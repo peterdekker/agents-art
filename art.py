@@ -9,7 +9,7 @@ def main():
     data_bin, words = data.load_vectors("binvectors256.vec", n_words=50)
     artnet = algorithms.ART1(
         step=0.1,
-        rho=0.3,
+        rho=0.1,
         n_clusters=10,
         shuffle_data=False
     )

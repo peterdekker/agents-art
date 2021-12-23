@@ -4,6 +4,10 @@ import seaborn as sns
 import matplotlib.pyplot as plt
 import pandas as pd
 
+plt.rcParams['figure.figsize'] = [10, 6]
+plt.rcParams['figure.dpi'] = 200
+plt.rcParams['savefig.format'] = "pdf"
+
 
 def plot(vectors, labels, clusters):
     n_labels = len(labels)
