@@ -9,7 +9,7 @@ plt.rcParams['figure.dpi'] = 200
 plt.rcParams['savefig.format'] = "pdf"
 
 
-def plot(vectors, labels, clusters):
+def plot(vectors, labels, clusters, file_label):
     n_labels = len(labels)
     assert n_labels == len(clusters) == vectors.shape[0]
     data_standardized = StandardScaler().fit_transform(vectors)
@@ -23,5 +23,5 @@ def plot(vectors, labels, clusters):
         pca_plot.text(df.pc1[i]+0.01, df.pc2[i], 
         labels[i], horizontalalignment='left', 
         size='small', color='black')
-    plt.savefig("pca.pdf")
+    plt.savefig(f"{file_label}-pca.pdf")
     #os.path.join(output_dir, f"{variable_param}-end-sb.{IMG_FORMAT}")
