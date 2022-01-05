@@ -45,27 +45,32 @@ def show_clusters(words, clusters):
     sort_df = piv_df.apply(lambda x: pd.Series(x.dropna().values)).fillna("")
     return(sort_df)
 
-def art_explore_parameters(data_bin, vigilances=None, learning_rates=None):
+def art_explore_parameters(data_bin, vigilances=None, learning_rates=None, n_clusters_settings = None):
     # If no parameter list given, evaluate only default value
     if not vigilances:
         vigilances=[ART_VIGILANCE]
     if not learning_rates:
         learning_rates = [ART_LEARNING_RATE]
+    if not n_clusters_settings:
+        n_clusters_settings = [N_CLUSTERS]
     assert isinstance(vigilances,list)
     assert isinstance(learning_rates,list)
-    results_dict = {"vigilance":[], "learning_rate": [], "silhouette_score":[]}
+    assert isinstance(n_clusters_settings,list)
+    results_dict = {"vigilance":[], "learning_rate": [], "silhouette_score":[], "n_clusters":[]}
     for vig in vigilances:
         for lr in learning_rates:
-            artnet = algorithms.ART1(
-                step=lr,
-                rho=vig,
-                n_clusters=N_CLUSTERS,
-                shuffle_data=False
-            )
-            score, _, _ = evaluate_model(artnet, data_bin, "ART")
-            # Write new row to dict for dataframe
-            results_dict["vigilance"].append(vig)
-            results_dict["learning_rate"].append(lr)
-            results_dict["silhouette_score"].append(score)
+            for nc in n_clusters_settings:
+                artnet = algorithms.ART1(
+                    step=lr,
+                    rho=vig,
+                    n_clusters=nc,
+                    shuffle_data=False
+                )
+                score, _, _ = evaluate_model(artnet, data_bin, "ART")
+                # Write new row to dict for dataframe
+                results_dict["vigilance"].append(vig)
+                results_dict["learning_rate"].append(lr)
+                results_dict["n_clusters"].append(nc)
+                results_dict["silhouette_score"].append(score)
     results_df = pd.DataFrame(results_dict)
     return results_df
