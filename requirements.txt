@@ -3,3 +3,4 @@ theano==1.0.5 # higher version than 1.0.0 that neupy explicitly asks
 sklearn
 seaborn
 pandas
+minisom
