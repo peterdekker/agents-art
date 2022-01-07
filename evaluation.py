@@ -66,11 +66,13 @@ def art_explore_parameters(data_bin, vigilances=None, learning_rates=None, n_clu
                     n_clusters=nc,
                     shuffle_data=False
                 )
-                score, _, _ = evaluate_model(artnet, data_bin, "ART")
+                score, clusters, _ = evaluate_model(artnet, data_bin, "ART")
+                n_clusters_assigned = len(set(clusters))
                 # Write new row to dict for dataframe
                 results_dict["vigilance"].append(vig)
                 results_dict["learning_rate"].append(lr)
                 results_dict["n_clusters"].append(nc)
+                results_dict["n_clusters_assigned"].append(n_clusters_assigned)
                 results_dict["silhouette_score"].append(score)
     results_df = pd.DataFrame(results_dict)
     return results_df
