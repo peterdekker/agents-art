@@ -1,14 +1,6 @@
 neupy
-theano==1.0.5 # higher version than 1.0.0 that neupy explicitly asks
-#sklearn
+sklearn
 seaborn
-#pandas
+pandas
 minisom
-
-# Specific for neupy, which has to be installed with no-deps because it fails on tensorflow version, not available for python 3.8 anymore
-#matplotlib==1.5.1
-Pillow==3.0.0
-graphviz==0.5.1
-progressbar2==3.34.3
-scikit-learn>=0.18.0
-pandas==0.23.4
+ipykernel

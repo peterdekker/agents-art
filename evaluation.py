@@ -56,7 +56,7 @@ def art_explore_parameters(data_bin, vigilances=None, learning_rates=None, n_clu
     assert isinstance(vigilances,list)
     assert isinstance(learning_rates,list)
     assert isinstance(n_clusters_settings,list)
-    results_dict = {"vigilance":[], "learning_rate": [], "silhouette_score":[], "n_clusters":[]}
+    results_dict = {"vigilance":[], "learning_rate": [], "silhouette_score":[], "n_clusters":[], "min_cluster_size":[]}
     for vig in vigilances:
         for lr in learning_rates:
             for nc in n_clusters_settings:
@@ -67,12 +67,13 @@ def art_explore_parameters(data_bin, vigilances=None, learning_rates=None, n_clu
                     shuffle_data=False
                 )
                 score, clusters, _ = evaluate_model(artnet, data_bin, "ART")
-                n_clusters_assigned = len(set(clusters))
+                cluster_sizes = np.bincount(np.array(clusters,dtype=int))
+                min_cluster_size = np.min(cluster_sizes)
                 # Write new row to dict for dataframe
                 results_dict["vigilance"].append(vig)
                 results_dict["learning_rate"].append(lr)
                 results_dict["n_clusters"].append(nc)
-                results_dict["n_clusters_assigned"].append(n_clusters_assigned)
+                results_dict["min_cluster_size"].append(min_cluster_size)
                 results_dict["silhouette_score"].append(score)
     results_df = pd.DataFrame(results_dict)
     return results_df
