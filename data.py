@@ -1,8 +1,48 @@
 import numpy as np
 import io
 import time
+from pycldf.dataset import Dataset
+import os
+import pathlib
+import requests
+import shutil
+import pandas as pd
 
 np.random.seed(11)
+currentdir = os.path.abspath("")
+
+DATA_ARCHIVE_PATH = "Romance_Verbal_Inflection_Dataset-v2.0.4.tar.gz"
+DATA_ARCHIVE_URL = "https://gitlab.com/sbeniamine/Romance_Verbal_Inflection_Dataset/-/archive/v2.0.4/Romance_Verbal_Inflection_Dataset-v2.0.4.tar.gz"
+DATA_PATH = os.path.join(currentdir, "Romance_Verbal_Inflection_Dataset-v2.0.4") # Directory after unpacking archive
+METADATA_PATH = os.path.join(DATA_PATH, "cldf/Wordlist-metadata.json")
+
+def download_if_needed(archive_path, archive_url, file_path, label):
+    if not os.path.exists(file_path):
+        # Create parent dirs
+        #p = pathlib.Path(file_path)
+        #p.parent.mkdir(parents=True, exist_ok=True)
+        with open(archive_path, 'wb') as f:
+            print(f"Downloading {label} from {archive_url}")
+            try:
+                r = requests.get(archive_url, allow_redirects=True)
+            except requests.exceptions.RequestException as e:  # This is the correct syntax
+                raise SystemExit(e)
+            # Write downloaded content to file
+            f.write(r.content)
+            if archive_path.endswith(".tar.gz"):
+                print("Unpacking archive.")
+                shutil.unpack_archive(archive_path, currentdir)
+
+
+def load_romance_dataset():
+    download_if_needed(DATA_ARCHIVE_PATH, DATA_ARCHIVE_URL, DATA_PATH, "romance")
+    print("Loading data...")
+    dataset = Dataset.from_metadata(METADATA_PATH)
+    forms_df = pd.DataFrame(dataset["FormTable"])
+    cognates_df = pd.DataFrame(dataset["CognatesetTable"])
+    lects_df = pd.DataFrame(dataset["LanguageTable"])
+    print("Loaded data.")
+    return forms_df, cognates_df, lects_df
 
 def map_int(string_list):
     return [int(s) for s in string_list]
