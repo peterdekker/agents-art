@@ -7,6 +7,10 @@ from neupy import algorithms
 import plot
 from conf import ART_VIGILANCE, ART_LEARNING_RATE, N_CLUSTERS
 
+def plot_data(data_bin, labels, clusters, sample_points = None, use_labels=True):
+    data_std = StandardScaler().fit_transform(data_bin)
+    plot.plot(data_std, labels, clusters, sample_points=sample_points, use_labels=use_labels)
+
 def report_model(model, data_bin, words, model_name, n_clusters=None):
     score, clusters, data_std = evaluate_model(model, data_bin, model_name, n_clusters)
     print (f"Silhouette score: {score}")
