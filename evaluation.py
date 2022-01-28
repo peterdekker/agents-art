@@ -6,11 +6,18 @@ from neupy import algorithms
 
 import plot
 from conf import ART_VIGILANCE, ART_LEARNING_RATE, N_CLUSTERS
-
-def plot_data(data_bin, labels, clusters, sample_points = None, use_labels=True):
+##############################
+##### Functions for Romance dataset
+def plot_data(data_bin, clusters, labels=None, micro_clusters=None, sample_points = None, file_label=None):
     data_std = StandardScaler().fit_transform(data_bin)
-    plot.plot(data_std, labels, clusters, sample_points=sample_points, use_labels=use_labels)
+    score = silhouette_score(X=data_bin, labels=clusters, metric="hamming")
+    print (f"Silhouette score: {score}")
+    plot.plot(data_std, clusters, labels=labels, micro_clusters=micro_clusters, sample_points=sample_points, file_label=file_label)
 
+
+
+##############################
+####### Functions for ART Clustering.ipynb: comparison of clustering algorithms on word embeddings dataset
 def report_model(model, data_bin, words, model_name, n_clusters=None):
     score, clusters, data_std = evaluate_model(model, data_bin, model_name, n_clusters)
     print (f"Silhouette score: {score}")

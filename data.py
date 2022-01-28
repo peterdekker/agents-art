@@ -8,7 +8,9 @@ import requests
 import shutil
 import pandas as pd
 
-np.random.seed(11)
+from conf import INFLECTION_CLASSES
+
+#np.random.seed(11)
 currentdir = os.path.abspath("")
 
 DATA_ARCHIVE_PATH = "Romance_Verbal_Inflection_Dataset-v2.0.4.tar.gz"
@@ -81,7 +83,7 @@ def get_sound_inventory(forms):
 
 def create_onehot_inflections(inflections):
     n_inflections = len(inflections)
-    inflection_inventory = list(inflections.unique())
+    inflection_inventory = INFLECTION_CLASSES
     inflection_inventory_size = len(inflection_inventory)
     array = np.zeros(shape=(n_inflections, inflection_inventory_size))
     for infl_row, inflection in enumerate(inflections):
@@ -120,15 +122,16 @@ def create_onehot_forms(forms, empty_symbol=True):
     return array, sounds
 
 
-def create_language_dataset(df, language, empty_symbol=True, language_column="Language_ID", form_column="Form", inflection_column="Latin_Conjugation"):
+def create_language_dataset(df, language, empty_symbol=True, language_column="Language_ID", form_column="Form", inflection_column="Latin_Conjugation", cogid_column="Cognateset_ID_first"):
     df_language = df[df[language_column] ==
-                     language][[form_column, inflection_column]]
+                     language]
     forms = df_language[form_column]
     inflections = df_language[inflection_column]
+    cogids = df_language[cogid_column]
     forms_onehot, sound_inventory = create_onehot_forms(forms, empty_symbol)
     inflections_onehot, inflection_inventory = create_onehot_inflections(
         inflections)
-    return forms_onehot, inflections_onehot, list(forms), list(inflections)
+    return forms_onehot, inflections_onehot, list(forms), list(inflections), list(cogids)
 
 ############### Methods binarized word embedings dataset #########
 
