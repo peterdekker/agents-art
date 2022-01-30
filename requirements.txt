@@ -1,5 +1,5 @@
 pip==21.3.1
-neupy
+neupy==0.8.2
 sklearn
 seaborn
 pandas

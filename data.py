@@ -83,7 +83,7 @@ def get_sound_inventory(forms):
 
 def create_onehot_inflections(inflections):
     n_inflections = len(inflections)
-    inflection_inventory = INFLECTION_CLASSES
+    inflection_inventory = list(set(inflections))
     inflection_inventory_size = len(inflection_inventory)
     array = np.zeros(shape=(n_inflections, inflection_inventory_size))
     for infl_row, inflection in enumerate(inflections):

@@ -43,3 +43,5 @@ def plot(data_standardized, clusters, labels=None, micro_clusters = None, file_l
             size=6, color='black')
     if file_label:
         plt.savefig(f"{file_label}.pdf")
+    #plt.show()
+    plt.clf()
