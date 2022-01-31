@@ -1,4 +1,7 @@
 # agents-art
+## Running
+The notebook "Romance inflection dataset.ipynb" contains the code belonging to the paper "Evolution of morphological inflection classes over generations by clustering with Adaptive Resonance Theory".
+(The notebook "ART clustering.ipynb" contains earlier experiments)
 ## Installation
 This software requires running Python 3.7 in a virtualenv. To this end, we use the tool pyenv:
 
