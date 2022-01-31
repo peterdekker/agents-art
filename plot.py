@@ -19,14 +19,14 @@ def plot(data_standardized, clusters, labels=None, micro_clusters = None, file_l
     data_red = alg.fit_transform(data_standardized)
     df = pd.DataFrame(data=data_red, columns=['dim1', 'dim2'])
     df["clusters"] = clusters
-    if labels:
+    if labels is not None:
         df["labels"] = labels
-    if micro_clusters:
+    if micro_clusters is not None:
         df["micro_clusters"] = micro_clusters
-    if sample_points:
+    if sample_points is not None:
         samples = np.random.choice(len(clusters), sample_points, replace=False)
         df = df.loc[samples].reset_index(drop=True)
-    if micro_clusters: # THis would in practice be used for lemmas=cognate ids
+    if micro_clusters is not None: # THis would in practice be used for lemmas=cognate ids
         micro_clusters_uniq = df["micro_clusters"].unique()
         marker_list = FILLED_MARKERS[:len(micro_clusters_uniq)]
         red_plot = sns.scatterplot(data = df, x="dim1", y="dim2", hue="clusters", style="micro_clusters", hue_order=INFLECTION_CLASSES, palette="hls", markers=marker_list, size=1, legend=False)
