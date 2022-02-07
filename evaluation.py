@@ -22,7 +22,7 @@ def report_model(model, data_bin, words, model_name, n_clusters=None):
     score, clusters, data_std = evaluate_model(model, data_bin, model_name, n_clusters)
     print (f"Silhouette score: {score}")
     # Use standardized data for PCA plot
-    plot.plot(data_std, words, clusters, model_name)
+    plot.plot(data_std, clusters, labels=words, file_label=model_name, show=True)
     # Give impression of clusters
     clusters_df = show_clusters(words, clusters).head(10)
     display(clusters_df)

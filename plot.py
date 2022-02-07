@@ -13,7 +13,7 @@ plt.rcParams['savefig.format'] = "pdf"
 
 
 
-def plot(data_standardized, clusters, labels=None, micro_clusters = None, file_label=None, sample_points=None):
+def plot(data_standardized, clusters, labels=None, micro_clusters = None, file_label=None, sample_points=None, show=False):
     assert len(clusters) == data_standardized.shape[0]
     alg = TSNE(n_components=2, metric="hamming", init="pca", learning_rate="auto", square_distances=True)
     data_red = alg.fit_transform(data_standardized)
@@ -43,5 +43,6 @@ def plot(data_standardized, clusters, labels=None, micro_clusters = None, file_l
             size=6, color='black')
     if file_label:
         plt.savefig(f"{file_label}.pdf")
-    #plt.show()
+    if show:
+        plt.show()
     plt.clf()
