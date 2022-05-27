@@ -18,18 +18,29 @@ cd ~/.pyenv && src/configure && make -C src
 # Set environment variables
 # the sed invocation inserts the lines at the start of the file
 # after any initial comment lines
-sed -Ei -e '/^([^#]|$)/ {a \
-export PYENV_ROOT="$HOME/.pyenv"
-a \
-export PATH="$PYENV_ROOT/bin:$PATH"
-a \
-' -e ':a' -e '$!{n;ba};}' ~/.profile
-echo 'eval "$(pyenv init --path)"' >>~/.profile
+#sed -Ei -e '/^([^#]|$)/ {a \
+#export PYENV_ROOT="$HOME/.pyenv"
+#a \
+#export PATH="$PYENV_ROOT/bin:$PATH"
+#a \
+#' -e ':a' -e '$!{n;ba};}' ~/.profile
+#
+#echo 'eval "$(pyenv init --path)"' >>~/.profile
+#
+#echo 'eval "$(pyenv init -)"' >> ~/.bashrc
 
+echo 'export PYENV_ROOT="$HOME/.pyenv"' >> ~/.bashrc
+echo 'command -v pyenv >/dev/null || export PATH="$PYENV_ROOT/bin:$PATH"' >> ~/.bashrc
 echo 'eval "$(pyenv init -)"' >> ~/.bashrc
 
+echo 'export PYENV_ROOT="$HOME/.pyenv"' >> ~/.profile
+echo 'command -v pyenv >/dev/null || export PATH="$PYENV_ROOT/bin:$PATH"' >> ~/.profile
+echo 'eval "$(pyenv init -)"' >> ~/.profile
+
+
+
 # Restart shell (or is full relogin needed?)
-exec $SHELL
+exec "$SHELL"
 
 # install Python 3.7.12
 pyenv install 3.7.12
@@ -42,6 +53,7 @@ exec "$SHELL"
 pyenv virtualenv 3.7.12 env37
 #Activate environment
 pyenv activate env37
+## Now, cd back to the respository directory
 # Install requirements
 pip3 install -r requirements.txt
 # Create jupyter notebook kernel for this env

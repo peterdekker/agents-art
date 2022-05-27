@@ -1,10 +1,11 @@
-from conf import ART_VIGILANCE, ART_LEARNING_RATE, INFLECTION_CLASSES, N_INFLECTION_CLASSES
+from conf import ART_VIGILANCE, ART_LEARNING_RATE, INFLECTION_CLASSES, N_INFLECTION_CLASSES, OUTPUT_DIR
 from neupy.algorithms import ART1
 from sklearn.metrics import silhouette_score, rand_score, adjusted_rand_score
 import numpy as np
 import seaborn as sns
 import matplotlib.pyplot as plt
 import pandas as pd
+import os
 
 import evaluation
 import data
@@ -68,28 +69,31 @@ def art_iterated(data_onehot, n_runs, n_timesteps, batch_size, inflections_gold,
                 records_end_scores.append({"vigilance": vig, "metric": "adj_rand", "score": adj_rand})
                 records_end_clusters.append({"vigilance": vig, "metric": "min_cluster_size", "n_forms": min_cluster_size})
                 records_end_clusters.append({"vigilance": vig, "metric": "max_cluster_size", "n_forms": max_cluster_size})
+
+    if not os.path.exists(OUTPUT_DIR):
+        os.makedirs(OUTPUT_DIR)
     # Plot results
     if not iterated:
         df_end_scores = pd.DataFrame.from_records(records_end_scores)
         df_end_scores.pivot(index="vigilance", columns="metric", values="score").to_csv("scores-art-end.tex", sep="&", line_terminator = "\\\\\n")
         sns.lineplot(data=df_end_scores, x="vigilance", y = "score", hue="metric")
-        plt.savefig(f"scores-art-end.pdf")
+        plt.savefig(os.path.join(OUTPUT_DIR, f"scores-art-end.pdf"))
         plt.clf()
         
         df_end_clusters = pd.DataFrame.from_records(records_end_clusters)
         df_end_clusters.pivot(index="vigilance", columns="metric", values="n_forms").to_csv("clusters-art-end.tex", sep="&", line_terminator = "\\\\\n")
         sns.lineplot(data=df_end_clusters, x="vigilance", y = "n_forms", hue="metric")
-        plt.savefig(f"clusters-art-end.pdf")
+        plt.savefig(os.path.join(OUTPUT_DIR, f"clusters-art-end.pdf"))
         plt.clf()
     if iterated:
         print("Plotting graphs.")
         df_course_scores = pd.DataFrame.from_records(records_course_scores)
         sns.lineplot(data=df_course_scores, x="timestep", y = "score", hue="metric", style="vigilance")
-        plt.savefig(f"scores-art-course-batch{batch_size}.pdf")
+        plt.savefig(os.path.join(OUTPUT_DIR, f"scores-art-course-batch{batch_size}.pdf"))
         plt.clf()
         
         df_course_clusters = pd.DataFrame.from_records(records_course_clusters)
         sns.lineplot(data=df_course_clusters, x="timestep", y = "n_forms", hue="metric", style="vigilance")
-        plt.savefig(f"clusters-art-course-batch{batch_size}.pdf")
+        plt.savefig(os.path.join(OUTPUT_DIR, f"clusters-art-course-batch{batch_size}.pdf"))
         plt.clf()
         print("Done plotting.")

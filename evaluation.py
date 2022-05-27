@@ -11,7 +11,7 @@ from conf import ART_VIGILANCE, ART_LEARNING_RATE, N_CLUSTERS
 def plot_data(data_bin, clusters, labels=None, micro_clusters=None, sample_points = None, file_label=None):
     data_std = StandardScaler().fit_transform(data_bin)
     score = silhouette_score(X=data_bin, labels=clusters, metric="hamming")
-    plot.plot(data_std, clusters, labels=labels, micro_clusters=micro_clusters, sample_points=sample_points, file_label=file_label)
+    plot.plot(data_std, clusters, labels=labels, micro_clusters=micro_clusters, sample_points=sample_points, file_label=file_label, show=True)
     return score
 
 

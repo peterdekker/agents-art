@@ -5,7 +5,9 @@ import pandas as pd
 import numpy as np
 from matplotlib.lines import Line2D
 
-from conf import LABEL_DENSITY, INFLECTION_CLASSES, FILLED_MARKERS
+import os
+
+from conf import LABEL_DENSITY, INFLECTION_CLASSES, FILLED_MARKERS, OUTPUT_DIR
 
 plt.rcParams['figure.figsize'] = [10, 6]
 plt.rcParams['figure.dpi'] = 200
@@ -42,7 +44,9 @@ def plot(data_standardized, clusters, labels=None, micro_clusters = None, file_l
             df.labels[i], horizontalalignment='left', 
             size=6, color='black')
     if file_label:
-        plt.savefig(f"{file_label}.pdf")
+        if not os.path.exists(OUTPUT_DIR):
+            os.makedirs(OUTPUT_DIR)
+        plt.savefig(os.path.join(OUTPUT_DIR,f"{file_label}.pdf"))
     if show:
         plt.show()
     plt.clf()

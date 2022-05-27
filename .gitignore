@@ -1,4 +1,5 @@
 *.pdf
+*.tex
 *.vec
 __pycache__
 Romance_Verbal_Inflection_Dataset-v2.0.4

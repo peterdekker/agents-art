@@ -8,3 +8,5 @@ INFLECTION_CLASSES = ["I", "II", "III", "IV", "special"]
 N_INFLECTION_CLASSES = len(INFLECTION_CLASSES)
 
 FILLED_MARKERS = ['o', 'v', '^', '<', '>', '8', 's', 'p', '*', 'h', 'H', 'D', 'd', 'P', 'X']*6
+
+OUTPUT_DIR = "output"
