@@ -1,4 +1,5 @@
 
+# Checked 16-06-22: same as notebook
 import data
 import evaluation
 import numpy as np
@@ -8,6 +9,8 @@ plot_data_before = False
 
 single_run = True
 iterated_run = False
+
+analysis_language = "French_Modern_Standard"
 
 def main():
     # Load data
@@ -20,7 +23,7 @@ def main():
     latin_conjugation_df = data.filter_romance_inflections(forms_df_1cognate, cognates_df)
 
     # Create dataset per language
-    forms_onehot, inflections_onehot, forms, inflections, cogids = data.create_language_dataset(latin_conjugation_df, "French_Modern_Standard", empty_symbol=True)
+    forms_onehot, inflections_onehot, forms, inflections, cogids = data.create_language_dataset(latin_conjugation_df, analysis_language, empty_symbol=True)
     forms_inflections_onehot = np.concatenate((forms_onehot, inflections_onehot), axis=1)
 
     inflections_empty = np.zeros(inflections_onehot.shape)
