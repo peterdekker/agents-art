@@ -5,8 +5,8 @@ from neupy.algorithms import ART1
 
 
 class IncrementalArt(ART1):
-    #rho = ProperFractionProperty(default=0.5)
-    #n_clusters = IntProperty(default=2, minval=2)
+    rho = ProperFractionProperty(default=0.5)
+    n_clusters = IntProperty(default=2, minval=2)
 
     def train(self, X):
         X = format_data(X)
@@ -53,12 +53,12 @@ class IncrementalArt(ART1):
                 output2 = np.zeros(input2.size)
                 input2[disabled_neurons] = -np.inf
                 winner_index = input2.argmax()
-                output2[winner_index] = 1
+                output2[winner_index] = 1 #the activated category Y then generates top-down signals U. Is this Y or U?
 
-                expectation = np.dot(weight_21, output2)
-                output1 = np.logical_and(p, expectation).astype(int)
+                expectation = np.dot(weight_21, output2) # expectation = critical feature pattern V (Grossberg 2020, p. 8)
+                output1 = np.logical_and(p, expectation).astype(int) # Put 1 on position if in both arrays (original data and expectation) there is a 1 at that position
 
-                reset_value = np.dot(output1.T, output1) / np.dot(p.T, p)
+                reset_value = np.dot(output1.T, output1) / np.dot(p.T, p) 
                 reset = reset_value < rho
 
                 if reset:
@@ -75,7 +75,7 @@ class IncrementalArt(ART1):
                         weight_12[winner_index, :] = (step * output1) / (
                             step + np.dot(output1.T, output1) - 1
                         )
-                        weight_21[:, winner_index] = output1
+                        weight_21[:, winner_index] = output1 # Set that combined array (line 59) as new weights
                     else:
                         # Get result with the best `rho`
                         winner_index = max(reseted_values)[1]
