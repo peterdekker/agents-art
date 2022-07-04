@@ -10,7 +10,7 @@ plot_data_before = False
 single_run = True
 iterated_run = False
 
-analysis_language = "French_Modern_Standard"
+language = "French_Modern_Standard"
 
 def main():
     # Load data
@@ -23,14 +23,14 @@ def main():
     latin_conjugation_df = data.filter_romance_inflections(forms_df_1cognate, cognates_df)
 
     # Create dataset per language
-    forms_onehot, inflections_onehot, forms, inflections, cogids = data.create_language_dataset(latin_conjugation_df, analysis_language, empty_symbol=True)
+    forms_onehot, inflections_onehot, forms, inflections, cogids = data.create_language_dataset(latin_conjugation_df, language, empty_symbol=True)
     forms_inflections_onehot = np.concatenate((forms_onehot, inflections_onehot), axis=1)
 
     inflections_empty = np.zeros(inflections_onehot.shape)
     forms_empty_inflections_onehot = np.concatenate((forms_onehot, inflections_empty), axis=1)
     
     if plot_data_before:
-        score = evaluation.plot_data(forms_inflections_onehot, labels=None, clusters=inflections, micro_clusters=cogids, file_label="data-inflections")
+        score = evaluation.plot_data(forms_inflections_onehot, labels=None, clusters=inflections, micro_clusters=cogids, file_label=f"data-inflections-{language}")
         print (f"Silhouette score, data before run (with inflection class): {score}")
     
     if single_run:

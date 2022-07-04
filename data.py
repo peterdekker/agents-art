@@ -122,9 +122,11 @@ def create_onehot_forms(forms, empty_symbol=True):
     return array, sounds
 
 
-def create_language_dataset(df, language, empty_symbol=True, language_column="Language_ID", form_column="Form", inflection_column="Latin_Conjugation", cogid_column="Cognateset_ID_first"):
+def create_language_dataset(df, language, empty_symbol=True, language_column="Language_ID", form_column="Form", inflection_column="Latin_Conjugation", cogid_column="Cognateset_ID_first", sample_first=None):
     df_language = df[df[language_column] ==
                      language]
+    if sample_first:
+        df_language = df_language.head(sample_first)
     forms = df_language[form_column]
     inflections = df_language[inflection_column]
     cogids = df_language[cogid_column]
