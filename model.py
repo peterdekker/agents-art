@@ -9,11 +9,11 @@ import os
 
 import evaluation
 import data
+import numpy as np
 
 
 
-
-def art_one(data_onehot, inflections_gold, cogids, language, vigilances=[ART_VIGILANCE], repeat_dataset=False, batch_size=None, data_plot=False, show=False):
+def art_one(data_onehot, inflections_gold, cogids, language, vigilances=[ART_VIGILANCE], repeat_dataset=False, batch_size=None, random_batch=False, data_plot=False, show=False):
     n_runs = 1
     inflections_gold = np.array(inflections_gold)
     if cogids is not None:
@@ -21,43 +21,34 @@ def art_one(data_onehot, inflections_gold, cogids, language, vigilances=[ART_VIG
     records_end_scores = []
     records_end_clusters = []
     for vig in vigilances:
-        print(f" - Vigilance: {vig}")
+        if len(vigilances) > 1:
+            print(f" - Vigilance: {vig}")
         for r in range(n_runs):
             artnet = ART1(
                 step=ART_LEARNING_RATE,
                 rho=vig,
                 n_clusters=N_INFLECTION_CLASSES,
             )
-            len_data = len(data_onehot)
+            # Make copy of data, because we will possibly shuffle
+            input_data = data_onehot.copy()
+            len_data = len(input_data)
             full_dataset_ix = np.arange(len_data)
 
-            if batch_size:
-                # learn in batches
-                for i in range(len_data//batch_size):
-                    batch = np.arange(i*batch_size, (i+1)*batch_size)
-                    print(batch)
-                    clusters_art = artnet.train(data_onehot[batch])
-            else:
-                # Use whole dataset
-                batch = full_dataset_ix
-                clusters_art = artnet.train(data_onehot[batch])
-                if repeat_dataset:
-                    for i in range(10):
-                        clusters_art = artnet.train(data_onehot[batch])
-
-            # Calculate scores
-            silhouette = silhouette_score(X=data_onehot[full_dataset_ix], labels=clusters_art, metric="hamming")
-            rand = rand_score(inflections_gold[full_dataset_ix], clusters_art)
-            adj_rand = adjusted_rand_score(inflections_gold[full_dataset_ix], clusters_art)
-            cluster_sizes = np.bincount(np.array(clusters_art,dtype=int))
-            min_cluster_size = np.min(cluster_sizes)
-            max_cluster_size = np.max(cluster_sizes)
-
-            print(f" -- Run: {r}. silh: {silhouette} rand: {rand} adj_rand: {adj_rand}")
+            # If batching off, use full dataset
+            if not batch_size:
+                batch_size = len_data
+            for rep in range(10 if repeat_dataset else 1):
+                for b in range(len_data//batch_size):
+                    batch = np.arange(b*batch_size, (b+1)*batch_size)
+                    rand, adj_rand, min_cluster_size, max_cluster_size = eval_art(input_data, inflections_gold, artnet, batch)
+            
+            # Evaluate once more on full dataset
+            rand, adj_rand, min_cluster_size, max_cluster_size = eval_art(input_data, inflections_gold, artnet, full_dataset_ix)
+            print(f"rand: {rand} adj_rand: {adj_rand}")
 
             if data_plot:
-                evaluation.plot_data(data_onehot[full_dataset_ix], labels=None, clusters=clusters_art, micro_clusters=cogids[batch], file_label=f"art-end-vig{vig}-{language}")
-            records_end_scores.append({"vigilance": vig, "metric": "silhouette", "score": silhouette})
+                evaluation.plot_data(input_data[full_dataset_ix], labels=None, clusters=clusters_art, micro_clusters=cogids[batch], file_label=f"art-end-vig{vig}-{language}")
+            # records_end_scores.append({"vigilance": vig, "metric": "silhouette", "score": silhouette})
             records_end_scores.append({"vigilance": vig, "metric": "rand", "score": rand})
             records_end_scores.append({"vigilance": vig, "metric": "adj_rand", "score": adj_rand})
             records_end_clusters.append({"vigilance": vig, "metric": "min_cluster_size", "n_forms": min_cluster_size})
@@ -81,6 +72,17 @@ def art_one(data_onehot, inflections_gold, cogids, language, vigilances=[ART_VIG
     if show:
         plt.show()
     plt.clf()
+
+def eval_art(data, inflections_gold, artnet, batch):
+    clusters_art = artnet.train(data[batch])
+    # Calculate scores
+    # silhouette = silhouette_score(X=data_onehot[batch], labels=clusters_art, metric="hamming")
+    rand = rand_score(inflections_gold[batch], clusters_art)
+    adj_rand = adjusted_rand_score(inflections_gold[batch], clusters_art)
+    cluster_sizes = np.bincount(np.array(clusters_art,dtype=int))
+    min_cluster_size = np.min(cluster_sizes)
+    max_cluster_size = np.max(cluster_sizes)
+    return rand,adj_rand,min_cluster_size,max_cluster_size
 
 def art_iterated(data_onehot, n_runs, n_timesteps, batch_size_iterated, inflections_gold, cogids, language, vigilances=[ART_VIGILANCE], data_plot=False):
     inflections_gold = np.array(inflections_gold)

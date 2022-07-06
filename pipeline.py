@@ -3,7 +3,7 @@
 import data
 import evaluation
 import numpy as np
-from model import art_one
+from model import art_one, art_iterated
 
 plot_data_before = False
 
@@ -36,10 +36,14 @@ def main():
     if single_run_eval_batches:
         print("Full data")
         art_one(forms_onehot, inflections, cogids, language)
-        print("Repeat")
-        art_one(forms_onehot, inflections, cogids, language, repeat_dataset=True)
+        print("Repeat dataset")
+        art_one(forms_onehot, inflections, cogids, language, repeat_dataset=False)
         print("batch 10")
         art_one(forms_onehot, inflections, cogids, language, batch_size=10)
+        print("batch 50")
+        art_one(forms_onehot, inflections, cogids, language, batch_size=50)
+
+        # Next: experiment with random batches, and evaluating on avg of batches, instead of doing full run after. Evaluate full dataset run on small batches?
 
     if single_run_eval_vigilances:
         art_one(forms_onehot, inflections, cogids, language, vigilances = np.arange(0,1.05,0.05))
