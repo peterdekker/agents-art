@@ -52,6 +52,7 @@ def main():
         art_one(forms_onehot, inflections, cogids, language, batch_size=50, shuffle_data=True)
 
         # Next: evaluating on avg of batches, instead of doing full run after. Evaluate full dataset run on small batches?
+        # Avg over multiple runs, then show statistics
 
     if single_run_eval_vigilances:
         art_one(forms_onehot, inflections, cogids, language, vigilances = np.arange(0,1.05,0.05))
