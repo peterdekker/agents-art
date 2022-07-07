@@ -36,14 +36,22 @@ def main():
     if single_run_eval_batches:
         print("Full data")
         art_one(forms_onehot, inflections, cogids, language)
+        print("Full data shuffle")
+        art_one(forms_onehot, inflections, cogids, language, shuffle_data=True)
         print("Repeat dataset")
-        art_one(forms_onehot, inflections, cogids, language, repeat_dataset=False)
+        art_one(forms_onehot, inflections, cogids, language, repeat_dataset=True)
+        print("Repeat dataset shuffle")
+        art_one(forms_onehot, inflections, cogids, language, repeat_dataset=True, shuffle_data=True)
         print("batch 10")
         art_one(forms_onehot, inflections, cogids, language, batch_size=10)
         print("batch 50")
         art_one(forms_onehot, inflections, cogids, language, batch_size=50)
+        print("random batch 10")
+        art_one(forms_onehot, inflections, cogids, language, batch_size=10, shuffle_data=True)
+        print("random batch 50")
+        art_one(forms_onehot, inflections, cogids, language, batch_size=50, shuffle_data=True)
 
-        # Next: experiment with random batches, and evaluating on avg of batches, instead of doing full run after. Evaluate full dataset run on small batches?
+        # Next: evaluating on avg of batches, instead of doing full run after. Evaluate full dataset run on small batches?
 
     if single_run_eval_vigilances:
         art_one(forms_onehot, inflections, cogids, language, vigilances = np.arange(0,1.05,0.05))

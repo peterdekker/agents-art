@@ -13,7 +13,7 @@ import numpy as np
 
 
 
-def art_one(data_onehot, inflections_gold, cogids, language, vigilances=[ART_VIGILANCE], repeat_dataset=False, batch_size=None, random_batch=False, data_plot=False, show=False):
+def art_one(data_onehot, inflections_gold, cogids, language, vigilances=[ART_VIGILANCE], repeat_dataset=False, batch_size=None, shuffle_data=False, data_plot=False, show=False):
     n_runs = 1
     inflections_gold = np.array(inflections_gold)
     if cogids is not None:
@@ -33,6 +33,9 @@ def art_one(data_onehot, inflections_gold, cogids, language, vigilances=[ART_VIG
             input_data = data_onehot.copy()
             len_data = len(input_data)
             full_dataset_ix = np.arange(len_data)
+            if shuffle_data:
+                # Makes taking batches sampling without replacement
+                np.random.shuffle(input_data)
 
             # If batching off, use full dataset
             if not batch_size:
@@ -43,11 +46,11 @@ def art_one(data_onehot, inflections_gold, cogids, language, vigilances=[ART_VIG
                     rand, adj_rand, min_cluster_size, max_cluster_size = eval_art(input_data, inflections_gold, artnet, batch)
             
             # Evaluate once more on full dataset
-            rand, adj_rand, min_cluster_size, max_cluster_size = eval_art(input_data, inflections_gold, artnet, full_dataset_ix)
+            rand, adj_rand, min_cluster_size, max_cluster_size = eval_art(data_onehot, inflections_gold, artnet, full_dataset_ix)
             print(f"rand: {rand} adj_rand: {adj_rand}")
 
             if data_plot:
-                evaluation.plot_data(input_data[full_dataset_ix], labels=None, clusters=clusters_art, micro_clusters=cogids[batch], file_label=f"art-end-vig{vig}-{language}")
+                evaluation.plot_data(data_onehot[full_dataset_ix], labels=None, clusters=clusters_art, micro_clusters=cogids[batch], file_label=f"art-end-vig{vig}-{language}")
             # records_end_scores.append({"vigilance": vig, "metric": "silhouette", "score": silhouette})
             records_end_scores.append({"vigilance": vig, "metric": "rand", "score": rand})
             records_end_scores.append({"vigilance": vig, "metric": "adj_rand", "score": adj_rand})
