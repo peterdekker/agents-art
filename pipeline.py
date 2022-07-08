@@ -1,9 +1,14 @@
 
-# Checked 16-06-22: same as notebook
+import warnings
+warnings.simplefilter(action='ignore', category=FutureWarning)
 import data
 import evaluation
 import numpy as np
+import os
 from model import art_one, art_iterated
+from conf import OUTPUT_DIR
+
+
 
 plot_data_before = False
 
@@ -14,7 +19,10 @@ iterated_run = False
 #language = "Italic_Latino-Faliscan_Latin"
 language = "French_Modern_Standard"
 
+
 def main():
+    if not os.path.exists(OUTPUT_DIR):
+        os.makedirs(OUTPUT_DIR)
     # Load data
     forms_df,cognates_df,lects_df = data.load_romance_dataset()
     
@@ -34,25 +42,25 @@ def main():
         print (f"Silhouette score, data before run (with inflection class): {score}")
     
     if single_run_eval_batches:
+        n_runs=10
         print("Full data")
         art_one(forms_onehot, inflections, cogids, language)
         print("Full data shuffle")
-        art_one(forms_onehot, inflections, cogids, language, shuffle_data=True)
+        art_one(forms_onehot, inflections, cogids, language, shuffle_data=True, n_runs=n_runs)
         print("Repeat dataset")
         art_one(forms_onehot, inflections, cogids, language, repeat_dataset=True)
         print("Repeat dataset shuffle")
-        art_one(forms_onehot, inflections, cogids, language, repeat_dataset=True, shuffle_data=True)
+        art_one(forms_onehot, inflections, cogids, language, repeat_dataset=True, shuffle_data=True, n_runs=n_runs)
         print("batch 10")
         art_one(forms_onehot, inflections, cogids, language, batch_size=10)
         print("batch 50")
         art_one(forms_onehot, inflections, cogids, language, batch_size=50)
         print("random batch 10")
-        art_one(forms_onehot, inflections, cogids, language, batch_size=10, shuffle_data=True)
+        art_one(forms_onehot, inflections, cogids, language, batch_size=10, shuffle_data=True, n_runs=n_runs)
         print("random batch 50")
-        art_one(forms_onehot, inflections, cogids, language, batch_size=50, shuffle_data=True)
+        art_one(forms_onehot, inflections, cogids, language, batch_size=50, shuffle_data=True, n_runs=n_runs)
 
-        # Next: evaluating on avg of batches, instead of doing full run after. Evaluate full dataset run on small batches?
-        # Avg over multiple runs, then show statistics
+        # Next: check scores for individual batches
 
     if single_run_eval_vigilances:
         art_one(forms_onehot, inflections, cogids, language, vigilances = np.arange(0,1.05,0.05))

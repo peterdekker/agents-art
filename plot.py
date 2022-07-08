@@ -44,8 +44,6 @@ def plot(data_standardized, clusters, labels=None, micro_clusters = None, file_l
             df.labels[i], horizontalalignment='left', 
             size=6, color='black')
     if file_label:
-        if not os.path.exists(OUTPUT_DIR):
-            os.makedirs(OUTPUT_DIR)
         plt.savefig(os.path.join(OUTPUT_DIR,f"data-{file_label}.pdf"))
     if show:
         plt.show()
