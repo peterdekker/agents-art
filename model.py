@@ -77,12 +77,12 @@ def art_one(data_onehot, inflections_gold, cogids, language, n_runs=1, vigilance
                     {"vigilance": vig, "run": r, "metric": "min_cluster_size", "n_forms": min_cluster_size})
                 records_end_clusters.append(
                     {"vigilance": vig, "run": r, "metric": "max_cluster_size", "n_forms": max_cluster_size})
-        rand_full_mean = np.mean(rand_full_runs)
-        adj_rand_full_mean = np.mean(adj_rand_full_runs)
-        print(f" - Full. Rand: {rand_full_mean}. Adj_rand: {adj_rand_full_mean}")
         rand_avg_batches_mean = np.mean(rand_avg_batches_runs)
         adj_rand_avg_batches_mean = np.mean(adj_rand_avg_batches_runs)
-        print(f" - Avg batches. Rand: {rand_avg_batches_mean}. Adj_rand: {adj_rand_avg_batches_mean}")
+        print(f" - Avg of training batches. Rand: {rand_avg_batches_mean}. Adj_rand: {adj_rand_avg_batches_mean}")
+        rand_full_mean = np.mean(rand_full_runs)
+        adj_rand_full_mean = np.mean(adj_rand_full_runs)
+        print(f" - Evaluate on extra full run. Rand: {rand_full_mean}. Adj_rand: {adj_rand_full_mean}")
 
     # Only create vigilance plot when comparing multiple vigilances
     if eval_vigilances:
