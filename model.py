@@ -51,7 +51,7 @@ def art_one(data_onehot, inflections_gold, cogids, language, n_runs=1, vigilance
             for rep in range(10 if repeat_dataset else 1):
                 for b in range(len_data//batch_size):
                     batch = np.arange(b*batch_size, (b+1)*batch_size)
-                    rand_batch, adj_rand_batch, min_cluster_size_batch, max_cluster_size_batch = eval_art(
+                    rand_batch, adj_rand_batch, min_cluster_size_batch, max_cluster_size_batch, clusters_art_batch = eval_art(
                         input_data, inflections_gold, artnet, batch)
                     rand_batches.append(rand_batch)
                     adj_rand_batches.append(adj_rand_batch)
@@ -59,7 +59,7 @@ def art_one(data_onehot, inflections_gold, cogids, language, n_runs=1, vigilance
             adj_rand_avg_batches_runs.append(np.mean(adj_rand_batches))
 
             # Evaluate once more on full dataset
-            rand, adj_rand, min_cluster_size, max_cluster_size = eval_art(
+            rand, adj_rand, min_cluster_size, max_cluster_size, clusters_art = eval_art(
                 data_onehot, inflections_gold, artnet, full_dataset_ix)
             rand_full_runs.append(rand)
             adj_rand_full_runs.append(adj_rand)
@@ -117,7 +117,7 @@ def eval_art(data, inflections_gold, artnet, batch):
     cluster_sizes = np.bincount(np.array(clusters_art, dtype=int))
     min_cluster_size = np.min(cluster_sizes)
     max_cluster_size = np.max(cluster_sizes)
-    return rand, adj_rand, min_cluster_size, max_cluster_size
+    return rand, adj_rand, min_cluster_size, max_cluster_size, clusters_art
 
 
 def art_iterated(data_onehot, n_runs, n_timesteps, batch_size_iterated, inflections_gold, cogids, language, vigilances=[ART_VIGILANCE], data_plot=False):

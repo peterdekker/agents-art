@@ -12,12 +12,12 @@ from conf import OUTPUT_DIR
 
 plot_data_before = False
 
-single_run_eval_batches = True
-single_run_eval_vigilances = False
+single_run_eval_batches = False
+single_run_eval_vigilances = True
 iterated_run = False
 
-#language = "Italic_Latino-Faliscan_Latin"
-language = "French_Modern_Standard"
+language = "Italic_Latino-Faliscan_Latin"
+#language = "French_Modern_Standard"
 
 
 def main():
