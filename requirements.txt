@@ -9,3 +9,4 @@ minisom
 ipykernel
 pycldf
 requests
+bpe

@@ -15,6 +15,7 @@ plot_data_before = False
 single_run_eval_batches = False
 single_run_eval_vigilances = True
 iterated_run = False
+bytepair_encoding = True
 
 language = "Italic_Latino-Faliscan_Latin"
 #language = "French_Modern_Standard"
@@ -33,7 +34,7 @@ def main():
     latin_conjugation_df = data.filter_romance_inflections(forms_df_1cognate, cognates_df)
 
     # Create dataset per language
-    forms_onehot, inflections_onehot, forms, inflections, cogids = data.create_language_dataset(latin_conjugation_df, language, empty_symbol=True, sample_first=1000)
+    forms_onehot, inflections_onehot, forms, inflections, cogids = data.create_language_dataset(latin_conjugation_df, language, empty_symbol=True, encoding="bytepair" if bytepair_encoding else "onehot", sample_first=1000)
     forms_inflections_onehot = np.concatenate((forms_onehot, inflections_onehot), axis=1)
 
     

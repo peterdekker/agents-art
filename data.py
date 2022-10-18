@@ -7,6 +7,7 @@ import pathlib
 import requests
 import shutil
 import pandas as pd
+from bpe import Encoder
 
 from conf import INFLECTION_CLASSES
 
@@ -17,7 +18,7 @@ DATA_ARCHIVE_PATH = "Romance_Verbal_Inflection_Dataset-v2.0.4.tar.gz"
 DATA_ARCHIVE_URL = "https://gitlab.com/sbeniamine/Romance_Verbal_Inflection_Dataset/-/archive/v2.0.4/Romance_Verbal_Inflection_Dataset-v2.0.4.tar.gz"
 # Directory after unpacking archive
 DATA_PATH = os.path.join(
-    currentdir, "Romance_Verbal_Inflection_Dataset-v2.0.4")
+    currentdir, "data", "Romance_Verbal_Inflection_Dataset-v2.0.4")
 METADATA_PATH = os.path.join(DATA_PATH, "cldf/Wordlist-metadata.json")
 
 ############ Methods Romance dataset ##########
@@ -121,8 +122,19 @@ def create_onehot_forms(forms, empty_symbol=True):
                 # Else: just leave the 0000s for empty symbol
     return array, sounds
 
+def create_bytepair_forms(forms):
+    encoder = Encoder(200, pct_bpe=0.88)
+    print(forms)
+    encoder.fit(forms)
+    print([encoder.tokenize(form) for form in forms])
+    print(list(encoder.transform(forms)))
+    # TODO: finish bytepair encoding. Possibly train on all languages
+    # "{0:b}".format() -> map(int)
+    # and set max bitstring length by max value
+    # and try to get max word lengths almost equal by setting parameters right: Set parameters right to get quite even word lengths: https://arxiv.org/abs/1508.07909
 
-def create_language_dataset(df, language, empty_symbol=True, language_column="Language_ID", form_column="Form", inflection_column="Latin_Conjugation", cogid_column="Cognateset_ID_first", sample_first=None):
+
+def create_language_dataset(df, language, empty_symbol=True, language_column="Language_ID", form_column="Form", inflection_column="Latin_Conjugation", cogid_column="Cognateset_ID_first", encoding="onehot", sample_first=None):
     df_language = df[df[language_column] ==
                      language]
     if sample_first:
@@ -130,10 +142,15 @@ def create_language_dataset(df, language, empty_symbol=True, language_column="La
     forms = df_language[form_column]
     inflections = df_language[inflection_column]
     cogids = df_language[cogid_column]
-    forms_onehot, sound_inventory = create_onehot_forms(forms, empty_symbol)
+    if encoding=="onehot":
+        forms_encoded, sound_inventory = create_onehot_forms(forms, empty_symbol)
+    elif encoding=="bytepair":
+        forms_encoded = create_bytepair_forms(forms)
+    else:
+        ValueError("Unrecognized data encoding.")
     inflections_onehot, inflection_inventory = create_onehot_inflections(
         inflections)
-    return forms_onehot, inflections_onehot, list(forms), list(inflections), list(cogids)
+    return forms_encoded, inflections_onehot, list(forms), list(inflections), list(cogids)
 
 ############### Methods binarized word embedings dataset #########
 
