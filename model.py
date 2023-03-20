@@ -23,10 +23,10 @@ def art_one(data_onehot, inflections_gold, cogids, language, n_runs=1, vigilance
         eval_vigilances = True
     for vig in vigilances:
         if eval_vigilances:
-            print(f" - Vigilance: {vig}")
+            print(f"Vigilance: {vig}")
 
-        rand_full_runs = []
-        adj_rand_full_runs = []
+        # rand_full_runs = []
+        # adj_rand_full_runs = []
         rand_avg_batches_runs = []
         adj_rand_avg_batches_runs = []
         for r in range(n_runs):
@@ -58,31 +58,31 @@ def art_one(data_onehot, inflections_gold, cogids, language, n_runs=1, vigilance
             rand_avg_batches_runs.append(np.mean(rand_batches))
             adj_rand_avg_batches_runs.append(np.mean(adj_rand_batches))
 
-            # Evaluate once more on full dataset
-            rand, adj_rand, min_cluster_size, max_cluster_size, clusters_art = eval_art(
-                data_onehot, inflections_gold, artnet, full_dataset_ix)
-            rand_full_runs.append(rand)
-            adj_rand_full_runs.append(adj_rand)
+            # # Evaluate once more on full dataset
+            # rand, adj_rand, min_cluster_size, max_cluster_size, clusters_art = eval_art(
+            #     data_onehot, inflections_gold, artnet, full_dataset_ix)
+            # rand_full_runs.append(rand)
+            # adj_rand_full_runs.append(adj_rand)
 
             if data_plot:
                 evaluation.plot_data(data_onehot[full_dataset_ix], labels=None, clusters=clusters_art,
                                      micro_clusters=cogids[batch], file_label=f"art-end-vig{vig}-{language}")
+            
             if eval_vigilances:
-                # records_end_scores.append({"vigilance": vig, "metric": "silhouette", "score": silhouette})
                 records_end_scores.append(
-                    {"vigilance": vig, "run": r, "metric": "rand", "score": rand})
+                    {"vigilance": vig, "run": r, "metric": "rand", "score": rand_batch}) # rand
                 records_end_scores.append(
-                    {"vigilance": vig, "run": r, "metric": "adj_rand", "score": adj_rand})
+                    {"vigilance": vig, "run": r, "metric": "adj_rand", "score": adj_rand_batch}) # adj_rand
                 records_end_clusters.append(
-                    {"vigilance": vig, "run": r, "metric": "min_cluster_size", "n_forms": min_cluster_size})
+                    {"vigilance": vig, "run": r, "metric": "min_cluster_size", "n_forms": min_cluster_size_batch}) # min_cluster_size
                 records_end_clusters.append(
-                    {"vigilance": vig, "run": r, "metric": "max_cluster_size", "n_forms": max_cluster_size})
+                    {"vigilance": vig, "run": r, "metric": "max_cluster_size", "n_forms": max_cluster_size_batch}) # max_cluster_size
         rand_avg_batches_mean = np.mean(rand_avg_batches_runs)
         adj_rand_avg_batches_mean = np.mean(adj_rand_avg_batches_runs)
-        print(f" - Avg of training batches. Rand: {rand_avg_batches_mean}. Adj_rand: {adj_rand_avg_batches_mean}")
-        rand_full_mean = np.mean(rand_full_runs)
-        adj_rand_full_mean = np.mean(adj_rand_full_runs)
-        print(f" - Evaluate on extra full run. Rand: {rand_full_mean}. Adj_rand: {adj_rand_full_mean}")
+        print(f" - Avg of batches (size {batch_size}). Rand: {rand_avg_batches_mean}. Adj_rand: {adj_rand_avg_batches_mean}")
+        # rand_full_mean = np.mean(rand_full_runs)
+        # adj_rand_full_mean = np.mean(adj_rand_full_runs)
+        # print(f" - Evaluate on extra full run. Rand: {rand_full_mean}. Adj_rand: {adj_rand_full_mean}")
 
     # Only create vigilance plot when comparing multiple vigilances
     if eval_vigilances:
