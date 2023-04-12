@@ -12,7 +12,7 @@ import data
 import numpy as np
 
 
-def art_one(data_onehot, inflections_gold, cogids, language, n_runs=1, vigilances=[ART_VIGILANCE], repeat_dataset=False, batch_size=None, shuffle_data=False, data_plot=False, show=False):
+def art_one(data_onehot, inflections_gold, cogids, language, n_runs=1, vigilances=[ART_VIGILANCE], repeat_dataset=False, batch_size=None, shuffle_data=False, eval_full_run=False, data_plot=False, show=False):
     inflections_gold = np.array(inflections_gold)
     if cogids is not None:
         cogids = np.array(cogids)
@@ -24,11 +24,12 @@ def art_one(data_onehot, inflections_gold, cogids, language, n_runs=1, vigilance
     for vig in vigilances:
         if eval_vigilances:
             print(f"Vigilance: {vig}")
-
-        # rand_full_runs = []
-        # adj_rand_full_runs = []
+        if eval_full_run:
+            rand_full_runs = []
+            adj_rand_full_runs = []
         rand_avg_batches_runs = []
         adj_rand_avg_batches_runs = []
+
         for r in range(n_runs):
             artnet = ART1(
                 step=ART_LEARNING_RATE,
@@ -58,17 +59,19 @@ def art_one(data_onehot, inflections_gold, cogids, language, n_runs=1, vigilance
             rand_avg_batches_runs.append(np.mean(rand_batches))
             adj_rand_avg_batches_runs.append(np.mean(adj_rand_batches))
 
-            # # Evaluate once more on full dataset
-            # rand, adj_rand, min_cluster_size, max_cluster_size, clusters_art = eval_art(
-            #     data_onehot, inflections_gold, artnet, full_dataset_ix)
-            # rand_full_runs.append(rand)
-            # adj_rand_full_runs.append(adj_rand)
+            if eval_full_run:
+                # Evaluate once more on full dataset
+                rand_full, adj_rand_full, min_cluster_size_full, max_cluster_siz_fulle, clusters_art_full = eval_art(
+                    data_onehot, inflections_gold, artnet, full_dataset_ix)
+                rand_full_runs.append(rand_full)
+                adj_rand_full_runs.append(adj_rand_full)
 
             if data_plot:
                 evaluation.plot_data(data_onehot[full_dataset_ix], labels=None, clusters=clusters_art,
                                      micro_clusters=cogids[batch], file_label=f"art-end-vig{vig}-{language}")
             
             if eval_vigilances:
+                # Take values from last batch, because in general, when evaluating vigilance, we dont work with batches
                 records_end_scores.append(
                     {"vigilance": vig, "run": r, "metric": "rand", "score": rand_batch}) # rand
                 records_end_scores.append(
@@ -80,25 +83,26 @@ def art_one(data_onehot, inflections_gold, cogids, language, n_runs=1, vigilance
         rand_avg_batches_mean = np.mean(rand_avg_batches_runs)
         adj_rand_avg_batches_mean = np.mean(adj_rand_avg_batches_runs)
         print(f" - Avg of batches (size {batch_size}). Rand: {rand_avg_batches_mean}. Adj_rand: {adj_rand_avg_batches_mean}")
-        # rand_full_mean = np.mean(rand_full_runs)
-        # adj_rand_full_mean = np.mean(adj_rand_full_runs)
-        # print(f" - Evaluate on extra full run. Rand: {rand_full_mean}. Adj_rand: {adj_rand_full_mean}")
+
+        if eval_full_run:
+            rand_full_mean = np.mean(rand_full_runs)
+            adj_rand_full_mean = np.mean(adj_rand_full_runs)
+            print(f" - Evaluate on extra full run. Rand: {rand_full_mean}. Adj_rand: {adj_rand_full_mean}")
 
     # Only create vigilance plot when comparing multiple vigilances
     if eval_vigilances:
         # Plot results
         df_end_scores = pd.DataFrame.from_records(records_end_scores)
-        df_end_scores.pivot(index="vigilance", columns="metric", values="score").to_csv(
-            "scores-art-end.tex", sep="&", line_terminator="\\\\\n")
         sns.lineplot(data=df_end_scores, x="vigilance",
                      y="score", hue="metric")
         plt.savefig(os.path.join(OUTPUT_DIR, f"scores-art-end-{language}.pdf"))
         if show:
             plt.show()
         plt.clf()
+        df_end_scores.reset_index().pivot_table(index="vigilance", columns="metric", values="score", aggfunc='mean').to_csv(
+            "scores-art-end.tex", sep="&", line_terminator="\\\\\n")
+
         df_end_clusters = pd.DataFrame.from_records(records_end_clusters)
-        df_end_clusters.pivot(index="vigilance", columns="metric", values="n_forms").to_csv(
-            "clusters-art-end.tex", sep="&", line_terminator="\\\\\n")
         sns.lineplot(data=df_end_clusters, x="vigilance",
                      y="n_forms", hue="metric")
         plt.savefig(os.path.join(
@@ -106,6 +110,8 @@ def art_one(data_onehot, inflections_gold, cogids, language, n_runs=1, vigilance
         if show:
             plt.show()
         plt.clf()
+        df_end_clusters.reset_index().pivot_table(index="vigilance", columns="metric", values="n_forms", aggfunc='mean').to_csv(
+            "clusters-art-end.tex", sep="&", line_terminator="\\\\\n")
 
 
 def eval_art(data, inflections_gold, artnet, batch):

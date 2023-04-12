@@ -7,7 +7,7 @@ SAMPLE_FIRST = None # 1000
 BYTEPAIR_ENCODING = False # TODO: still under construction
 N_RUNS = 10
 
-ART_VIGILANCE=0.5
+ART_VIGILANCE=0.8
 ART_LEARNING_RATE=0.1
 
 INFLECTION_CLASSES = ["I", "II", "III", "IV", "special"]

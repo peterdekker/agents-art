@@ -43,17 +43,24 @@ def main():
         art_one(forms_onehot, inflections, cogids, LANGUAGE, n_runs=N_RUNS, repeat_dataset=True, shuffle_data=True)
         print("batch 10")
         art_one(forms_onehot, inflections, cogids, LANGUAGE, batch_size=10)
-        print("batch 50")
-        art_one(forms_onehot, inflections, cogids, LANGUAGE, batch_size=50)
         print("batch 10 shuffle, n runs")
         art_one(forms_onehot, inflections, cogids, LANGUAGE, batch_size=10, n_runs=N_RUNS, shuffle_data=True)
+        print("batch 50")
+        art_one(forms_onehot, inflections, cogids, LANGUAGE, batch_size=50)
         print("batch 50 shuffle, n runs")
         art_one(forms_onehot, inflections, cogids, LANGUAGE, batch_size=50, n_runs=N_RUNS, shuffle_data=True)
+        print("batch 1000")
+        art_one(forms_onehot, inflections, cogids, LANGUAGE, batch_size=1000)
+        print("batch 1000 shuffle, n runs")
+        art_one(forms_onehot, inflections, cogids, LANGUAGE, batch_size=1000, n_runs=N_RUNS, shuffle_data=True)
 
         # Next: check scores for individual batches
 
     if single_run_eval_vigilances:
-        art_one(forms_onehot, inflections, cogids, LANGUAGE, vigilances = np.arange(0,1.05,0.05))
+        # One run
+        #art_one(forms_onehot, inflections, cogids, LANGUAGE, vigilances = np.arange(0,1.05,0.05))
+        # n runs with shuffle
+        art_one(forms_onehot, inflections, cogids, LANGUAGE, n_runs=N_RUNS, shuffle_data=True, vigilances = np.arange(0,1.05,0.05))
 
     # if iterated_run:
         # if plot_data_before:
