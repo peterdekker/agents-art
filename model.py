@@ -11,8 +11,13 @@ import evaluation
 import data
 import numpy as np
 
+def majority_baseline(inflections_gold):
+    base = np.zeros(len(inflections_gold))
+    rand, adj_rand, min_cluster_size, max_cluster_size = eval_results(base, inflections_gold)
+    print(f" - Majority baseline. Rand: {rand}. Adj_rand: {adj_rand}")
 
-def art_one(data_onehot, inflections_gold, cogids, language, n_runs=1, vigilances=[ART_VIGILANCE], repeat_dataset=False, batch_size=None, shuffle_data=False, eval_full_run=False, data_plot=False, show=False):
+
+def art_one(data_onehot, inflections_gold, cogids, language, n_runs=1, vigilances=[ART_VIGILANCE], repeat_dataset=False, batch_size=None, shuffle_data=False, eval_full_run=True, data_plot=False, show=False):
     inflections_gold = np.array(inflections_gold)
     if cogids is not None:
         cogids = np.array(cogids)
@@ -52,8 +57,9 @@ def art_one(data_onehot, inflections_gold, cogids, language, n_runs=1, vigilance
             for rep in range(10 if repeat_dataset else 1):
                 for b in range(len_data//batch_size):
                     batch = np.arange(b*batch_size, (b+1)*batch_size)
-                    rand_batch, adj_rand_batch, min_cluster_size_batch, max_cluster_size_batch, clusters_art_batch = eval_art(
-                        input_data, inflections_gold, artnet, batch)
+                    clusters_art_batch = artnet.train(input_data[batch])
+                    rand_batch, adj_rand_batch, min_cluster_size_batch, max_cluster_size_batch = eval_results(
+                        clusters_art_batch, inflections_gold[batch])
                     rand_batches.append(rand_batch)
                     adj_rand_batches.append(adj_rand_batch)
             rand_avg_batches_runs.append(np.mean(rand_batches))
@@ -61,14 +67,15 @@ def art_one(data_onehot, inflections_gold, cogids, language, n_runs=1, vigilance
 
             if eval_full_run:
                 # Evaluate once more on full dataset
-                rand_full, adj_rand_full, min_cluster_size_full, max_cluster_siz_fulle, clusters_art_full = eval_art(
-                    data_onehot, inflections_gold, artnet, full_dataset_ix)
+                clusters_art_full = artnet.train(input_data)
+                rand_full, adj_rand_full, min_cluster_size_full, max_cluster_size_full = eval_results(
+                    clusters_art_full, inflections_gold)
                 rand_full_runs.append(rand_full)
                 adj_rand_full_runs.append(adj_rand_full)
 
-            if data_plot:
-                evaluation.plot_data(data_onehot[full_dataset_ix], labels=None, clusters=clusters_art,
-                                     micro_clusters=cogids[batch], file_label=f"art-end-vig{vig}-{language}")
+            # if data_plot:
+            #     evaluation.plot_data(data_onehot[full_dataset_ix], labels=None, clusters=clusters_art,
+            #                          micro_clusters=cogids[batch], file_label=f"art-end-vig{vig}-{language}")
             
             if eval_vigilances:
                 # Take values from last batch, because in general, when evaluating vigilance, we dont work with batches
@@ -114,16 +121,16 @@ def art_one(data_onehot, inflections_gold, cogids, language, n_runs=1, vigilance
             "clusters-art-end.tex", sep="&", line_terminator="\\\\\n")
 
 
-def eval_art(data, inflections_gold, artnet, batch):
-    clusters_art = artnet.train(data[batch])
+def eval_results(results, inflections_gold):
     # Calculate scores
     # silhouette = silhouette_score(X=data_onehot[batch], labels=clusters_art, metric="hamming")
-    rand = rand_score(inflections_gold[batch], clusters_art)
-    adj_rand = adjusted_rand_score(inflections_gold[batch], clusters_art)
-    cluster_sizes = np.bincount(np.array(clusters_art, dtype=int))
+    rand = rand_score(inflections_gold, results)
+    adj_rand = adjusted_rand_score(inflections_gold, results)
+    cluster_sizes = np.bincount(np.array(results, dtype=int))
     min_cluster_size = np.min(cluster_sizes)
     max_cluster_size = np.max(cluster_sizes)
-    return rand, adj_rand, min_cluster_size, max_cluster_size, clusters_art
+    return rand, adj_rand, min_cluster_size, max_cluster_size
+
 
 
 def art_iterated(data_onehot, n_runs, n_timesteps, batch_size_iterated, inflections_gold, cogids, language, vigilances=[ART_VIGILANCE], data_plot=False):

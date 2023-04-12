@@ -5,13 +5,14 @@ import data
 import evaluation
 import numpy as np
 import os
-from model import art_one, art_iterated
+from model import art_one, majority_baseline
 from conf import OUTPUT_DIR, LANGUAGE, EMPTY_SYMBOL, BYTEPAIR_ENCODING, SAMPLE_FIRST, N_RUNS
 
 
  # Operation modes
-single_run_eval_batches = True
+single_run_eval_batches = False
 single_run_eval_vigilances = False
+single_run_maj_baseline = True
 
 
 
@@ -61,6 +62,19 @@ def main():
         #art_one(forms_onehot, inflections, cogids, LANGUAGE, vigilances = np.arange(0,1.05,0.05))
         # n runs with shuffle
         art_one(forms_onehot, inflections, cogids, LANGUAGE, n_runs=N_RUNS, shuffle_data=True, vigilances = np.arange(0,1.05,0.05))
+    
+    if single_run_maj_baseline:
+        # print("Full data shuffle, n runs")
+        # art_one(forms_onehot, inflections, cogids, LANGUAGE, n_runs=N_RUNS, shuffle_data=True)
+        print("Majority baseline")
+        majority_baseline(inflections)
+
+        print("Comparison to inflection classes:")
+        language_df = latin_conjugation_df[latin_conjugation_df["Language_ID"]==LANGUAGE]
+        print("Token count")
+        print(language_df["Latin_Conjugation"].value_counts(normalize=True))
+        # print("Type count")
+        # print(language_df.drop_duplicates(subset="Cognateset_ID_first")["Latin_Conjugation"].value_counts(normalize=True))
 
     # if iterated_run:
         # if plot_data_before:
