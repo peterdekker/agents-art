@@ -11,6 +11,11 @@ import evaluation
 import data
 import numpy as np
 
+def random_baseline(inflections_gold):
+    base = np.random.choice(range(0,5),len(inflections_gold))
+    rand, adj_rand, min_cluster_size, max_cluster_size = eval_results(base, inflections_gold)
+    print(f" - Random baseline. Rand: {rand}. Adj_rand: {adj_rand}")
+
 def majority_baseline(inflections_gold):
     base = np.zeros(len(inflections_gold))
     rand, adj_rand, min_cluster_size, max_cluster_size = eval_results(base, inflections_gold)

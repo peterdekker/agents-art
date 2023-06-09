@@ -5,7 +5,7 @@ import data
 import evaluation
 import numpy as np
 import os
-from model import art_one, majority_baseline
+from model import art_one, majority_baseline, random_baseline
 from conf import OUTPUT_DIR, LANGUAGE, EMPTY_SYMBOL, BYTEPAIR_ENCODING, SAMPLE_FIRST, N_RUNS
 
 
@@ -68,6 +68,9 @@ def main():
         # art_one(forms_onehot, inflections, cogids, LANGUAGE, n_runs=N_RUNS, shuffle_data=True)
         print("Majority baseline")
         majority_baseline(inflections)
+
+        print("Random baseline")
+        random_baseline(inflections)
 
         print("Comparison to inflection classes:")
         language_df = latin_conjugation_df[latin_conjugation_df["Language_ID"]==LANGUAGE]
