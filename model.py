@@ -77,7 +77,6 @@ def art(data_onehot, inflections_gold, cogids, language, n_runs=1, vigilances=[A
                     if b >= tail:
                         rand_batches_tail.append(rand_batch)
                         adj_rand_batches_tail.append(adj_rand_batch)
-                print(rand_batches)
             # Keep numbers per run, to be able to give spread of results
             rand_avg_batches_runs.append(np.mean(rand_batches))
             adj_rand_avg_batches_runs.append(np.mean(adj_rand_batches))
