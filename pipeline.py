@@ -2,68 +2,60 @@
 import warnings
 warnings.simplefilter(action='ignore', category=FutureWarning)
 import data
-import evaluation
+import plot
 import numpy as np
+import argparse
 import os
-from model import art_one, majority_baseline, random_baseline
+from model import art, majority_baseline, random_baseline
 from conf import OUTPUT_DIR, LANGUAGE, EMPTY_SYMBOL, BYTEPAIR_ENCODING, SAMPLE_FIRST, N_RUNS
 
 
- # Operation modes
-single_run_eval_batches = False
-single_run_eval_vigilances = False
-single_run_maj_baseline = True
 
 
 
 def main():
+    parser = argparse.ArgumentParser(description='Command line ART model.')
+    parser.add_argument('--single_run_plotdata', action='store_true')
+    parser.add_argument('--eval_batches', action='store_true')
+    parser.add_argument('--eval_vigilances', action='store_true')
+    parser.add_argument('--baseline', action='store_true')
+    args = parser.parse_args()
+
     if not os.path.exists(OUTPUT_DIR):
         os.makedirs(OUTPUT_DIR)
     # Load data
     forms_df, cognates_df, lects_df = data.load_romance_dataset()
-    
     # Filter data
     forms_df_1cognate = data.filter_romance_empty_multicog(forms_df)
-
     # Filter on Latin inflection classes
     latin_conjugation_df = data.filter_romance_inflections(forms_df_1cognate, cognates_df)
-
     # Create dataset per LANGUAGE
     forms_onehot, inflections_onehot, forms, inflections, cogids = data.create_language_dataset(latin_conjugation_df, LANGUAGE, empty_symbol=EMPTY_SYMBOL, encoding="bytepair" if BYTEPAIR_ENCODING else "onehot", sample_first=SAMPLE_FIRST)
-    forms_inflections_onehot = np.concatenate((forms_onehot, inflections_onehot), axis=1)
-
     
-    if single_run_eval_batches:
-        print("Full data")
-        art_one(forms_onehot, inflections, cogids, LANGUAGE)
-        print("Full data shuffle, n runs")
-        art_one(forms_onehot, inflections, cogids, LANGUAGE, n_runs=N_RUNS, shuffle_data=True)
-        print("Repeat dataset")
-        art_one(forms_onehot, inflections, cogids, LANGUAGE, repeat_dataset=True)
-        print("Repeat dataset shuffle, n runs")
-        art_one(forms_onehot, inflections, cogids, LANGUAGE, n_runs=N_RUNS, repeat_dataset=True, shuffle_data=True)
-        print("batch 10")
-        art_one(forms_onehot, inflections, cogids, LANGUAGE, batch_size=10)
-        print("batch 10 shuffle, n runs")
-        art_one(forms_onehot, inflections, cogids, LANGUAGE, batch_size=10, n_runs=N_RUNS, shuffle_data=True)
-        print("batch 50")
-        art_one(forms_onehot, inflections, cogids, LANGUAGE, batch_size=50)
-        print("batch 50 shuffle, n runs")
-        art_one(forms_onehot, inflections, cogids, LANGUAGE, batch_size=50, n_runs=N_RUNS, shuffle_data=True)
-        print("batch 1000")
-        art_one(forms_onehot, inflections, cogids, LANGUAGE, batch_size=1000)
-        print("batch 1000 shuffle, n runs")
-        art_one(forms_onehot, inflections, cogids, LANGUAGE, batch_size=1000, n_runs=N_RUNS, shuffle_data=True)
-
-        # Next: check scores for individual batches
-
-    if single_run_eval_vigilances:
-        # One run
-        #art_one(forms_onehot, inflections, cogids, LANGUAGE, vigilances = np.arange(0,1.05,0.05))
-        # n runs with shuffle
-        art_one(forms_onehot, inflections, cogids, LANGUAGE, n_runs=N_RUNS, shuffle_data=True, vigilances = np.arange(0,1.05,0.05))
+    if args.single_run_plotdata:
+        # Plot data before running model
+        plot.plot_data(forms_onehot, labels=None, clusters=inflections,
+                                micro_clusters=cogids, file_label=f"pca-art-data-{LANGUAGE}", show=False)
+                
+        print(f"Full data shuffle, {N_RUNS} runs")
+        art(forms_onehot, inflections, cogids, LANGUAGE, n_runs=3, shuffle_data=True, data_plot=True)
     
-    if single_run_maj_baseline:
+    if args.eval_batches:
+        print(f"Full data shuffle, {N_RUNS} runs")
+        art(forms_onehot, inflections, cogids, LANGUAGE, n_runs=N_RUNS, shuffle_data=True)
+        print(f"Repeat dataset shuffle, {N_RUNS} runs")
+        art(forms_onehot, inflections, cogids, LANGUAGE, n_runs=N_RUNS, repeat_dataset=True, shuffle_data=True)
+        print(f"batch 10 shuffle, {N_RUNS} runs")
+        art(forms_onehot, inflections, cogids, LANGUAGE, batch_size=10, n_runs=N_RUNS, shuffle_data=True)
+        print(f"batch 50 shuffle, {N_RUNS} runs")
+        art(forms_onehot, inflections, cogids, LANGUAGE, batch_size=50, n_runs=N_RUNS, shuffle_data=True)
+        print(f"batch 1000 shuffle, {N_RUNS} runs")
+        art(forms_onehot, inflections, cogids, LANGUAGE, batch_size=1000, n_runs=N_RUNS, shuffle_data=True)
+
+    if args.eval_vigilances:
+        art(forms_onehot, inflections, cogids, LANGUAGE, n_runs=N_RUNS, shuffle_data=True, vigilances = np.arange(0,1.05,0.05))
+    
+    if args.baseline:
         # print("Full data shuffle, n runs")
         # art_one(forms_onehot, inflections, cogids, LANGUAGE, n_runs=N_RUNS, shuffle_data=True)
         print("Majority baseline")
@@ -80,6 +72,7 @@ def main():
         # print(language_df.drop_duplicates(subset="Cognateset_ID_first")["Latin_Conjugation"].value_counts(normalize=True))
 
     # if iterated_run:
+    #   forms_inflections_onehot = np.concatenate((forms_onehot, inflections_onehot), axis=1)
         # if plot_data_before:
         #     score = evaluation.plot_data(forms_inflections_onehot, labels=None, clusters=inflections, micro_clusters=cogids, file_label=f"inflections-{LANGUAGE}")
         #     print (f"Silhouette score, data before run (with inflection class): {score}")

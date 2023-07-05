@@ -4,6 +4,8 @@ import matplotlib.pyplot as plt
 import pandas as pd
 import numpy as np
 from matplotlib.lines import Line2D
+from sklearn.metrics import silhouette_score
+from sklearn.preprocessing import StandardScaler
 
 import os
 
@@ -13,7 +15,11 @@ plt.rcParams['figure.figsize'] = [10, 6]
 plt.rcParams['figure.dpi'] = 200
 plt.rcParams['savefig.format'] = "pdf"
 
-
+def plot_data(data_bin, clusters, labels=None, micro_clusters=None, sample_points = None, file_label=None, show=False):
+    data_std = StandardScaler().fit_transform(data_bin)
+    plot(data_std, clusters, labels=labels, micro_clusters=micro_clusters, sample_points=sample_points, file_label=file_label, show=show)
+    #score = silhouette_score(X=data_bin, labels=clusters, metric="hamming")
+    #return score
 
 def plot(data_standardized, clusters, labels=None, micro_clusters = None, file_label=None, sample_points=None, show=False):
     assert len(clusters) == data_standardized.shape[0]
