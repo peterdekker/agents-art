@@ -38,18 +38,18 @@ def main():
                                 micro_clusters=cogids, file_label=f"pca-art-data-{LANGUAGE}", show=False)
                 
         print(f"Full data shuffle, {N_RUNS} runs")
-        art(forms_onehot, inflections, cogids, LANGUAGE, n_runs=3, shuffle_data=True, data_plot=True)
+        art(forms_onehot, inflections, cogids, LANGUAGE, n_runs=1, shuffle_data=False, data_plot=True)
     
     if args.eval_batches:
-        print(f"Full data shuffle, {N_RUNS} runs")
+        print(f"Full data shuffle, {N_RUNS} runs:")
         art(forms_onehot, inflections, cogids, LANGUAGE, n_runs=N_RUNS, shuffle_data=True)
-        print(f"Repeat dataset shuffle, {N_RUNS} runs")
+        print(f"Repeat dataset shuffle, {N_RUNS} runs:")
         art(forms_onehot, inflections, cogids, LANGUAGE, n_runs=N_RUNS, repeat_dataset=True, shuffle_data=True)
-        print(f"batch 10 shuffle, {N_RUNS} runs")
+        print(f"batch 10 shuffle, {N_RUNS} runs:")
         art(forms_onehot, inflections, cogids, LANGUAGE, batch_size=10, n_runs=N_RUNS, shuffle_data=True)
-        print(f"batch 50 shuffle, {N_RUNS} runs")
+        print(f"batch 50 shuffle, {N_RUNS} runs:")
         art(forms_onehot, inflections, cogids, LANGUAGE, batch_size=50, n_runs=N_RUNS, shuffle_data=True)
-        print(f"batch 1000 shuffle, {N_RUNS} runs")
+        print(f"batch 1000 shuffle, {N_RUNS} runs:")
         art(forms_onehot, inflections, cogids, LANGUAGE, batch_size=1000, n_runs=N_RUNS, shuffle_data=True)
 
     if args.eval_vigilances:
@@ -58,15 +58,15 @@ def main():
     if args.baseline:
         # print("Full data shuffle, n runs")
         # art_one(forms_onehot, inflections, cogids, LANGUAGE, n_runs=N_RUNS, shuffle_data=True)
-        print("Majority baseline")
+        print("Majority baseline:")
         majority_baseline(inflections)
 
-        print("Random baseline")
+        print("Random baseline:")
         random_baseline(inflections)
 
         print("Comparison to inflection classes:")
         language_df = latin_conjugation_df[latin_conjugation_df["Language_ID"]==LANGUAGE]
-        print("Token count")
+        print("Token count:")
         print(language_df["Latin_Conjugation"].value_counts(normalize=True))
         # print("Type count")
         # print(language_df.drop_duplicates(subset="Cognateset_ID_first")["Latin_Conjugation"].value_counts(normalize=True))

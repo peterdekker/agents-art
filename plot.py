@@ -16,8 +16,10 @@ plt.rcParams['figure.dpi'] = 200
 plt.rcParams['savefig.format'] = "pdf"
 
 def plot_data(data_bin, clusters, labels=None, micro_clusters=None, sample_points = None, file_label=None, show=False):
+    print("Start plotting...")
     data_std = StandardScaler().fit_transform(data_bin)
     plot(data_std, clusters, labels=labels, micro_clusters=micro_clusters, sample_points=sample_points, file_label=file_label, show=show)
+    print("End plotting.")
     #score = silhouette_score(X=data_bin, labels=clusters, metric="hamming")
     #return score
 
@@ -37,9 +39,9 @@ def plot(data_standardized, clusters, labels=None, micro_clusters = None, file_l
     if micro_clusters is not None: # THis would in practice be used for lemmas=cognate ids
         micro_clusters_uniq = df["micro_clusters"].unique()
         marker_list = FILLED_MARKERS[:len(micro_clusters_uniq)]
-        red_plot = sns.scatterplot(data = df, x="dim1", y="dim2", hue="clusters", style="micro_clusters", hue_order=INFLECTION_CLASSES, palette="hls", markers=marker_list, size=1, legend=False)
+        red_plot = sns.scatterplot(data = df, x="dim1", y="dim2", hue="clusters", style="micro_clusters", hue_order=INFLECTION_CLASSES, palette="hls", markers=marker_list, size=1, legend=True)
     else:
-        red_plot = sns.scatterplot(data = df, x="dim1", y="dim2", hue="clusters", hue_order=INFLECTION_CLASSES, palette="hls", size=1, legend=False)
+        red_plot = sns.scatterplot(data = df, x="dim1", y="dim2", hue="clusters", hue_order=INFLECTION_CLASSES, palette="hls", size=1, legend=True)
     red_plot.set(xlabel=None)
     red_plot.set(ylabel=None)
     red_plot.set(xticklabels=[])
