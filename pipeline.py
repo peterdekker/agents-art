@@ -6,6 +6,7 @@ import plot
 import numpy as np
 import argparse
 import os
+import pandas as pd
 from model import art, majority_baseline, random_baseline
 from conf import OUTPUT_DIR, LANGUAGE, EMPTY_SYMBOL, BYTEPAIR_ENCODING, SAMPLE_FIRST, N_RUNS
 
@@ -24,21 +25,25 @@ def main():
     if not os.path.exists(OUTPUT_DIR):
         os.makedirs(OUTPUT_DIR)
     # Load data
-    forms_df, cognates_df, lects_df = data.load_romance_dataset()
-    # Filter data
-    forms_df_1cognate = data.filter_romance_empty_multicog(forms_df)
-    # Filter on Latin inflection classes
-    latin_conjugation_df = data.filter_romance_inflections(forms_df_1cognate, cognates_df)
-    # Create dataset per LANGUAGE
-    forms_onehot, inflections_onehot, forms, inflections, cogids = data.create_language_dataset(latin_conjugation_df, LANGUAGE, empty_symbol=EMPTY_SYMBOL, encoding="bytepair" if BYTEPAIR_ENCODING else "onehot", sample_first=SAMPLE_FIRST)
+    # forms_df, cognates_df, lects_df = data.load_romance_dataset()
+    # # Filter data
+    # forms_df_1cognate = data.filter_romance_empty_multicog(forms_df)
+    # # Filter on Latin inflection classes
+    # latin_conjugation_df = data.filter_romance_inflections(forms_df_1cognate, cognates_df)
+    # # Create dataset per LANGUAGE
+    latin_conjugation_df = pd.read_csv ('latin_conjugation_df.csv')
+  
+    forms_onehot, inflections_onehot, forms, inflections, cogids, bigram_inventory = data.create_language_dataset(latin_conjugation_df, LANGUAGE, empty_symbol=EMPTY_SYMBOL, encoding="bytepair" if BYTEPAIR_ENCODING else "onehot", sample_first=SAMPLE_FIRST)
     
-    if args.single_run_plotdata:
+    # if args.single_run_plotdata:
         # Plot data before running model
-        plot.plot_data(forms_onehot, labels=None, clusters=inflections,
-                                micro_clusters=cogids, file_label=f"pca-art-data-{LANGUAGE}", show=False)
-                
-        print(f"Full data shuffle, {N_RUNS} runs")
-        art(forms_onehot, inflections, cogids, LANGUAGE, n_runs=1, shuffle_data=False, data_plot=True)
+    df, pca = plot.fit_pca(forms_onehot)
+    # plot.plot_data(df, labels=None, clusters=inflections,
+                            # micro_clusters=cogids, file_label=f"pca-art-data_bigram_hamming_original_MCA_-{LANGUAGE}", show=False)
+    plot.plot_data(df, labels=None, clusters=inflections,
+                            micro_clusters=None, file_label=f"pca-art-data_bigram_hamming_original_MCA_-{LANGUAGE}", show=False)  
+    # print(f"Full data shuffle, {N_RUNS} runs")
+    art(forms_onehot, forms, bigram_inventory,inflections, cogids, pca,LANGUAGE, n_runs=1, shuffle_data=True, data_plot=True)
     
     if args.eval_batches:
         print(f"Full data shuffle, {N_RUNS} runs:")
@@ -52,8 +57,8 @@ def main():
         print(f"batch 1000 shuffle, {N_RUNS} runs:")
         art(forms_onehot, inflections, cogids, LANGUAGE, batch_size=1000, n_runs=N_RUNS, shuffle_data=True)
 
-    if args.eval_vigilances:
-        art(forms_onehot, inflections, cogids, LANGUAGE, n_runs=N_RUNS, shuffle_data=True, vigilances = np.arange(0,1.05,0.05))
+    # if args.eval_vigilances:
+    # art(forms_onehot, forms, bigram_inventory, inflections, cogids, LANGUAGE, n_runs=N_RUNS, shuffle_data=True, vigilances = np.arange(0.0,1.05,0.05))
     
     if args.baseline:
         # print("Full data shuffle, n runs")

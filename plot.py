@@ -1,4 +1,5 @@
 from sklearn.manifold import TSNE
+from sklearn.decomposition import PCA
 import seaborn as sns
 import matplotlib.pyplot as plt
 import pandas as pd
@@ -6,6 +7,7 @@ import numpy as np
 from matplotlib.lines import Line2D
 from sklearn.metrics import silhouette_score
 from sklearn.preprocessing import StandardScaler
+import prince
 
 import os
 
@@ -15,20 +17,40 @@ plt.rcParams['figure.figsize'] = [10, 6]
 plt.rcParams['figure.dpi'] = 200
 plt.rcParams['savefig.format'] = "pdf"
 
-def plot_data(data_bin, clusters, labels=None, micro_clusters=None, sample_points = None, file_label=None, show=False):
+def fit_pca(data_bin):
+    pca = PCA(n_components=2)
+    # X=pd.DataFrame(data=data_bin)
+    pca = pca.fit(data_bin)
+    data_red = pca.transform(data_bin)
+    df=pd.DataFrame(data_red)
+    df.columns=['dim1', 'dim2']
+    return df, pca
+
+def transform_using_fitted_pca(data_bin, pca):
+    # X=pd.DataFrame(data=data_bin)
+    data_red = pca.transform(data_bin)
+    df=pd.DataFrame(data_red)
+    # df=data_red
+    df.columns=['dim1', 'dim2']
+    return df
+
+def plot_data(df, clusters, labels=None, micro_clusters=None, sample_points = None, file_label=None, prototypes=None, show=False):
     print("Start plotting...")
-    data_std = StandardScaler().fit_transform(data_bin)
-    plot(data_std, clusters, labels=labels, micro_clusters=micro_clusters, sample_points=sample_points, file_label=file_label, show=show)
+    # data_std = StandardScaler().fit_transform(data_bin)
+
+    # plot(data_std, clusters, labels=labels, micro_clusters=micro_clusters, sample_points=sample_points, file_label=file_label, show=show)
+    plot_heikki(df, clusters, labels=labels, micro_clusters=micro_clusters, sample_points=sample_points, prototypes=prototypes, file_label=file_label, show=show)
     print("End plotting.")
     #score = silhouette_score(X=data_bin, labels=clusters, metric="hamming")
-    #return score
+    # return score
 
-def plot(data_standardized, clusters, labels=None, micro_clusters = None, file_label=None, sample_points=None, show=False):
-    assert len(clusters) == data_standardized.shape[0]
-    alg = TSNE(n_components=2, metric="hamming", init="pca", learning_rate="auto", square_distances=True)
-    data_red = alg.fit_transform(data_standardized)
-    df = pd.DataFrame(data=data_red, columns=['dim1', 'dim2'])
-    df["clusters"] = clusters
+def plot_heikki(df, clusters, labels=None, micro_clusters = None, file_label=None, sample_points=None, prototypes=None, show=False):
+    # assert len(clusters) == data_bin.shape[0]
+    # alg = TSNE(n_components=2, metric="hamming", init="pca", learning_rate="auto")
+    # data_red = alg.fit_transform(data_standardized)
+    # clusters=np.sort(clusters)
+    df["clusters"] = [str(a) for a in clusters]
+    df = df.sort_values(by=["clusters"])
     if labels is not None:
         df["labels"] = labels
     if micro_clusters is not None:
@@ -39,9 +61,9 @@ def plot(data_standardized, clusters, labels=None, micro_clusters = None, file_l
     if micro_clusters is not None: # THis would in practice be used for lemmas=cognate ids
         micro_clusters_uniq = df["micro_clusters"].unique()
         marker_list = FILLED_MARKERS[:len(micro_clusters_uniq)]
-        red_plot = sns.scatterplot(data = df, x="dim1", y="dim2", hue="clusters", style="micro_clusters", hue_order=INFLECTION_CLASSES, palette="hls", markers=marker_list, size=1, legend=True)
+        red_plot = sns.scatterplot(data = df, x="dim1", y="dim2", hue="clusters", style="micro_clusters", palette="hls", markers=marker_list, size=1, legend="full")
     else:
-        red_plot = sns.scatterplot(data = df, x="dim1", y="dim2", hue="clusters", hue_order=INFLECTION_CLASSES, palette="hls", size=1, legend=True)
+        red_plot = sns.scatterplot(data = df, x="dim1", y="dim2", hue="clusters", palette="hls", size=1, legend="full")
     red_plot.set(xlabel=None)
     red_plot.set(ylabel=None)
     red_plot.set(xticklabels=[])
@@ -51,6 +73,10 @@ def plot(data_standardized, clusters, labels=None, micro_clusters = None, file_l
             red_plot.text(df.dim1[i]+0.01, df.dim2[i], 
             df.labels[i], horizontalalignment='left', 
             size=6, color='black')
+    
+    if prototypes is not None:
+        red_plot = sns.scatterplot(data = prototypes, x="dim1", y="dim2", c='k', size=5, legend="full")
+    
     if file_label:
         plt.savefig(os.path.join(OUTPUT_DIR,f"data-{file_label}.pdf"))
     if show:

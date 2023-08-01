@@ -81,6 +81,41 @@ def get_sound_inventory(forms):
     max_form_len = max([len(x) for x in forms])
     return sound_inventory, max_form_len
 
+def get_sound_bigrams(forms):
+    sound_inventory = list(set(list("".join(forms))))
+    bigram_list=[]
+    for i1 in range(0,len(sound_inventory)):
+        for i2 in range(0,len(sound_inventory)):
+            bigram_list.append([sound_inventory[i1]+sound_inventory[i2]])
+
+    return bigram_list
+
+def get_existing_sound_bigrams(forms):
+    sound_inventory = list(set(list("".join(forms))))
+    bigram_list=[]
+    form_values=forms.values
+
+    for i1 in range(0,len(form_values)):
+        for i2 in range(0,len(form_values[i1])-1):
+            bigram=form_values[i1][i2:i2+2]
+            if bigram not in bigram_list:
+                bigram_list.append(bigram)
+
+    return bigram_list
+
+def get_existing_sound_Ngrams(forms, Ngrams): # NOT FINISHED!!
+    sound_inventory = list(set(list("".join(forms))))
+    Ngram_list=[]
+    form_values=forms.values
+
+    for i1 in range(0,len(form_values)):
+        for i2 in range(0,len(form_values[i1])-1):
+            Ngram=form_values[i1][i2:i2+2]
+            if Ngram not in Ngram_list:
+                Ngram_list.append(Ngram)
+
+    return Ngram_list
+
 
 def create_onehot_inflections(inflections):
     n_inflections = len(inflections)
@@ -92,6 +127,41 @@ def create_onehot_inflections(inflections):
         array[infl_row, hot_index] = 1
     return array, inflection_inventory
 
+def create_onehot_forms_from_bigrams(forms, empty_symbol=True):
+    bigram_list = get_existing_sound_bigrams(forms)
+    n_forms = len(forms)
+
+    n_bigrams = len(bigram_list)
+    # print(sounds)
+    #print(f"n_forms: {n_forms}")
+    #print(f"n_sounds: {n_sounds}")
+    #print(f"max_form_len: {max_form_len}")
+    array = np.zeros(shape=(n_forms, n_bigrams))
+
+    for form_row, form in enumerate(forms):
+        for char_position in range(0,len(form)-1):
+            current_bigram=form[char_position:char_position+2]
+            index=bigram_list.index(current_bigram)
+            array[form_row, index] = 1
+
+        # randInds=np.random.randint(0,n_bigrams,10)
+        # array[form_row, randInds]=1-array[form_row, randInds]
+        # # print(form)
+        # form_len = len(form)
+        # for char_position in range(max_form_len):
+        #     if char_position < form_len:
+        #         char = form[char_position]
+        #         char_hot_index = sounds.index(char)
+        #         array[form_row, char_position*n_sounds+char_hot_index] = 1
+        #         #print(f"Char position {char_position} within form: {char}. Hot index: {char_hot_index}. Index: {form_row, char_position*n_sounds+char_hot_index}")
+        #     else:  # Char_position >= form_len; so word shorter than the longest word
+        #         if empty_symbol:
+        #             # Create symbol for these positions
+        #             empty_hot_index = sounds.index(".")
+        #             array[form_row, char_position*n_sounds+empty_hot_index] = 1
+        #             #print(f"Char position {char_position} OUTSIDE form. Hot index: {empty_hot_index}. Index: {form_row, char_position*n_sounds+empty_hot_index}")
+        #         # Else: just leave the 0000s for empty symbol
+    return array, bigram_list
 
 def create_onehot_forms(forms, empty_symbol=True):
     sounds, max_form_len = get_sound_inventory(forms)
@@ -139,18 +209,19 @@ def create_language_dataset(df, language, empty_symbol=True, language_column="La
                      language]
     if sample_first:
         df_language = df_language.head(sample_first)
+    df_language=df_language[df_language['Cell'].str.contains("'PRS-IND', '3PL'")]
     forms = df_language[form_column]
     inflections = df_language[inflection_column]
     cogids = df_language[cogid_column]
     if encoding=="onehot":
-        forms_encoded, sound_inventory = create_onehot_forms(forms, empty_symbol)
+        forms_encoded, bigram_inventory = create_onehot_forms_from_bigrams(forms, empty_symbol)
     elif encoding=="bytepair":
         forms_encoded = create_bytepair_forms(forms)
     else:
         ValueError("Unrecognized data encoding.")
     inflections_onehot, inflection_inventory = create_onehot_inflections(
         inflections)
-    return forms_encoded, inflections_onehot, list(forms), list(inflections), list(cogids)
+    return forms_encoded, inflections_onehot, list(forms), list(inflections), list(cogids), bigram_inventory
 
 ############### Methods binarized word embedings dataset #########
 
