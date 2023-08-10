@@ -209,6 +209,7 @@ def create_language_dataset(df, language, empty_symbol=True, language_column="La
                      language]
     if sample_first:
         df_language = df_language.head(sample_first)
+    print(df_language)
     df_language=df_language[df_language['Cell'].str.contains("'PRS-IND', '3PL'")]
     forms = df_language[form_column]
     inflections = df_language[inflection_column]

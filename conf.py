@@ -1,5 +1,7 @@
 LANGUAGE = "Italic_Latino-Faliscan_Latin"
 
+LATIN_CONJUGATION_DF_FILE = 'latin_conjugation_df.csv'
+
 SAMPLE_FIRST = None # 1000
 BYTEPAIR_ENCODING = False # TODO: still under construction
 N_RUNS = 2

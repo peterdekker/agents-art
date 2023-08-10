@@ -8,7 +8,7 @@ import argparse
 import os
 import pandas as pd
 from model import art, majority_baseline, random_baseline
-from conf import OUTPUT_DIR, LANGUAGE, EMPTY_SYMBOL, BYTEPAIR_ENCODING, SAMPLE_FIRST, N_RUNS
+from conf import OUTPUT_DIR, LANGUAGE, EMPTY_SYMBOL, BYTEPAIR_ENCODING, SAMPLE_FIRST, N_RUNS, LATIN_CONJUGATION_DF_FILE
 
 
 
@@ -24,15 +24,18 @@ def main():
 
     if not os.path.exists(OUTPUT_DIR):
         os.makedirs(OUTPUT_DIR)
-    # Load data
-    # forms_df, cognates_df, lects_df = data.load_romance_dataset()
-    # # Filter data
-    # forms_df_1cognate = data.filter_romance_empty_multicog(forms_df)
-    # # Filter on Latin inflection classes
-    # latin_conjugation_df = data.filter_romance_inflections(forms_df_1cognate, cognates_df)
-    # # Create dataset per LANGUAGE
-    latin_conjugation_df = pd.read_csv ('latin_conjugation_df.csv')
-  
+    if os.path.exists(LATIN_CONJUGATION_DF_FILE):
+        latin_conjugation_df = pd.read_csv (LATIN_CONJUGATION_DF_FILE)
+    else:
+        #Load data
+        forms_df, cognates_df, lects_df = data.load_romance_dataset()
+        # Filter data
+        forms_df_1cognate = data.filter_romance_empty_multicog(forms_df)
+        # Filter on Latin inflection classes
+        latin_conjugation_df = data.filter_romance_inflections(forms_df_1cognate, cognates_df)
+        latin_conjugation_df.to_csv(LATIN_CONJUGATION_DF_FILE)
+
+    # Create dataset per LANGUAGE  
     forms_onehot, inflections_onehot, forms, inflections, cogids, bigram_inventory = data.create_language_dataset(latin_conjugation_df, LANGUAGE, empty_symbol=EMPTY_SYMBOL, encoding="bytepair" if BYTEPAIR_ENCODING else "onehot", sample_first=SAMPLE_FIRST)
     
     # if args.single_run_plotdata:

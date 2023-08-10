@@ -1,6 +1,6 @@
 from conf import ART_VIGILANCE, ART_LEARNING_RATE, INFLECTION_CLASSES, N_INFLECTION_CLASSES, OUTPUT_DIR, MAX_CLUSTERS
 import plot
-from neupy.algorithms import ART1
+from art import ART1
 from sklearn.metrics import rand_score, adjusted_rand_score, normalized_mutual_info_score, adjusted_mutual_info_score
 import numpy as np
 import seaborn as sns
