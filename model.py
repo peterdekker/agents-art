@@ -89,10 +89,18 @@ def art(data_onehot, forms, bigram_inventory, inflections_gold, cogids, pca, lan
                     # Number of clusters (rows) that are not unused (unused=all 1s)
                     n_used_clusters = np.sum(1-np.all(prototypes,axis=1))
 
+                    # This counts how many of each gold-standard words per each inflection class is clustered in each of the clusters coming from ART
+                    # Eg. 0th row being [2,3,0,4,6] would mean that cluster 0 (coming out from ART) includes 2 words from inflection class 'I', 3 words from 'II', and so on
                     cluster_inflection_stats=np.zeros((n_used_clusters,N_INFLECTION_CLASSES))
                     for i in range(0,len(clusters_gold_int)):
                         cluster_inflection_stats[int(clusters_art_batch[i]),clusters_gold_int[i]]+=1
                     row_sums = cluster_inflection_stats.sum(axis=1)
+                    
+                    #With multiple runs, it's possible that on the next run, no input samples are set into a category created on a previous run. In this case the new category will be empty.
+                    #This is done to avoid division by zero.
+                    row_sums[np.where(row_sums==0)]=1
+
+                    # Here the counts are changed in percentages
                     cluster_inflection_stats = cluster_inflection_stats / row_sums[:, np.newaxis]
                     records.append(
                     {"vigilance": vig, "run": r, "batch": rep*n_batches+b,
