@@ -1,6 +1,7 @@
 from conf import ART_VIGILANCE, ART_LEARNING_RATE, INFLECTION_CLASSES, N_INFLECTION_CLASSES, OUTPUT_DIR, MAX_CLUSTERS
 import plot
 from art import ART1
+from sklearn import cluster
 from sklearn.metrics import rand_score, adjusted_rand_score, normalized_mutual_info_score, adjusted_mutual_info_score
 import numpy as np
 import seaborn as sns
@@ -11,15 +12,22 @@ import os
 import numpy as np
 
 def random_baseline(inflections_gold):
-    base = np.random.choice(range(0,5),len(inflections_gold))
-    rand, adj_rand, min_cluster_size, max_cluster_size = eval_results(base, inflections_gold)
-    print(f" - Random baseline. Rand: {rand}. Adj_rand: {adj_rand}")
+    base = np.random.choice(range(0,N_INFLECTION_CLASSES),len(inflections_gold))
+    rand, adj_rand, norm_mutual_info, adj_mutual_info, min_cluster_size, max_cluster_size = eval_results(base, inflections_gold)
+    print(f" - Random baseline. RI: {rand}. ARI: {adj_rand} NMI: {norm_mutual_info}. AMI: {adj_mutual_info}")
 
 def majority_baseline(inflections_gold):
     base = np.zeros(len(inflections_gold))
-    rand, adj_rand, min_cluster_size, max_cluster_size = eval_results(base, inflections_gold)
-    print(f" - Majority baseline. Rand: {rand}. Adj_rand: {adj_rand}")
+    rand, adj_rand, norm_mutual_info, adj_mutual_info, min_cluster_size, max_cluster_size = eval_results(base, inflections_gold)
+    print(f" - Random baseline. RI: {rand}. ARI: {adj_rand} NMI: {norm_mutual_info}. AMI: {adj_mutual_info}")
 
+def agg_cluster_baseline(data_onehot, inflections_gold):
+    agg_labels = cluster.AgglomerativeClustering(n_clusters=N_INFLECTION_CLASSES, affinity="manhattan", linkage="average").fit_predict(data_onehot)
+    rand, adj_rand, norm_mutual_info, adj_mutual_info, min_cluster_size, max_cluster_size = eval_results(agg_labels, inflections_gold)
+    print(f" - Agg clustering baseline. RI: {rand}. ARI: {adj_rand} NMI: {norm_mutual_info}. AMI: {adj_mutual_info}")
+
+# 
+# opt = cluster.OPTICS(metric="hamming")
 
 def art(data_onehot, forms, bigram_inventory, inflections_gold, cogids, pca, language, n_runs=1, vigilances=[ART_VIGILANCE], repeat_dataset=False, batch_size=None, shuffle_data=False, data_plot=False, show=False):
     if cogids is not None:
@@ -61,6 +69,9 @@ def art(data_onehot, forms, bigram_inventory, inflections_gold, cogids, pca, lan
                     F=F[shf]
                     clusters_gold = clusters_gold[shf]
                 for b in range(n_batches):
+                    # TODO: batches right now (without replacement)
+                    # do exactly the same as processing the whole dataset at once.
+                    # Experiment with sampling with replacement.
                     batch = np.arange(b*batch_size, (b+1)*batch_size)
                     clusters_art_batch, prototypes = artnet.train(input_data[batch], F[batch])
                     clusters_gold_batch = clusters_gold[batch]
@@ -96,7 +107,7 @@ def art(data_onehot, forms, bigram_inventory, inflections_gold, cogids, pca, lan
                         cluster_inflection_stats[int(clusters_art_batch[i]),clusters_gold_int[i]]+=1
                     row_sums = cluster_inflection_stats.sum(axis=1)
                     
-                    #With multiple runs, it's possible that on the next run, no input samples are set into a category created on a previous run. In this case the new category will be empty.
+                    #With multiple batches/repeats, it's possible that on the next batch, no input samples are set into a category created on a previous batch. In this case the new category will be empty.
                     #This is done to avoid division by zero.
                     row_sums[np.where(row_sums==0)]=1
 

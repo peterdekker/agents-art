@@ -7,7 +7,7 @@ import numpy as np
 import argparse
 import os
 import pandas as pd
-from model import art, majority_baseline, random_baseline
+from model import art, majority_baseline, random_baseline, agg_cluster_baseline
 from conf import OUTPUT_DIR, LANGUAGE, EMPTY_SYMBOL, BYTEPAIR_ENCODING, SAMPLE_FIRST, N_RUNS, LATIN_CONJUGATION_DF_FILE
 
 
@@ -69,6 +69,9 @@ def main():
 
         print("Random baseline:")
         random_baseline(inflections)
+
+        print("Agg clustering baseline:")
+        agg_cluster_baseline(forms_onehot, inflections)
 
         print("Comparison to inflection classes:")
         language_df = latin_conjugation_df[latin_conjugation_df["Language_ID"]==LANGUAGE]
