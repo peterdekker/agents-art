@@ -38,30 +38,28 @@ def main():
     # Create dataset per LANGUAGE  
     forms_onehot, inflections_onehot, forms, inflections, cogids, bigram_inventory = data.create_language_dataset(latin_conjugation_df, LANGUAGE, empty_symbol=EMPTY_SYMBOL, encoding="bytepair" if BYTEPAIR_ENCODING else "onehot", sample_first=SAMPLE_FIRST)
     
-    # if args.single_run_plotdata:
+    if args.single_run_plotdata:
         # Plot data before running model
-    df, pca = plot.fit_pca(forms_onehot)
-    # plot.plot_data(df, labels=None, clusters=inflections,
-                            # micro_clusters=cogids, file_label=f"pca-art-data_bigram_hamming_original_MCA_-{LANGUAGE}", show=False)
-    plot.plot_data(df, labels=None, clusters=inflections,
-                            micro_clusters=None, file_label=f"pca-art-data_bigram_hamming_original_MCA_-{LANGUAGE}", show=False)  
-    # print(f"Full data shuffle, {N_RUNS} runs")
-    art(forms_onehot, forms, bigram_inventory,inflections, cogids, pca,LANGUAGE, n_runs=1, shuffle_data=True, data_plot=True)
+        df, pca = plot.fit_pca(forms_onehot)
+        # plot.plot_data(df, labels=None, clusters=inflections,
+                                # micro_clusters=cogids, file_label=f"pca-art-data_bigram_hamming_original_MCA_-{LANGUAGE}", show=False)
+        plot.plot_data(df, labels=None, clusters=inflections,
+                                micro_clusters=None, file_label=f"pca-art-data_bigram_hamming_original_MCA_-{LANGUAGE}", show=False)  
+        # print(f"Full data shuffle, {N_RUNS} runs")
+        art(forms_onehot, forms, bigram_inventory,inflections, cogids, pca,LANGUAGE, n_runs=1, shuffle_data=True, data_plot=True)
     
     if args.eval_batches:
         print(f"Full data shuffle, {N_RUNS} runs:")
-        art(forms_onehot, inflections, cogids, LANGUAGE, n_runs=N_RUNS, shuffle_data=True)
+        art(forms_onehot, forms, bigram_inventory, inflections, cogids, None, LANGUAGE, n_runs=N_RUNS, shuffle_data=True)
         print(f"Repeat dataset shuffle, {N_RUNS} runs:")
-        art(forms_onehot, inflections, cogids, LANGUAGE, n_runs=N_RUNS, repeat_dataset=True, shuffle_data=True)
+        art(forms_onehot, forms, bigram_inventory, inflections, cogids, None, LANGUAGE, n_runs=N_RUNS, repeat_dataset=True, shuffle_data=True)
         print(f"batch 10 shuffle, {N_RUNS} runs:")
-        art(forms_onehot, inflections, cogids, LANGUAGE, batch_size=10, n_runs=N_RUNS, shuffle_data=True)
+        art(forms_onehot, forms, bigram_inventory, inflections, cogids, None, LANGUAGE, batch_size=10, n_runs=N_RUNS, shuffle_data=True)
         print(f"batch 50 shuffle, {N_RUNS} runs:")
-        art(forms_onehot, inflections, cogids, LANGUAGE, batch_size=50, n_runs=N_RUNS, shuffle_data=True)
-        print(f"batch 1000 shuffle, {N_RUNS} runs:")
-        art(forms_onehot, inflections, cogids, LANGUAGE, batch_size=1000, n_runs=N_RUNS, shuffle_data=True)
+        art(forms_onehot, forms, bigram_inventory, inflections, cogids, None, LANGUAGE, batch_size=50, n_runs=N_RUNS, shuffle_data=True)
 
-    # if args.eval_vigilances:
-    # art(forms_onehot, forms, bigram_inventory, inflections, cogids, LANGUAGE, n_runs=N_RUNS, shuffle_data=True, vigilances = np.arange(0.0,1.05,0.05))
+    if args.eval_vigilances:
+        art(forms_onehot, forms, bigram_inventory, inflections, cogids, None, LANGUAGE, n_runs=N_RUNS, shuffle_data=True, vigilances = np.arange(0.0,1.05,0.05))
     
     if args.baseline:
         # print("Full data shuffle, n runs")

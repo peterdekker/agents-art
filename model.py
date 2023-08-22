@@ -63,9 +63,10 @@ def art(data_onehot, forms, bigram_inventory, inflections_gold, cogids, pca, lan
                 for b in range(n_batches):
                     batch = np.arange(b*batch_size, (b+1)*batch_size)
                     clusters_art_batch, prototypes = artnet.train(input_data[batch], F[batch])
+                    clusters_gold_batch = clusters_gold[batch]
 
                     ri_batch, ari_batch, nmi_batch, ami_batch, min_cluster_size_batch, max_cluster_size_batch = eval_results(
-                        clusters_art_batch, clusters_gold[batch])
+                        clusters_art_batch, clusters_gold_batch)
                         
 
                     histo=np.histogram(clusters_art_batch, bins=list(np.arange(0,21)))[0]
@@ -82,16 +83,17 @@ def art(data_onehot, forms, bigram_inventory, inflections_gold, cogids, pca, lan
                         category_bigrams.append(cluster_bigrams)
 
                     clusters_gold_int=[]
-                    ORDER=np.array(['I','II','III','IV','V','special'])
-                    for i in range(0,len(clusters_gold)):
-                        clusters_gold_int.append(np.where(ORDER==clusters_gold[i])[0][0])
+                    ORDER=np.array(INFLECTION_CLASSES)
+                    for i in range(0,len(clusters_gold_batch)):
+                        clusters_gold_int.append(np.where(ORDER==clusters_gold_batch[i])[0][0])
+                    # Number of clusters (rows) that are not unused (unused=all 1s)
+                    n_used_clusters = np.sum(1-np.all(prototypes,axis=1))
 
-                    cluster_inflection_stats=np.zeros((MAX_CLUSTERS,6))
+                    cluster_inflection_stats=np.zeros((n_used_clusters,N_INFLECTION_CLASSES))
                     for i in range(0,len(clusters_gold_int)):
                         cluster_inflection_stats[int(clusters_art_batch[i]),clusters_gold_int[i]]+=1
                     row_sums = cluster_inflection_stats.sum(axis=1)
                     cluster_inflection_stats = cluster_inflection_stats / row_sums[:, np.newaxis]
-
                     records.append(
                     {"vigilance": vig, "run": r, "batch": rep*n_batches+b,
                      "ri": ri_batch, "ari": ari_batch, "nmi": nmi_batch, "ami": ami_batch,
@@ -124,7 +126,7 @@ def art(data_onehot, forms, bigram_inventory, inflections_gold, cogids, pca, lan
             
     df_results = pd.DataFrame(records)
     df_results.to_csv(os.path.join(OUTPUT_DIR, f"histogram_per_vigilance-{language}_out.csv"))
-    print(df_results.groupby("vigilance")["ri", "ari", "nmi", "ami", "min_cluster_size", "max_cluster_size"].mean())
+    print(df_results.groupby("vigilance")[["ri", "ari", "nmi", "ami", "min_cluster_size", "max_cluster_size"]].mean())
     df_results_small=df_results[["vigilance", "run", "cluster_population","category_bigrams","cluster_inflection_stats"]]
     df_results_small.to_csv(os.path.join(OUTPUT_DIR, f"cluster_stats.csv"))
     
@@ -166,7 +168,7 @@ def art(data_onehot, forms, bigram_inventory, inflections_gold, cogids, pca, lan
             plt.show()
         plt.clf()
         df_results.to_csv(
-            "clusters-scores-art-end.tex", sep="&", line_terminator="\\\\\n")
+            "clusters-scores-art-end.tex", sep="&", lineterminator="\\\\\n")
 
 
 def eval_results(results, inflections_gold):

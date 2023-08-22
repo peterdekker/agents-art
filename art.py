@@ -699,13 +699,14 @@ class ART1(BaseNetwork):
                             step + np.dot(output1.T, output1) - 1
                         )
                         weight_21[:, winner_index] = output1
+                        
                     else:
                         # Get result with the best `rho`
                         winner_index = max(reseted_values)[1]
 
                     classes[i] = winner_index
 
-        prototypes = weight_21 ## TODO: this is not correct, prototypes should contain winning weights_21 for all data points
+        prototypes = weight_21.T ## TODO: this is not correct, prototypes should contain winning weights_21 for all data points
         return classes, prototypes
 
     def predict(self, X):
