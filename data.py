@@ -127,7 +127,7 @@ def create_onehot_inflections(inflections):
         array[infl_row, hot_index] = 1
     return array, inflection_inventory
 
-def create_onehot_forms_from_bigrams(forms, empty_symbol=True, pool_verb_features=False, pool_persons=False):
+def create_onehot_forms_from_bigrams(forms, empty_symbol=True, pool_verb_features=False):
     bigram_list = get_existing_sound_bigrams(forms)
     n_forms = len(forms)
 
@@ -204,7 +204,7 @@ def create_bytepair_forms(forms):
     # and try to get max word lengths almost equal by setting parameters right: Set parameters right to get quite even word lengths: https://arxiv.org/abs/1508.07909
 
 
-def create_language_dataset(df, language, empty_symbol=True, language_column="Language_ID", form_column="Form", inflection_column="Latin_Conjugation", cogid_column="Cognateset_ID_first", encoding="onehot", sample_first=None, use_only_present=True, use_only_3PL=False, concat_verb_features=True, pool_persons=False):
+def create_language_dataset(df, language, empty_symbol=True, language_column="Language_ID", form_column="Form", inflection_column="Latin_Conjugation", cogid_column="Cognateset_ID_first", encoding="onehot", sample_first=None, use_only_present=True, use_only_3PL=False, squeeze_into_verbs=True, concat_verb_features=True):
     df_language = df[df[language_column] ==
                      language]
     if sample_first:
@@ -225,42 +225,66 @@ def create_language_dataset(df, language, empty_symbol=True, language_column="La
     person_tags=person_tags.values #array(['1SG', '2SG', '3SG', ..., '1PL', '2PL', '3PL']
     unique_verbs=cogids.unique()
     if encoding=="onehot":
-        forms_encoded, bigram_inventory = create_onehot_forms_from_bigrams(forms, empty_symbol, concat_verb_features, pool_persons)
+        forms_encoded, bigram_inventory = create_onehot_forms_from_bigrams(forms, empty_symbol, concat_verb_features)
     elif encoding=="bytepair":
         forms_encoded = create_bytepair_forms(forms)
     else:
         ValueError("Unrecognized data encoding.")
 
-    
-    if concat_verb_features:
-        #Make new pooled bigram inventory with person tags
-        pooled_bigram_inventory=[]
-        for p in range(len(unique_person_tags)):
-            pooled_bigram_inventory=np.append(pooled_bigram_inventory,([i + '_'+unique_person_tags[p] for i in bigram_inventory]),axis=0)
+    if squeeze_into_verbs:
+        if concat_verb_features:
+            #Make new pooled bigram inventory with person tags
+            pooled_bigram_inventory=[]
+            for p in range(len(unique_person_tags)):
+                pooled_bigram_inventory=np.append(pooled_bigram_inventory,([i + '_'+unique_person_tags[p] for i in bigram_inventory]),axis=0)
 
-        pooled_forms_encoded=np.empty((0,len(unique_person_tags)*forms_encoded.shape[1]))
-        pooled_inflections=[]
-        pool_order=unique_person_tags #array(['1SG', '2SG', '3SG', '1PL', '2PL', '3PL'],
-        for i in range(0,len(unique_verbs)):
-            
-            pooled_forms_encoded_for_verb=[]
-            indices_for_verb=np.where(cogids==unique_verbs[i])[0]
-            pooled_inflections.append(inflections.values[indices_for_verb[0]]) #Save inflection for this pooled verb, from the first position
-            person_tags_for_verb=person_tags[indices_for_verb] #Not necessarily in the same order as wanted
-            for p in range(len(pool_order)):
+            pooled_forms_encoded=np.empty((0,len(unique_person_tags)*forms_encoded.shape[1]))
+            pooled_inflections=[]
+            pool_order=unique_person_tags #array(['1SG', '2SG', '3SG', '1PL', '2PL', '3PL'],
+            for i in range(0,len(unique_verbs)):
+                
+                pooled_forms_encoded_for_verb=[]
+                indices_for_verb=np.where(cogids==unique_verbs[i])[0]
+                pooled_inflections.append(inflections.values[indices_for_verb[0]]) #Save inflection for this pooled verb, from the first position
+                person_tags_for_verb=person_tags[indices_for_verb] #Not necessarily in the same order as wanted
+                for p in range(len(pool_order)):
 
-                if pool_order[p] in person_tags_for_verb:
-                    index=np.where(pool_order[p] == person_tags_for_verb)
-                    index_in_forms_encoded=indices_for_verb[index[0][0]]
-                    pooled_forms_encoded_for_verb=np.append(pooled_forms_encoded_for_verb, forms_encoded[index_in_forms_encoded],axis=0)
-                else:
-                    pooled_forms_encoded_for_verb=np.append(pooled_forms_encoded_for_verb, np.zeros((forms_encoded.shape[1])),axis=0)
-            
-            pooled_forms_encoded=np.append(pooled_forms_encoded,pooled_forms_encoded_for_verb[None,:],axis=0)
-        inflections = pooled_inflections
+                    if pool_order[p] in person_tags_for_verb:
+                        index=np.where(pool_order[p] == person_tags_for_verb)
+                        index_in_forms_encoded=indices_for_verb[index[0][0]]
+                        pooled_forms_encoded_for_verb=np.append(pooled_forms_encoded_for_verb, forms_encoded[index_in_forms_encoded],axis=0)
+                    else:
+                        pooled_forms_encoded_for_verb=np.append(pooled_forms_encoded_for_verb, np.zeros((forms_encoded.shape[1])),axis=0)
+                
+                pooled_forms_encoded=np.append(pooled_forms_encoded,pooled_forms_encoded_for_verb[None,:],axis=0)
+            inflections = pooled_inflections
 
-        forms_encoded=pooled_forms_encoded
-        bigram_inventory=pooled_bigram_inventory
+            forms_encoded=pooled_forms_encoded
+            bigram_inventory=pooled_bigram_inventory
+        else:   #Squeeze all persons into a single bigram vector, without concatenating (One hot of existing bigrams over all person tenses)
+               #Make new pooled bigram inventory with person tags
+  
+            pooled_forms_encoded=np.empty((0,forms_encoded.shape[1]))
+            pooled_inflections=[]
+            pool_order=unique_person_tags #array(['1SG', '2SG', '3SG', '1PL', '2PL', '3PL'],
+            for i in range(0,len(unique_verbs)):
+                
+                pooled_forms_encoded_for_verb=np.zeros((1,len(bigram_inventory)))
+                indices_for_verb=np.where(cogids==unique_verbs[i])[0]
+                pooled_inflections.append(inflections.values[indices_for_verb[0]]) #Save inflection for this pooled verb, from the first position
+                person_tags_for_verb=person_tags[indices_for_verb] #Not necessarily in the same order as wanted
+                for p in range(len(pool_order)):
+
+                    if pool_order[p] in person_tags_for_verb:
+                        index=np.where(pool_order[p] == person_tags_for_verb)
+                        index_in_forms_encoded=indices_for_verb[index[0][0]]
+                        pooled_forms_encoded_for_verb=pooled_forms_encoded_for_verb+forms_encoded[index_in_forms_encoded]
+                
+                pooled_forms_encoded_for_verb=np.clip(pooled_forms_encoded_for_verb, 0, 1)
+                pooled_forms_encoded=np.append(pooled_forms_encoded,pooled_forms_encoded_for_verb,axis=0)
+            inflections = pooled_inflections
+
+            forms_encoded=pooled_forms_encoded
 
     
     inflections_onehot, inflection_inventory = create_onehot_inflections(

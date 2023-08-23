@@ -19,7 +19,8 @@ EMPTY_SYMBOL = True
 
 OUTPUT_DIR = "output"
 
-CONCAT_VERB_FEATURES=True
+CONCAT_VERB_FEATURES=False
 USE_ONLY_3PL=False
+SQUEEZE_INTO_VERBS=True
 
-CONFIG_STRING=f"--use_only_3PL={USE_ONLY_3PL}---Concat_verb_features={CONCAT_VERB_FEATURES}"
+CONFIG_STRING=f"--use_only_3PL={USE_ONLY_3PL}---squeeze_into_verbs=={SQUEEZE_INTO_VERBS}---Concat_verb_features={CONCAT_VERB_FEATURES}"
