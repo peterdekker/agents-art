@@ -7,8 +7,8 @@ import numpy as np
 import argparse
 import os
 import pandas as pd
-from model import art, majority_baseline, random_baseline, agg_cluster_baseline
-from conf import OUTPUT_DIR, LANGUAGE, EMPTY_SYMBOL, BYTEPAIR_ENCODING, SAMPLE_FIRST, N_RUNS, LATIN_CONJUGATION_DF_FILE
+from model import art, majority_baseline, random_baseline, agg_cluster_baseline, kmeans_cluster_baseline
+from conf import OUTPUT_DIR, LANGUAGE, EMPTY_SYMBOL, BYTEPAIR_ENCODING, SAMPLE_FIRST, N_RUNS, LATIN_CONJUGATION_DF_FILE, CONCAT_VERB_FEATURES, USE_ONLY_3PL, CONFIG_STRING
 
 
 
@@ -36,15 +36,15 @@ def main():
         latin_conjugation_df.to_csv(LATIN_CONJUGATION_DF_FILE)
 
     # Create dataset per LANGUAGE  
-    forms_onehot, inflections_onehot, forms, inflections, cogids, bigram_inventory = data.create_language_dataset(latin_conjugation_df, LANGUAGE, empty_symbol=EMPTY_SYMBOL, encoding="bytepair" if BYTEPAIR_ENCODING else "onehot", sample_first=SAMPLE_FIRST)
+    forms_onehot, inflections_onehot, forms, inflections, cogids, bigram_inventory = data.create_language_dataset(latin_conjugation_df, LANGUAGE, empty_symbol=EMPTY_SYMBOL, encoding="bytepair" if BYTEPAIR_ENCODING else "onehot", sample_first=SAMPLE_FIRST, use_only_3PL=USE_ONLY_3PL, concat_verb_features=CONCAT_VERB_FEATURES, pool_persons=False)
     
     if args.single_run_plotdata:
-        # Plot data before running model
+    # Plot data before running model
         df, pca = plot.fit_pca(forms_onehot)
         # plot.plot_data(df, labels=None, clusters=inflections,
                                 # micro_clusters=cogids, file_label=f"pca-art-data_bigram_hamming_original_MCA_-{LANGUAGE}", show=False)
         plot.plot_data(df, labels=None, clusters=inflections,
-                                micro_clusters=None, file_label=f"pca-art-data_bigram_hamming_original_MCA_-{LANGUAGE}", show=False)  
+                                micro_clusters=None, file_label=f"pca-art-data_bigram_hamming_original_MCA_-{LANGUAGE}_{CONFIG_STRING}", show=False)  
         # print(f"Full data shuffle, {N_RUNS} runs")
         art(forms_onehot, forms, bigram_inventory,inflections, cogids, pca,LANGUAGE, n_runs=1, shuffle_data=True, data_plot=True)
     
@@ -59,7 +59,7 @@ def main():
         art(forms_onehot, forms, bigram_inventory, inflections, cogids, None, LANGUAGE, batch_size=50, n_runs=N_RUNS, shuffle_data=True)
 
     if args.eval_vigilances:
-        art(forms_onehot, forms, bigram_inventory, inflections, cogids, None, LANGUAGE, n_runs=N_RUNS, shuffle_data=True, vigilances = np.arange(0.0,1.05,0.05))
+        art(forms_onehot, forms, bigram_inventory, inflections, cogids, None, LANGUAGE, n_runs=N_RUNS, shuffle_data=True, vigilances = np.arange(0.0,1.02,0.02))
     
     if args.baseline:
         # print("Full data shuffle, n runs")
@@ -70,8 +70,11 @@ def main():
         print("Random baseline:")
         random_baseline(inflections)
 
-        print("Agg clustering baseline:")
-        agg_cluster_baseline(forms_onehot, inflections)
+        # print("Agg clustering baseline:")
+        # agg_cluster_baseline(forms_onehot, inflections)
+
+        print("Kmeans clustering baseline:")
+        kmeans_cluster_baseline(forms_onehot, inflections)
 
         print("Comparison to inflection classes:")
         language_df = latin_conjugation_df[latin_conjugation_df["Language_ID"]==LANGUAGE]
@@ -82,9 +85,9 @@ def main():
 
     # if iterated_run:
     #   forms_inflections_onehot = np.concatenate((forms_onehot, inflections_onehot), axis=1)
-        # if plot_data_before:
-        #     score = evaluation.plot_data(forms_inflections_onehot, labels=None, clusters=inflections, micro_clusters=cogids, file_label=f"inflections-{LANGUAGE}")
-        #     print (f"Silhouette score, data before run (with inflection class): {score}")
+    #     if plot_data_before:
+    #         score = evaluation.plot_data(forms_inflections_onehot, labels=None, clusters=inflections, micro_clusters=cogids, file_label=f"inflections-{LANGUAGE}")
+    #         print (f"Silhouette score, data before run (with inflection class): {score}")
     #     inflections_empty = np.zeros(inflections_onehot.shape)
     #     forms_empty_inflections_onehot = np.concatenate((forms_onehot, inflections_empty), axis=1)
 

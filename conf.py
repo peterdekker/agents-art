@@ -18,3 +18,8 @@ FILLED_MARKERS = ['o', 'v', '^', '<', '>', '8', 's', 'p', '*', 'h', 'H', 'D', 'd
 EMPTY_SYMBOL = True
 
 OUTPUT_DIR = "output"
+
+CONCAT_VERB_FEATURES=True
+USE_ONLY_3PL=False
+
+CONFIG_STRING=f"--use_only_3PL={USE_ONLY_3PL}---Concat_verb_features={CONCAT_VERB_FEATURES}"

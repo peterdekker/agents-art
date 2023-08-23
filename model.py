@@ -1,4 +1,4 @@
-from conf import ART_VIGILANCE, ART_LEARNING_RATE, INFLECTION_CLASSES, N_INFLECTION_CLASSES, OUTPUT_DIR, MAX_CLUSTERS
+from conf import ART_VIGILANCE, ART_LEARNING_RATE, INFLECTION_CLASSES, N_INFLECTION_CLASSES, OUTPUT_DIR, MAX_CLUSTERS, CONFIG_STRING
 import plot
 from art import ART1
 from sklearn import cluster
@@ -25,6 +25,12 @@ def agg_cluster_baseline(data_onehot, inflections_gold):
     agg_labels = cluster.AgglomerativeClustering(n_clusters=N_INFLECTION_CLASSES, affinity="manhattan", linkage="average").fit_predict(data_onehot)
     rand, adj_rand, norm_mutual_info, adj_mutual_info, min_cluster_size, max_cluster_size = eval_results(agg_labels, inflections_gold)
     print(f" - Agg clustering baseline. RI: {rand}. ARI: {adj_rand} NMI: {norm_mutual_info}. AMI: {adj_mutual_info}")
+
+def kmeans_cluster_baseline(data_onehot, inflections_gold):
+    kmeans_labels = cluster.KMeans(n_clusters=N_INFLECTION_CLASSES).fit_predict(data_onehot)
+    # print(cluster.KMeans.cluster_centers_)
+    rand, adj_rand, norm_mutual_info, adj_mutual_info, min_cluster_size, max_cluster_size = eval_results(kmeans_labels, inflections_gold)
+    print(f" - Kmeans clustering baseline. RI: {rand}. ARI: {adj_rand} NMI: {norm_mutual_info}. AMI: {adj_mutual_info}")
 
 # 
 # opt = cluster.OPTICS(metric="hamming")
@@ -140,14 +146,14 @@ def art(data_onehot, forms, bigram_inventory, inflections_gold, cogids, pca, lan
                 df2=pd.DataFrame(prototype_based_new_coords)
                 df2.columns=['dim1', 'dim2']
                 plot.plot_data(df2, labels=None, clusters=clusters_gold, prototypes=df,
-                        file_label=f"pca-art-vig{vig}-run{r}-{language}_protos", show=show)
+                        file_label=f"pca-art-vig{vig}-run{r}-{language}_protos_{CONFIG_STRING}", show=show)
                 
             
     df_results = pd.DataFrame(records)
-    df_results.to_csv(os.path.join(OUTPUT_DIR, f"histogram_per_vigilance-{language}_out.csv"))
+    df_results.to_csv(os.path.join(OUTPUT_DIR, f"histogram_per_vigilance-{language}_{CONFIG_STRING}_out.csv"))
     print(df_results.groupby("vigilance")[["ri", "ari", "nmi", "ami", "min_cluster_size", "max_cluster_size"]].mean())
     df_results_small=df_results[["vigilance", "run", "cluster_population","category_bigrams","cluster_inflection_stats"]]
-    df_results_small.to_csv(os.path.join(OUTPUT_DIR, f"cluster_stats.csv"))
+    df_results_small.to_csv(os.path.join(OUTPUT_DIR, f"cluster_stats_{CONFIG_STRING}.csv"))
     
 
     # Only create vigilance plot when comparing multiple vigilances
@@ -174,7 +180,7 @@ def art(data_onehot, forms, bigram_inventory, inflections_gold, cogids, pca, lan
 
         sns.lineplot(data=df_melt_scores, x="vigilance",
                      y="score", hue="metric")
-        plt.savefig(os.path.join(OUTPUT_DIR, f"scores-art-end-{language}.pdf"))
+        plt.savefig(os.path.join(OUTPUT_DIR, f"scores-art-end-{language}-{CONFIG_STRING}.pdf"))
         if show:
             plt.show()
         plt.clf()
