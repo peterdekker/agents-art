@@ -81,36 +81,14 @@ def get_sound_inventory(forms):
     max_form_len = max([len(x) for x in forms])
     return sound_inventory, max_form_len
 
-def get_sound_bigrams(forms):
-    sound_inventory = list(set(list("".join(forms))))
-    bigram_list=[]
-    for i1 in range(0,len(sound_inventory)):
-        for i2 in range(0,len(sound_inventory)):
-            bigram_list.append([sound_inventory[i1]+sound_inventory[i2]])
-
-    return bigram_list
-
-def get_existing_sound_bigrams(forms):
-    sound_inventory = list(set(list("".join(forms))))
-    bigram_list=[]
-    form_values=forms.values
-
-    for i1 in range(0,len(form_values)):
-        for i2 in range(0,len(form_values[i1])-1):
-            bigram=form_values[i1][i2:i2+2]
-            if bigram not in bigram_list:
-                bigram_list.append(bigram)
-
-    return bigram_list
-
 def get_existing_sound_Ngrams(forms, Ngrams): # NOT FINISHED!!
     sound_inventory = list(set(list("".join(forms))))
     Ngram_list=[]
     form_values=forms.values
 
     for i1 in range(0,len(form_values)):
-        for i2 in range(0,len(form_values[i1])-1):
-            Ngram=form_values[i1][i2:i2+2]
+        for i2 in range(0,len(form_values[i1])-(Ngrams-1)):
+            Ngram=form_values[i1][i2:i2+Ngrams]
             if Ngram not in Ngram_list:
                 Ngram_list.append(Ngram)
 
@@ -127,41 +105,25 @@ def create_onehot_inflections(inflections):
         array[infl_row, hot_index] = 1
     return array, inflection_inventory
 
-def create_onehot_forms_from_bigrams(forms, empty_symbol=True, pool_verb_features=False):
-    bigram_list = get_existing_sound_bigrams(forms)
+def create_onehot_forms_from_Ngrams(forms, Ngrams, empty_symbol=True, pool_verb_features=False):
+    Ngram_list = get_existing_sound_Ngrams(forms, Ngrams)
     n_forms = len(forms)
 
-    n_bigrams = len(bigram_list)
+    n_Ngrams = len(Ngram_list)
     # print(sounds)
     #print(f"n_forms: {n_forms}")
     #print(f"n_sounds: {n_sounds}")
     #print(f"max_form_len: {max_form_len}")
-    array = np.zeros(shape=(n_forms, n_bigrams))
+    array = np.zeros(shape=(n_forms, n_Ngrams))
 
     for form_row, form in enumerate(forms):
-        for char_position in range(0,len(form)-1):
-            current_bigram=form[char_position:char_position+2]
-            index=bigram_list.index(current_bigram)
+        for char_position in range(0,len(form)-(Ngrams-1)):
+            current_Ngram=form[char_position:char_position+Ngrams]
+            index=Ngram_list.index(current_Ngram)
             array[form_row, index] = 1
 
-        # randInds=np.random.randint(0,n_bigrams,10)
-        # array[form_row, randInds]=1-array[form_row, randInds]
-        # # print(form)
-        # form_len = len(form)
-        # for char_position in range(max_form_len):
-        #     if char_position < form_len:
-        #         char = form[char_position]
-        #         char_hot_index = sounds.index(char)
-        #         array[form_row, char_position*n_sounds+char_hot_index] = 1
-        #         #print(f"Char position {char_position} within form: {char}. Hot index: {char_hot_index}. Index: {form_row, char_position*n_sounds+char_hot_index}")
-        #     else:  # Char_position >= form_len; so word shorter than the longest word
-        #         if empty_symbol:
-        #             # Create symbol for these positions
-        #             empty_hot_index = sounds.index(".")
-        #             array[form_row, char_position*n_sounds+empty_hot_index] = 1
-        #             #print(f"Char position {char_position} OUTSIDE form. Hot index: {empty_hot_index}. Index: {form_row, char_position*n_sounds+empty_hot_index}")
-        #         # Else: just leave the 0000s for empty symbol
-    return array, bigram_list
+    return array, Ngram_list
+
 
 def create_onehot_forms(forms, empty_symbol=True):
     sounds, max_form_len = get_sound_inventory(forms)
@@ -204,7 +166,7 @@ def create_bytepair_forms(forms):
     # and try to get max word lengths almost equal by setting parameters right: Set parameters right to get quite even word lengths: https://arxiv.org/abs/1508.07909
 
 
-def create_language_dataset(df, language, empty_symbol=True, language_column="Language_ID", form_column="Form", inflection_column="Latin_Conjugation", cogid_column="Cognateset_ID_first", encoding="onehot", sample_first=None, use_only_present=True, use_only_3PL=False, squeeze_into_verbs=True, concat_verb_features=True):
+def create_language_dataset(df, language, Ngrams=2, empty_symbol=True, language_column="Language_ID", form_column="Form", inflection_column="Latin_Conjugation", cogid_column="Cognateset_ID_first", encoding="onehot", sample_first=None, use_only_present=True, use_only_3PL=False, squeeze_into_verbs=True, concat_verb_features=True):
     df_language = df[df[language_column] ==
                      language]
     if sample_first:
@@ -217,6 +179,7 @@ def create_language_dataset(df, language, empty_symbol=True, language_column="La
         else:
             df_used=df_language[df_language['Cell'].str.contains("'PRS-IND'")]
 
+            df_used.to_csv('only_used_Latin_stuff.csv')
     forms = df_used[form_column]
     inflections = df_used[inflection_column]
     cogids = df_used[cogid_column]
@@ -225,7 +188,7 @@ def create_language_dataset(df, language, empty_symbol=True, language_column="La
     person_tags=person_tags.values #array(['1SG', '2SG', '3SG', ..., '1PL', '2PL', '3PL']
     unique_verbs=cogids.unique()
     if encoding=="onehot":
-        forms_encoded, bigram_inventory = create_onehot_forms_from_bigrams(forms, empty_symbol, concat_verb_features)
+        forms_encoded, bigram_inventory = create_onehot_forms_from_Ngrams(forms, Ngrams, empty_symbol, concat_verb_features)
     elif encoding=="bytepair":
         forms_encoded = create_bytepair_forms(forms)
     else:

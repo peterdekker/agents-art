@@ -44,6 +44,31 @@ def plot_data(df, clusters, labels=None, micro_clusters=None, sample_points = No
     #score = silhouette_score(X=data_bin, labels=clusters, metric="hamming")
     # return score
 
+def plot_barchart(cluster_inflection_stats, category_bigrams, 
+                        file_label=None, show=False):
+    sums=np.sum(cluster_inflection_stats,axis=1)
+    order=np.argsort(-sums) #Get indeces from largest cluster to smallest (minus reverses default ascending sorting order)
+    orderedStats=cluster_inflection_stats[order]
+    fig, ax = plt.subplots()
+    bottom = np.zeros(orderedStats.shape[0])
+    xCoords=list(range(0,orderedStats.shape[0]))
+
+    for i in range(len(INFLECTION_CLASSES)):
+        members=orderedStats[:,i]
+        p = ax.bar(xCoords, members, 0.4, bottom=bottom, label=INFLECTION_CLASSES[i])
+        bottom += members
+    ax.legend()
+
+    for bar in range(orderedStats.shape[0]):
+        for bigram in range(len(category_bigrams[bar])):
+            plt.text(bar-0.8, bigram*3+5, category_bigrams[bar][bigram], fontsize=7)
+    
+    # category_bigrams
+    if show:
+        plt.show()
+    if file_label:
+        plt.savefig(os.path.join(OUTPUT_DIR,f"barchart-{file_label}.pdf"))
+
 def plot_heikki(df, clusters, labels=None, micro_clusters = None, file_label=None, sample_points=None, prototypes=None, show=False):
     # assert len(clusters) == data_bin.shape[0]
     # alg = TSNE(n_components=2, metric="hamming", init="pca", learning_rate="auto")
@@ -64,6 +89,7 @@ def plot_heikki(df, clusters, labels=None, micro_clusters = None, file_label=Non
         red_plot = sns.scatterplot(data = df, x="dim1", y="dim2", hue="clusters", style="micro_clusters", palette="hls", markers=marker_list, size=1, legend="full")
     else:
         red_plot = sns.scatterplot(data = df, x="dim1", y="dim2", hue="clusters", palette="hls", size=1, legend="full")
+        # red_plot = plt.pie(data = d f, labels = labels, colors = colors,
     red_plot.set(xlabel=None)
     red_plot.set(ylabel=None)
     red_plot.set(xticklabels=[])

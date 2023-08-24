@@ -118,7 +118,7 @@ def art(data_onehot, forms, bigram_inventory, inflections_gold, cogids, pca, lan
                     row_sums[np.where(row_sums==0)]=1
 
                     # Here the counts are changed in percentages
-                    cluster_inflection_stats = cluster_inflection_stats / row_sums[:, np.newaxis]
+                    cluster_inflection_stats_percent = cluster_inflection_stats / row_sums[:, np.newaxis]
                     records.append(
                     {"vigilance": vig, "run": r, "batch": rep*n_batches+b,
                      "ri": ri_batch, "ari": ari_batch, "nmi": nmi_batch, "ami": ami_batch,
@@ -126,6 +126,7 @@ def art(data_onehot, forms, bigram_inventory, inflections_gold, cogids, pca, lan
                      "category_bigrams": category_bigrams,
                      "prototypes": prototypes,
                      "cluster_inflection_stats":cluster_inflection_stats,
+                     "cluster_inflection_stats_percent":cluster_inflection_stats_percent,
                      "min_cluster_size": min_cluster_size_batch, "max_cluster_size": max_cluster_size_batch})
 
 
@@ -146,6 +147,8 @@ def art(data_onehot, forms, bigram_inventory, inflections_gold, cogids, pca, lan
                 df2=pd.DataFrame(prototype_based_new_coords)
                 df2.columns=['dim1', 'dim2']
                 plot.plot_data(df2, labels=None, clusters=clusters_gold, prototypes=df,
+                        file_label=f"pca-art-vig{vig}-run{r}-{language}_protos_{CONFIG_STRING}", show=show)
+                plot.plot_barchart(cluster_inflection_stats, category_bigrams, 
                         file_label=f"pca-art-vig{vig}-run{r}-{language}_protos_{CONFIG_STRING}", show=show)
                 
             

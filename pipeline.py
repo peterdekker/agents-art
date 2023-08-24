@@ -8,10 +8,7 @@ import argparse
 import os
 import pandas as pd
 from model import art, majority_baseline, random_baseline, agg_cluster_baseline, kmeans_cluster_baseline
-from conf import OUTPUT_DIR, LANGUAGE, EMPTY_SYMBOL, BYTEPAIR_ENCODING, SAMPLE_FIRST, N_RUNS, LATIN_CONJUGATION_DF_FILE, CONCAT_VERB_FEATURES, USE_ONLY_3PL, CONFIG_STRING, SQUEEZE_INTO_VERBS
-
-
-
+from conf import OUTPUT_DIR, LANGUAGE, EMPTY_SYMBOL, BYTEPAIR_ENCODING, SAMPLE_FIRST, N_RUNS, LATIN_CONJUGATION_DF_FILE, CONCAT_VERB_FEATURES, USE_ONLY_3PL, CONFIG_STRING, SQUEEZE_INTO_VERBS, NGRAMS
 
 
 def main():
@@ -36,17 +33,17 @@ def main():
         latin_conjugation_df.to_csv(LATIN_CONJUGATION_DF_FILE)
 
     # Create dataset per LANGUAGE  
-    forms_onehot, inflections_onehot, forms, inflections, cogids, bigram_inventory = data.create_language_dataset(latin_conjugation_df, LANGUAGE, empty_symbol=EMPTY_SYMBOL, encoding="bytepair" if BYTEPAIR_ENCODING else "onehot", sample_first=SAMPLE_FIRST, use_only_3PL=USE_ONLY_3PL, squeeze_into_verbs=SQUEEZE_INTO_VERBS, concat_verb_features=CONCAT_VERB_FEATURES)
+    forms_onehot, inflections_onehot, forms, inflections, cogids, bigram_inventory = data.create_language_dataset(latin_conjugation_df, LANGUAGE, Ngrams=NGRAMS, empty_symbol=EMPTY_SYMBOL, encoding="bytepair" if BYTEPAIR_ENCODING else "onehot", sample_first=SAMPLE_FIRST, use_only_3PL=USE_ONLY_3PL, squeeze_into_verbs=SQUEEZE_INTO_VERBS, concat_verb_features=CONCAT_VERB_FEATURES)
     
-    if args.single_run_plotdata:
-        # Plot data before running model
-        df, pca = plot.fit_pca(forms_onehot)
-        # plot.plot_data(df, labels=None, clusters=inflections,
-                                # micro_clusters=cogids, file_label=f"pca-art-data_bigram_hamming_original_MCA_-{LANGUAGE}", show=False)
-        plot.plot_data(df, labels=None, clusters=inflections,
-                                micro_clusters=None, file_label=f"pca-art-data_bigram_hamming_original_MCA_-{LANGUAGE}_{CONFIG_STRING}", show=False)  
-        # print(f"Full data shuffle, {N_RUNS} runs")
-        art(forms_onehot, forms, bigram_inventory,inflections, cogids, pca,LANGUAGE, n_runs=1, shuffle_data=True, data_plot=True)
+    # if args.single_run_plotdata:
+    # Plot data before running model
+    df, pca = plot.fit_pca(forms_onehot)
+    # plot.plot_data(df, labels=None, clusters=inflections,
+                            # micro_clusters=cogids, file_label=f"pca-art-data_bigram_hamming_original_MCA_-{LANGUAGE}", show=False)
+    plot.plot_data(df, labels=None, clusters=inflections,
+                            micro_clusters=None, file_label=f"pca-art-data_bigram_hamming_original_MCA_-{LANGUAGE}_{CONFIG_STRING}", show=False)  
+    # print(f"Full data shuffle, {N_RUNS} runs")
+    art(forms_onehot, forms, bigram_inventory,inflections, cogids, pca,LANGUAGE, n_runs=1, shuffle_data=True, data_plot=True)
     
     if args.eval_batches:
         print(f"Full data shuffle, {N_RUNS} runs:")
