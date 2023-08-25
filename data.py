@@ -166,7 +166,7 @@ def create_bytepair_forms(forms):
     # and try to get max word lengths almost equal by setting parameters right: Set parameters right to get quite even word lengths: https://arxiv.org/abs/1508.07909
 
 
-def create_language_dataset(df, language, Ngrams=2, empty_symbol=True, language_column="Language_ID", form_column="Form", inflection_column="Latin_Conjugation", cogid_column="Cognateset_ID_first", encoding="onehot", sample_first=None, use_only_present=True, use_only_3PL=False, squeeze_into_verbs=True, concat_verb_features=True):
+def create_language_dataset(df, language, Ngrams=2, empty_symbol=True, language_column="Language_ID", form_column="Form", inflection_column="Latin_Conjugation", cogid_column="Cognateset_ID_first", encoding="onehot", sample_first=None, use_only_present=True, use_only_3PL=False, squeeze_into_verbs=True, concat_verb_features=True, set_common_features_to_zero=False):
     df_language = df[df[language_column] ==
                      language]
     if sample_first:
@@ -219,6 +219,12 @@ def create_language_dataset(df, language, Ngrams=2, empty_symbol=True, language_
                     else:
                         pooled_forms_encoded_for_verb=np.append(pooled_forms_encoded_for_verb, np.zeros((forms_encoded.shape[1])),axis=0)
                 
+                if set_common_features_to_zero:
+                    temp=np.reshape(pooled_forms_encoded_for_verb, (len(pool_order), forms_encoded.shape[1]))
+                    S=sum(temp)
+                    temp[:,S==6]=0 # If the same gram was activated in all person tenses, their sum here is 6
+                    pooled_forms_encoded_for_verb=np.reshape(temp, (len(pool_order)*forms_encoded.shape[1]))
+
                 pooled_forms_encoded=np.append(pooled_forms_encoded,pooled_forms_encoded_for_verb[None,:],axis=0)
             inflections = pooled_inflections
 
@@ -243,6 +249,9 @@ def create_language_dataset(df, language, Ngrams=2, empty_symbol=True, language_
                         index_in_forms_encoded=indices_for_verb[index[0][0]]
                         pooled_forms_encoded_for_verb=pooled_forms_encoded_for_verb+forms_encoded[index_in_forms_encoded]
                 
+                if set_common_features_to_zero:
+                    pooled_forms_encoded_for_verb[pooled_forms_encoded_for_verb==6]=0 # If the same gram was activated in all person tenses, their sum here is 6
+
                 pooled_forms_encoded_for_verb=np.clip(pooled_forms_encoded_for_verb, 0, 1)
                 pooled_forms_encoded=np.append(pooled_forms_encoded,pooled_forms_encoded_for_verb,axis=0)
             inflections = pooled_inflections

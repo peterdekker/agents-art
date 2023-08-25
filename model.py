@@ -1,4 +1,4 @@
-from conf import ART_VIGILANCE, ART_LEARNING_RATE, INFLECTION_CLASSES, N_INFLECTION_CLASSES, OUTPUT_DIR, MAX_CLUSTERS, CONFIG_STRING
+from conf import ART_VIGILANCE, ART_LEARNING_RATE, INFLECTION_CLASSES, N_INFLECTION_CLASSES, OUTPUT_DIR, INITIAL_CLUSTERS, CONFIG_STRING
 import plot
 from art import ART1
 from sklearn import cluster
@@ -54,7 +54,7 @@ def art(data_onehot, forms, bigram_inventory, inflections_gold, cogids, pca, lan
             artnet = ART1(
                 step=ART_LEARNING_RATE,
                 rho=vig,
-                n_clusters=MAX_CLUSTERS,
+                n_clusters=INITIAL_CLUSTERS,
             )
             # Make copy of data, because we will possibly shuffle
             input_data = data_onehot.copy()
@@ -80,18 +80,19 @@ def art(data_onehot, forms, bigram_inventory, inflections_gold, cogids, pca, lan
                     # Experiment with sampling with replacement.
                     batch = np.arange(b*batch_size, (b+1)*batch_size)
                     clusters_art_batch, prototypes = artnet.train(input_data[batch], F[batch])
+                    N_found_clusters=len(prototypes)
                     clusters_gold_batch = clusters_gold[batch]
 
                     ri_batch, ari_batch, nmi_batch, ami_batch, min_cluster_size_batch, max_cluster_size_batch = eval_results(
                         clusters_art_batch, clusters_gold_batch)
                         
 
-                    histo=np.histogram(clusters_art_batch, bins=list(np.arange(0,21)))[0]
+                    histo=np.histogram(clusters_art_batch, bins=list(np.arange(0,N_found_clusters+1)))[0]
                     order=np.flip(np.argsort(histo))
                     cluster_population=histo[order]
                     prototypes=prototypes[order,:]
                     category_bigrams=[]
-                    for p in range(0,MAX_CLUSTERS):
+                    for p in range(0,N_found_clusters):
                         ones=np.nonzero(prototypes[p,:])[0]
                         ones=list(ones)
                         cluster_bigrams=[]

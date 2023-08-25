@@ -629,7 +629,7 @@ class ART1(BaseNetwork):
     array([ 0.,  1.,  1.])
     """
     rho = ProperFractionProperty(default=0.5)
-    n_clusters = IntProperty(default=2, minval=2)
+    n_clusters = IntProperty(default=1, minval=1)
 
     def train(self, X, forms):
         X = format_data(X)
@@ -701,8 +701,18 @@ class ART1(BaseNetwork):
                         weight_21[:, winner_index] = output1
                         
                     else:
-                        # Get result with the best `rho`
-                        winner_index = max(reseted_values)[1]
+                        # Create new category - Heikki edit
+                        n_clusters=n_clusters+1
+                        winner_index = n_clusters-1 #-1 because 0 is a cluster
+                        output1=p[None,:].T #Make input a 2d column vector for appending
+                        weight_21 = np.append(weight_21,output1,axis=1) #Assuming the new weights would've been initialized to ones, after the logical and, the input features p would be the ones left activated
+                        new_bottom_up_weights=(step * output1) / (
+                            step + np.dot(output1.T, output1) - 1
+                        )
+                        weight_12 = np.append(weight_12,new_bottom_up_weights.T,axis=0) 
+
+                        
+                        
 
                     classes[i] = winner_index
 
