@@ -650,7 +650,7 @@ class ART1(BaseNetwork):
             self.weight_21 = np.ones((n_features, n_clusters))
 
         if not hasattr(self, 'weight_12'):
-            scaler = step / (step + n_clusters - 1)
+            scaler = step / (step + n_features - 1)
             self.weight_12 = scaler * self.weight_21.T
 
         weight_21 = self.weight_21
@@ -682,7 +682,7 @@ class ART1(BaseNetwork):
                 output1 = np.logical_and(p, expectation).astype(int)
 
                 reset_value = np.dot(output1.T, output1) / np.dot(p.T, p)
-                reset = reset_value < rho
+                reset = reset_value < rho # Below vigilance = reset = keep searching
 
                 if reset:
                     disabled_neurons.append(winner_index)
@@ -699,22 +699,36 @@ class ART1(BaseNetwork):
                             step + np.dot(output1.T, output1) - 1
                         )
                         weight_21[:, winner_index] = output1
-                        
-                    else:
-                        # Create new category - Heikki edit
-                        n_clusters=n_clusters+1
-                        winner_index = n_clusters-1 #-1 because 0 is a cluster
-                        output1=p[None,:].T #Make input a 2d column vector for appending
-                        weight_21 = np.append(weight_21,output1,axis=1) #Assuming the new weights would've been initialized to ones, after the logical and, the input features p would be the ones left activated
-                        new_bottom_up_weights=(step * output1) / (
-                            step + np.dot(output1.T, output1) - 1
-                        )
-                        weight_12 = np.append(weight_12,new_bottom_up_weights.T,axis=0) 
+                    
+                        if winner_index==n_clusters-1:    #If the input was set into an unused category, initialize a new one
+                            n_clusters=n_clusters+1
+                            new_top_down_weights=np.ones((n_features, 1))
+                            weight_21 = np.append(weight_21,new_top_down_weights,axis=1) #Assuming the new weights would've been initialized to ones, after the logical and, the input features p would be the ones left activated
+                            new_bottom_up_weights=(step * new_top_down_weights) / (
+                                step + n_features - 1)
+                            weight_12 = np.append(weight_12,new_bottom_up_weights.T,axis=0) 
+                    # else:
+                    #     # Create new category - Heikki edit
+
+                        # winner_index = max(reseted_values)[1]
+                    #     # n_clusters=n_clusters+1
+                    #     # winner_index = n_clusters-1 #-1 because 0 is a cluster
+                    #     # output1=p[None,:].T #Make input a 2d column vector for appending
+                    #     # weight_21 = np.append(weight_21,output1,axis=1) #Assuming the new weights would've been initialized to ones, after the logical and, the input features p would be the ones left activated
+                    #     # new_bottom_up_weights=(step * output1) / (
+                    #     #     step + np.dot(output1.T, output1) - 1
+                    #     # )
+                    #     # weight_12 = np.append(weight_12,new_bottom_up_weights.T,axis=0) 
 
                         
                         
-
+                    if np.isnan(winner_index):
+                        print('MSMSMS')
                     classes[i] = winner_index
+
+        self.weight_12=weight_12
+        self.weight_21=weight_21
+        self.n_clusters=n_clusters
 
         prototypes = weight_21.T ## TODO: this is not correct, prototypes should contain winning weights_21 for all data points
         return classes, prototypes

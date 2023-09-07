@@ -1,4 +1,4 @@
-from conf import ART_VIGILANCE, ART_LEARNING_RATE, INFLECTION_CLASSES, N_INFLECTION_CLASSES, OUTPUT_DIR, INITIAL_CLUSTERS, CONFIG_STRING
+from conf import ART_VIGILANCE, ART_LEARNING_RATE, INFLECTION_CLASSES, N_INFLECTION_CLASSES, OUTPUT_DIR, INITIAL_CLUSTERS, CONFIG_STRING, VIGILANCE_RANGE
 import plot
 from art import ART1
 from sklearn import cluster
@@ -66,7 +66,7 @@ def art(data_onehot, forms, bigram_inventory, inflections_gold, cogids, pca, lan
                 batch_size = len_data
             n_batches = len_data//batch_size
 
-            for rep in range(10 if repeat_dataset else 1):
+            for rep in range(5 if repeat_dataset else 1):
                 if shuffle_data:
                     # Makes taking batches sampling without replacement
                     shf = np.random.permutation(len(input_data))
@@ -82,7 +82,7 @@ def art(data_onehot, forms, bigram_inventory, inflections_gold, cogids, pca, lan
                     clusters_art_batch, prototypes = artnet.train(input_data[batch], F[batch])
                     N_found_clusters=len(prototypes)
                     clusters_gold_batch = clusters_gold[batch]
-
+                    # print(clusters_art_batch)
                     ri_batch, ari_batch, nmi_batch, ami_batch, min_cluster_size_batch, max_cluster_size_batch = eval_results(
                         clusters_art_batch, clusters_gold_batch)
                         
@@ -91,13 +91,21 @@ def art(data_onehot, forms, bigram_inventory, inflections_gold, cogids, pca, lan
                     order=np.flip(np.argsort(histo))
                     cluster_population=histo[order]
                     prototypes=prototypes[order,:]
+                    S=np.sum(prototypes,axis=0)
+                    bigram_inventory=np.array(bigram_inventory)
+                    always_activated_features=np.argwhere(S==N_found_clusters)
+                    always_activated_bigrams=bigram_inventory[always_activated_features]
+  
                     category_bigrams=[]
                     for p in range(0,N_found_clusters):
                         ones=np.nonzero(prototypes[p,:])[0]
                         ones=list(ones)
                         cluster_bigrams=[]
                         for i in ones:
-                            cluster_bigrams.append(bigram_inventory[i])
+                            if i in always_activated_features:
+                                cluster_bigrams.insert(0,bigram_inventory[i]) # If always activated feature, add in position 0 -> clearer for barplot
+                            else:
+                                cluster_bigrams.append(bigram_inventory[i])
                         category_bigrams.append(cluster_bigrams)
 
                     clusters_gold_int=[]
@@ -149,14 +157,14 @@ def art(data_onehot, forms, bigram_inventory, inflections_gold, cogids, pca, lan
                 df2.columns=['dim1', 'dim2']
                 plot.plot_data(df2, labels=None, clusters=clusters_gold, prototypes=df,
                         file_label=f"pca-art-vig{vig}-run{r}-{language}_protos_{CONFIG_STRING}", show=show)
-                plot.plot_barchart(cluster_inflection_stats, category_bigrams, 
+                plot.plot_barchart(cluster_inflection_stats, category_bigrams, always_activated_bigrams,
                         file_label=f"pca-art-vig{vig}-run{r}-{language}_protos_{CONFIG_STRING}", show=show)
                 
             
     df_results = pd.DataFrame(records)
     df_results.to_csv(os.path.join(OUTPUT_DIR, f"histogram_per_vigilance-{language}_{CONFIG_STRING}_out.csv"))
     print(df_results.groupby("vigilance")[["ri", "ari", "nmi", "ami", "min_cluster_size", "max_cluster_size"]].mean())
-    df_results_small=df_results[["vigilance", "run", "cluster_population","category_bigrams","cluster_inflection_stats"]]
+    df_results_small=df_results[["vigilance", "run", "cluster_population","category_bigrams","cluster_inflection_stats","ari","batch"]]
     df_results_small.to_csv(os.path.join(OUTPUT_DIR, f"cluster_stats_{CONFIG_STRING}.csv"))
     
 
@@ -164,7 +172,8 @@ def art(data_onehot, forms, bigram_inventory, inflections_gold, cogids, pca, lan
     if eval_vigilances:
         # Plot results
 
-        df_melt_scores = pd.melt(df_results, id_vars=["vigilance", "run", "batch"], value_vars=["ri","ari", "nmi", "ami"], var_name="metric", value_name="score")
+        df_melt_scores = pd.melt(df_results, id_vars=["vigilance", "run", "batch"], value_vars=["ari"], var_name="metric", value_name="score")
+        # df_melt_scores = pd.melt(df_results, id_vars=["vigilance", "run", "batch"], value_vars=["ri","ari", "nmi", "ami"], var_name="metric", value_name="score")
         df_melt_clusters = pd.melt(df_results, id_vars=["vigilance", "run", "batch"], value_vars=["min_cluster_size","max_cluster_size"], var_name="metric", value_name="size")
         df_melt_ci = pd.melt(df_results, id_vars=["vigilance"], value_vars=["cluster_population"], var_name="metric", value_name="N_in_cluster")
 
@@ -184,6 +193,11 @@ def art(data_onehot, forms, bigram_inventory, inflections_gold, cogids, pca, lan
 
         sns.lineplot(data=df_melt_scores, x="vigilance",
                      y="score", hue="metric")
+        rep_kmeans_ARI=np.ones((1,len(VIGILANCE_RANGE)))*0.782 #This is obtained from one baseline run
+        # rep_kmeans_AMI=np.ones((1,len(VIGILANCE_RANGE)))*0.835 #This is obtained from one baseline run
+        sns.lineplot(x=VIGILANCE_RANGE,
+                     y=rep_kmeans_ARI[0], dashes=True, hue=1)
+        plt.legend(labels=["ARI","_ss", "AMI", "_ss","Baseline ARI (kmeans)", "Baseline AMI (kmeans)"])
         plt.savefig(os.path.join(OUTPUT_DIR, f"scores-art-end-{language}-{CONFIG_STRING}.pdf"))
         if show:
             plt.show()

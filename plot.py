@@ -44,7 +44,7 @@ def plot_data(df, clusters, labels=None, micro_clusters=None, sample_points = No
     #score = silhouette_score(X=data_bin, labels=clusters, metric="hamming")
     # return score
 
-def plot_barchart(cluster_inflection_stats, category_bigrams, 
+def plot_barchart(cluster_inflection_stats, category_bigrams, always_activated_bigrams,
                         file_label=None, show=False):
     sums=np.sum(cluster_inflection_stats,axis=1)
     order=np.argsort(-sums) #Get indeces from largest cluster to smallest (minus reverses default ascending sorting order)
@@ -55,13 +55,18 @@ def plot_barchart(cluster_inflection_stats, category_bigrams,
 
     for i in range(len(INFLECTION_CLASSES)):
         members=orderedStats[:,i]
-        p = ax.bar(xCoords, members, 0.4, bottom=bottom, label=INFLECTION_CLASSES[i])
+        p = ax.bar(xCoords, members, 0.4, bottom=bottom, label=INFLECTION_CLASSES[i],alpha=0.5)
         bottom += members
     ax.legend()
 
     for bar in range(orderedStats.shape[0]):
         for bigram in range(len(category_bigrams[bar])):
-            plt.text(bar-0.8, bigram*3+5, category_bigrams[bar][bigram], fontsize=7)
+            if category_bigrams[bar][bigram] in always_activated_bigrams:
+                #Is not unique feature
+                plt.text(bar-0.15, bigram*3+5, category_bigrams[bar][bigram], fontsize=7)
+            else:
+                #Is unique feature
+                plt.text(bar-0.15, bigram*3+5, category_bigrams[bar][bigram], fontsize=9, weight='bold')
     
     # category_bigrams
     if show:
