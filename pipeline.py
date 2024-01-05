@@ -19,18 +19,20 @@ def main():
     parser.add_argument('--baseline', action='store_true')
     args = parser.parse_args()
 
-    if not os.path.exists(OUTPUT_DIR):
-        os.makedirs(OUTPUT_DIR)
-    if os.path.exists(LATIN_CONJUGATION_DF_FILE):
-        latin_conjugation_df = pd.read_csv (LATIN_CONJUGATION_DF_FILE)
-    else:
+    os.makedirs(OUTPUT_DIR, exist_ok=True)
+    
+    if not os.path.exists(LATIN_CONJUGATION_DF_FILE):
         #Load data
         forms_df, cognates_df, lects_df = data.load_romance_dataset()
         # Filter data
         forms_df_1cognate = data.filter_romance_empty_multicog(forms_df)
         # Filter on Latin inflection classes
         latin_conjugation_df = data.filter_romance_inflections(forms_df_1cognate, cognates_df)
+        print(latin_conjugation_df)
         latin_conjugation_df.to_csv(LATIN_CONJUGATION_DF_FILE)
+        # First time script is run, we write and then immediately read from CSV file. This makes Cell column right Python object
+    
+    latin_conjugation_df = pd.read_csv(LATIN_CONJUGATION_DF_FILE,index_col=0)
 
     # Create dataset per LANGUAGE  
     forms_onehot, inflections_onehot, forms, inflections, cogids, bigram_inventory = data.create_language_dataset(latin_conjugation_df, LANGUAGE, Ngrams=NGRAMS, empty_symbol=EMPTY_SYMBOL, encoding="bytepair" if BYTEPAIR_ENCODING else "onehot", sample_first=SAMPLE_FIRST, use_only_3PL=USE_ONLY_3PL, squeeze_into_verbs=SQUEEZE_INTO_VERBS, concat_verb_features=CONCAT_VERB_FEATURES, set_common_features_to_zero=SET_COMMON_FEATURES_TO_ZERO)

@@ -7,27 +7,27 @@ import pathlib
 import requests
 import shutil
 import pandas as pd
-from bpe import Encoder
+# from bpe import Encoder
 
 from conf import INFLECTION_CLASSES
 
 #np.random.seed(11)
 currentdir = os.path.abspath("")
 
-DATA_ARCHIVE_PATH = "Romance_Verbal_Inflection_Dataset-v2.0.4.tar.gz"
-DATA_ARCHIVE_URL = "https://gitlab.com/sbeniamine/Romance_Verbal_Inflection_Dataset/-/archive/v2.0.4/Romance_Verbal_Inflection_Dataset-v2.0.4.tar.gz"
+DATASET_ROMANCE_ARCHIVE_PATH = "Romance_Verbal_Inflection_Dataset-v2.0.4.tar.gz"
+DATASET_ROMANCE_ARCHIVE_URL = "https://gitlab.com/sbeniamine/Romance_Verbal_Inflection_Dataset/-/archive/v2.0.4/Romance_Verbal_Inflection_Dataset-v2.0.4.tar.gz"
 # Directory after unpacking archive
-DATA_PATH = os.path.join(
-    currentdir, "data", "Romance_Verbal_Inflection_Dataset-v2.0.4")
-METADATA_PATH = os.path.join(DATA_PATH, "cldf/Wordlist-metadata.json")
+DATA_PATH = os.path.join(currentdir, "data")
+DATASET_ROMANCE_PATH = os.path.join(DATA_PATH, "Romance_Verbal_Inflection_Dataset-v2.0.4")
+DATASET_ROMANCE_METADATA_PATH = os.path.join(DATASET_ROMANCE_PATH, "cldf/Wordlist-metadata.json")
 
 ############ Methods Romance dataset ##########
 
 
-def download_if_needed(archive_path, archive_url, file_path, label):
-    if not os.path.exists(file_path):
+def download_if_needed(archive_path, archive_url, dataset_path, data_path, label):
+    if not os.path.exists(dataset_path):
         # Create parent dirs
-        #p = pathlib.Path(file_path)
+        #p = pathlib.Path(data_path)
         #p.parent.mkdir(parents=True, exist_ok=True)
         with open(archive_path, 'wb') as f:
             print(f"Downloading {label} from {archive_url}")
@@ -37,16 +37,18 @@ def download_if_needed(archive_path, archive_url, file_path, label):
                 raise SystemExit(e)
             # Write downloaded content to file
             f.write(r.content)
-            if archive_path.endswith(".tar.gz"):
-                print("Unpacking archive.")
-                shutil.unpack_archive(archive_path, currentdir)
+            if not archive_path.endswith(".tar.gz"):
+                raise ValueError("Archive path does not end in .tar.gz.")
+            print("Unpacking archive.")
+            os.makedirs(data_path, exist_ok=True)
+            shutil.unpack_archive(archive_path, extract_dir=data_path)
 
 
 def load_romance_dataset():
-    download_if_needed(DATA_ARCHIVE_PATH, DATA_ARCHIVE_URL,
-                       DATA_PATH, "romance")
+    download_if_needed(DATASET_ROMANCE_ARCHIVE_PATH, DATASET_ROMANCE_ARCHIVE_URL,
+                       DATASET_ROMANCE_PATH, DATA_PATH, "romance")
     print("Loading data...")
-    dataset = Dataset.from_metadata(METADATA_PATH)
+    dataset = Dataset.from_metadata(DATASET_ROMANCE_METADATA_PATH)
     forms_df = pd.DataFrame(dataset["FormTable"])
     cognates_df = pd.DataFrame(dataset["CognatesetTable"])
     lects_df = pd.DataFrame(dataset["LanguageTable"])
@@ -154,16 +156,16 @@ def create_onehot_forms(forms, empty_symbol=True):
                 # Else: just leave the 0000s for empty symbol
     return array, sounds
 
-def create_bytepair_forms(forms):
-    encoder = Encoder(200, pct_bpe=0.88)
-    print(forms)
-    encoder.fit(forms)
-    print([encoder.tokenize(form) for form in forms])
-    print(list(encoder.transform(forms)))
-    # TODO: finish bytepair encoding. Possibly train on all languages
-    # "{0:b}".format() -> map(int)
-    # and set max bitstring length by max value
-    # and try to get max word lengths almost equal by setting parameters right: Set parameters right to get quite even word lengths: https://arxiv.org/abs/1508.07909
+# def create_bytepair_forms(forms):
+#     encoder = Encoder(200, pct_bpe=0.88)
+#     print(forms)
+#     encoder.fit(forms)
+#     print([encoder.tokenize(form) for form in forms])
+#     print(list(encoder.transform(forms)))
+#     # TODO: finish bytepair encoding. Possibly train on all languages
+#     # "{0:b}".format() -> map(int)
+#     # and set max bitstring length by max value
+#     # and try to get max word lengths almost equal by setting parameters right: Set parameters right to get quite even word lengths: https://arxiv.org/abs/1508.07909
 
 
 def create_language_dataset(df, language, Ngrams=2, empty_symbol=True, language_column="Language_ID", form_column="Form", inflection_column="Latin_Conjugation", cogid_column="Cognateset_ID_first", encoding="onehot", sample_first=None, use_only_present=True, use_only_3PL=False, squeeze_into_verbs=True, concat_verb_features=True, set_common_features_to_zero=False):
@@ -171,7 +173,6 @@ def create_language_dataset(df, language, Ngrams=2, empty_symbol=True, language_
                      language]
     if sample_first:
         df_language = df_language.head(sample_first)
-    print(df_language)
 
     if use_only_present:
         if use_only_3PL:

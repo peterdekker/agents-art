@@ -6,8 +6,8 @@ pandas
 #minisom
 pycldf
 requests
-prince
-bpe
+# prince
+# bpe
 six
 # For Jupyter notebook
 jupyter
