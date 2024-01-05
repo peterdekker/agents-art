@@ -2,7 +2,7 @@ numpy
 scikit-learn
 scipy
 seaborn
-pandas
+pandas>=1.5
 #minisom
 pycldf
 requests

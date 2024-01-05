@@ -28,7 +28,6 @@ def main():
         forms_df_1cognate = data.filter_romance_empty_multicog(forms_df)
         # Filter on Latin inflection classes
         latin_conjugation_df = data.filter_romance_inflections(forms_df_1cognate, cognates_df)
-        print(latin_conjugation_df)
         latin_conjugation_df.to_csv(LATIN_CONJUGATION_DF_FILE)
         # First time script is run, we write and then immediately read from CSV file. This makes Cell column right Python object
     

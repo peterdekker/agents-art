@@ -13,13 +13,17 @@ from conf import INFLECTION_CLASSES
 
 #np.random.seed(11)
 currentdir = os.path.abspath("")
-
-DATASET_ROMANCE_ARCHIVE_PATH = "Romance_Verbal_Inflection_Dataset-v2.0.4.tar.gz"
-DATASET_ROMANCE_ARCHIVE_URL = "https://gitlab.com/sbeniamine/Romance_Verbal_Inflection_Dataset/-/archive/v2.0.4/Romance_Verbal_Inflection_Dataset-v2.0.4.tar.gz"
-# Directory after unpacking archive
 DATA_PATH = os.path.join(currentdir, "data")
-DATASET_ROMANCE_PATH = os.path.join(DATA_PATH, "Romance_Verbal_Inflection_Dataset-v2.0.4")
-DATASET_ROMANCE_METADATA_PATH = os.path.join(DATASET_ROMANCE_PATH, "cldf/Wordlist-metadata.json")
+
+ROMANCE_ARCHIVE_PATH = "Romance_Verbal_Inflection_Dataset-v2.0.4.tar.gz"
+ROMANCE_ARCHIVE_URL = "https://gitlab.com/sbeniamine/Romance_Verbal_Inflection_Dataset/-/archive/v2.0.4/Romance_Verbal_Inflection_Dataset-v2.0.4.tar.gz"
+# Directory after unpacking archive
+ROMANCE_PATH = os.path.join(DATA_PATH, "Romance_Verbal_Inflection_Dataset-v2.0.4")
+ROMANCE_METADATA_PATH = os.path.join(ROMANCE_PATH, "cldf/Wordlist-metadata.json")
+
+PORTUGUESE_ARCHIVE_PATH = "https://zenodo.org/records/8392722/files/v2.0.1.zip"
+ESTONIAN_ARCHIVE_PATH = "https://zenodo.org/records/8392744/files/v1.0.1.zip"
+ARABIC_ARCHIVE_PATH = "https://zenodo.org/records/10100678/files/aravelex-1.0.zip"
 
 ############ Methods Romance dataset ##########
 
@@ -45,10 +49,10 @@ def download_if_needed(archive_path, archive_url, dataset_path, data_path, label
 
 
 def load_romance_dataset():
-    download_if_needed(DATASET_ROMANCE_ARCHIVE_PATH, DATASET_ROMANCE_ARCHIVE_URL,
-                       DATASET_ROMANCE_PATH, DATA_PATH, "romance")
+    download_if_needed(ROMANCE_ARCHIVE_PATH, ROMANCE_ARCHIVE_URL,
+                       ROMANCE_PATH, DATA_PATH, "romance")
     print("Loading data...")
-    dataset = Dataset.from_metadata(DATASET_ROMANCE_METADATA_PATH)
+    dataset = Dataset.from_metadata(ROMANCE_METADATA_PATH)
     forms_df = pd.DataFrame(dataset["FormTable"])
     cognates_df = pd.DataFrame(dataset["CognatesetTable"])
     lects_df = pd.DataFrame(dataset["LanguageTable"])
