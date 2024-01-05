@@ -1,7 +1,7 @@
 numpy
 scikit-learn
 scipy
-seaborn
+seaborn>0.12.2
 pandas>=1.5
 #minisom
 pycldf
