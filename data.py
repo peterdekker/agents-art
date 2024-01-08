@@ -172,7 +172,7 @@ def create_onehot_forms(forms, empty_symbol=True):
 #     # and try to get max word lengths almost equal by setting parameters right: Set parameters right to get quite even word lengths: https://arxiv.org/abs/1508.07909
 
 
-def create_language_dataset(df, language, Ngrams=2, empty_symbol=True, language_column="Language_ID", form_column="Form", inflection_column="Latin_Conjugation", cogid_column="Cognateset_ID_first", encoding="onehot", sample_first=None, use_only_present=True, use_only_3PL=False, squeeze_into_verbs=True, concat_verb_features=True, set_common_features_to_zero=False):
+def create_language_dataset(df, language, Ngrams=2, empty_symbol=True, language_column="Language_ID", form_column="Form", inflection_column="Latin_Conjugation", cogid_column="Cognateset_ID_first", sample_first=None, use_only_present=True, use_only_3PL=False, squeeze_into_verbs=True, concat_verb_features=True, set_common_features_to_zero=False):
     df_language = df[df[language_column] ==
                      language]
     if sample_first:
@@ -192,12 +192,8 @@ def create_language_dataset(df, language, Ngrams=2, empty_symbol=True, language_
     unique_person_tags=person_tags.unique()
     person_tags=person_tags.values #array(['1SG', '2SG', '3SG', ..., '1PL', '2PL', '3PL']
     unique_verbs=cogids.unique()
-    if encoding=="onehot":
-        forms_encoded, bigram_inventory = create_onehot_forms_from_Ngrams(forms, Ngrams, empty_symbol, concat_verb_features)
-    elif encoding=="bytepair":
-        forms_encoded = create_bytepair_forms(forms)
-    else:
-        ValueError("Unrecognized data encoding.")
+
+    forms_encoded, bigram_inventory = create_onehot_forms_from_Ngrams(forms, Ngrams, empty_symbol, concat_verb_features)
 
     if squeeze_into_verbs:
         if concat_verb_features:

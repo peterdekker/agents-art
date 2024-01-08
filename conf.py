@@ -1,11 +1,15 @@
 import numpy as np
 
-LANGUAGE = "Italic_Latino-Faliscan_Latin"
+### Default for Argparse options
+LANGUAGE = "latin"
+###
+
+
+LANGUAGE_ROMANCE_DATASET = "Italic_Latino-Faliscan_Latin"
 
 LATIN_CONJUGATION_DF_FILE = 'latin_conjugation_df.csv'
 
 SAMPLE_FIRST = None # 1000
-BYTEPAIR_ENCODING = False # TODO: still under construction
 N_RUNS = 10
 
 ART_VIGILANCE=0.25

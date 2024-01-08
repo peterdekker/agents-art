@@ -1,14 +1,14 @@
 
+from conf import OUTPUT_DIR, LANGUAGE, LANGUAGE_ROMANCE_DATASET, EMPTY_SYMBOL,  SAMPLE_FIRST, N_RUNS, LATIN_CONJUGATION_DF_FILE, CONCAT_VERB_FEATURES, USE_ONLY_3PL, CONFIG_STRING, SQUEEZE_INTO_VERBS, NGRAMS, SET_COMMON_FEATURES_TO_ZERO, VIGILANCE_RANGE
+from model import art, majority_baseline, random_baseline, kmeans_cluster_baseline
+import pandas as pd
+import os
+import argparse
+import numpy as np
+import plot
+import data
 import warnings
 warnings.simplefilter(action='ignore', category=FutureWarning)
-import data
-import plot
-import numpy as np
-import argparse
-import os
-import pandas as pd
-from model import art, majority_baseline, random_baseline, agg_cluster_baseline, kmeans_cluster_baseline
-from conf import OUTPUT_DIR, LANGUAGE, EMPTY_SYMBOL, BYTEPAIR_ENCODING, SAMPLE_FIRST, N_RUNS, LATIN_CONJUGATION_DF_FILE, CONCAT_VERB_FEATURES, USE_ONLY_3PL, CONFIG_STRING, SQUEEZE_INTO_VERBS, NGRAMS, SET_COMMON_FEATURES_TO_ZERO, VIGILANCE_RANGE
 
 
 def main():
@@ -17,51 +17,61 @@ def main():
     parser.add_argument('--eval_batches', action='store_true')
     parser.add_argument('--eval_vigilances', action='store_true')
     parser.add_argument('--baseline', action='store_true')
+    parser.add_argument('--language', type=str, default=LANGUAGE)
     args = parser.parse_args()
 
+    language = args.language
+
     os.makedirs(OUTPUT_DIR, exist_ok=True)
-    
+
     if not os.path.exists(LATIN_CONJUGATION_DF_FILE):
-        #Load data
-        forms_df, cognates_df, lects_df = data.load_romance_dataset()
+        # Load data
+        forms_df, cognates_df, _ = data.load_romance_dataset()
         # Filter data
         forms_df_1cognate = data.filter_romance_empty_multicog(forms_df)
         # Filter on Latin inflection classes
-        latin_conjugation_df = data.filter_romance_inflections(forms_df_1cognate, cognates_df)
+        latin_conjugation_df = data.filter_romance_inflections(
+            forms_df_1cognate, cognates_df)
         latin_conjugation_df.to_csv(LATIN_CONJUGATION_DF_FILE)
         # First time script is run, we write and then immediately read from CSV file. This makes Cell column right Python object
-    
-    latin_conjugation_df = pd.read_csv(LATIN_CONJUGATION_DF_FILE,index_col=0)
 
-    # Create dataset per LANGUAGE  
-    forms_onehot, inflections_onehot, forms, inflections, cogids, bigram_inventory = data.create_language_dataset(latin_conjugation_df, LANGUAGE, Ngrams=NGRAMS, empty_symbol=EMPTY_SYMBOL, encoding="bytepair" if BYTEPAIR_ENCODING else "onehot", sample_first=SAMPLE_FIRST, use_only_3PL=USE_ONLY_3PL, squeeze_into_verbs=SQUEEZE_INTO_VERBS, concat_verb_features=CONCAT_VERB_FEATURES, set_common_features_to_zero=SET_COMMON_FEATURES_TO_ZERO)
-    
+    latin_conjugation_df = pd.read_csv(LATIN_CONJUGATION_DF_FILE, index_col=0)
+
+    # Create dataset per LANGUAGE_ROMANCE_DATASET
+    forms_onehot, _, forms, inflections, cogids, bigram_inventory = data.create_language_dataset(latin_conjugation_df, LANGUAGE_ROMANCE_DATASET, Ngrams=NGRAMS, empty_symbol=EMPTY_SYMBOL, 
+                                                                                                                  sample_first=SAMPLE_FIRST, use_only_3PL=USE_ONLY_3PL, squeeze_into_verbs=SQUEEZE_INTO_VERBS, concat_verb_features=CONCAT_VERB_FEATURES, set_common_features_to_zero=SET_COMMON_FEATURES_TO_ZERO)
     if args.single_run_plotdata:
-    # Plot data before running model
+        # Plot data before running model
         df, pca = plot.fit_pca(forms_onehot)
         # plot.plot_data(df, labels=None, clusters=inflectionss,
-                                # micro_clusters=cogids, file_label=f"pca-art-data_bigram_hamming_original_MCA_-{LANGUAGE}", show=False)
+        # micro_clusters=cogids, file_label=f"pca-art-data_bigram_hamming_original_MCA_-{LANGUAGE_ROMANCE_DATASET}", show=False)
         plot.plot_data(df, labels=None, clusters=inflections,
-                                micro_clusters=None, file_label=f"pca-art-data_bigram_hamming_original_MCA_-{LANGUAGE}_{CONFIG_STRING}", show=False)  
+                       micro_clusters=None, file_label=f"pca-art-data_bigram_hamming_original_MCA_-{language}_{CONFIG_STRING}", show=False)
         # print(f"Full data shuffle, {N_RUNS} runs")
-        art(forms_onehot, forms, bigram_inventory,inflections, cogids, pca,LANGUAGE, n_runs=1, shuffle_data=True, repeat_dataset=True, data_plot=True)
-    
+        art(forms_onehot, forms, bigram_inventory, inflections, cogids, pca,
+            language, n_runs=1, shuffle_data=True, repeat_dataset=True, data_plot=True)
+
     if args.eval_batches:
         print(f"Full data shuffle, {N_RUNS} runs:")
-        art(forms_onehot, forms, bigram_inventory, inflections, cogids, None, LANGUAGE, n_runs=N_RUNS, shuffle_data=True)
+        art(forms_onehot, forms, bigram_inventory, inflections,
+            cogids, None, language, n_runs=N_RUNS, shuffle_data=True)
         print(f"Repeat dataset shuffle, {N_RUNS} runs:")
-        art(forms_onehot, forms, bigram_inventory, inflections, cogids, None, LANGUAGE, n_runs=N_RUNS, repeat_dataset=True, shuffle_data=True)
+        art(forms_onehot, forms, bigram_inventory, inflections, cogids, None,
+            language, n_runs=N_RUNS, repeat_dataset=True, shuffle_data=True)
         print(f"batch 10 shuffle, {N_RUNS} runs:")
-        art(forms_onehot, forms, bigram_inventory, inflections, cogids, None, LANGUAGE, batch_size=10, n_runs=N_RUNS, shuffle_data=True)
+        art(forms_onehot, forms, bigram_inventory, inflections, cogids,
+            None, language, batch_size=10, n_runs=N_RUNS, shuffle_data=True)
         print(f"batch 50 shuffle, {N_RUNS} runs:")
-        art(forms_onehot, forms, bigram_inventory, inflections, cogids, None, LANGUAGE, batch_size=50, n_runs=N_RUNS, shuffle_data=True)
+        art(forms_onehot, forms, bigram_inventory, inflections, cogids,
+            None, language, batch_size=50, n_runs=N_RUNS, shuffle_data=True)
 
     if args.eval_vigilances:
-        art(forms_onehot, forms, bigram_inventory, inflections, cogids, None, LANGUAGE, n_runs=N_RUNS, shuffle_data=True, repeat_dataset=True, vigilances = VIGILANCE_RANGE)
-    
+        art(forms_onehot, forms, bigram_inventory, inflections, cogids, None, language,
+            n_runs=N_RUNS, shuffle_data=True, repeat_dataset=True, vigilances=VIGILANCE_RANGE)
+
     if args.baseline:
         # print("Full data shuffle, n runs")
-        # art_one(forms_onehot, inflections, cogids, LANGUAGE, n_runs=N_RUNS, shuffle_data=True)
+        # art_one(forms_onehot, inflections, cogids, language, n_runs=N_RUNS, shuffle_data=True)
         print("Majority baseline:")
         majority_baseline(inflections)
 
@@ -75,7 +85,8 @@ def main():
         kmeans_cluster_baseline(forms_onehot, inflections)
 
         print("Comparison to inflection classes:")
-        language_df = latin_conjugation_df[latin_conjugation_df["Language_ID"]==LANGUAGE]
+        language_df = latin_conjugation_df[latin_conjugation_df["Language_ID"]
+                                           == LANGUAGE_ROMANCE_DATASET]
         print("Token count:")
         print(language_df["Latin_Conjugation"].value_counts(normalize=True))
         # print("Type count")
@@ -84,7 +95,7 @@ def main():
     # if iterated_run:
     #   forms_inflections_onehot = np.concatenate((forms_onehot, inflections_onehot), axis=1)
     #     if plot_data_before:
-    #         score = evaluation.plot_data(forms_inflections_onehot, labels=None, clusters=inflections, micro_clusters=cogids, file_label=f"inflections-{LANGUAGE}")
+    #         score = evaluation.plot_data(forms_inflections_onehot, labels=None, clusters=inflections, micro_clusters=cogids, file_label=f"inflections-{language}")
     #         print (f"Silhouette score, data before run (with inflection class): {score}")
     #     inflections_empty = np.zeros(inflections_onehot.shape)
     #     forms_empty_inflections_onehot = np.concatenate((forms_onehot, inflections_empty), axis=1)
@@ -92,7 +103,6 @@ def main():
     #     for bs in [10,20,50,100,200,500]:
     #         print(f"Batch size: {bs}")
     #         art_iterated(forms_empty_inflections_onehot, n_runs=20, n_timesteps=500, batch_size_iterated=bs, inflections_gold=inflections, cogids=cogids, vigilances=[0.25, 0.5, 0.75] )
-
 
 
 if __name__ == "__main__":
