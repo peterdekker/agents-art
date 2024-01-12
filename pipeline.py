@@ -41,7 +41,7 @@ def main():
                                                                                                                     sample_first=SAMPLE_FIRST, use_only_3PL=USE_ONLY_3PL, squeeze_into_verbs=SQUEEZE_INTO_VERBS, concat_verb_features=CONCAT_VERB_FEATURES, set_common_features_to_zero=SET_COMMON_FEATURES_TO_ZERO)
     elif language=="estonian":
         if not os.path.exists(conjugation_df_path):
-            data.load_paralex_dataset()
+            data.load_paralex_dataset(language)
 
     if args.single_run_plotdata:
         # Plot data before running model

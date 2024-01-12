@@ -66,7 +66,15 @@ def load_romance_dataset():
     return conjugation_df
 
 def load_paralex_dataset(language):
+    file_path = paths[language]["file_path"]
     download_if_needed(paths[language], language)
+    paradigms_df = pd.read_csv(os.path.join(file_path, f"{language}_paradigms.csv"))
+    print(paradigms_df)
+    lexemes_df = pd.read_csv(os.path.join(file_path, f"{language}_lexemes.csv"))
+    print(lexemes_df)
+    paradigms_lexemes_merged = paradigms_df.merge(
+        right=lexemes_df, left_on="lexeme", right_on="lexeme_id")
+    print(paradigms_lexemes_merged)
 
 
 def filter_romance_empty_multicog(forms_df):
