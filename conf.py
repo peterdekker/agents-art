@@ -1,13 +1,29 @@
 import numpy as np
+import os
 
 ### Default for Argparse options
 LANGUAGE = "latin"
 ###
 
+currentdir = os.path.abspath("")
+DATA_PATH = os.path.join(currentdir, "data")
 
-LANGUAGE_ROMANCE_DATASET = "Italic_Latino-Faliscan_Latin"
+paths = {
+    "latin":
+    {"archive_url": "https://zenodo.org/records/4039059/files/v2.0.4.zip",
+     "archive_path": "Romance_Verbal_Inflection_Dataset-v2.0.4.zip",
+     "file_path": os.path.join(DATA_PATH, "Romance_Verbal_Inflection_Dataset-v2.0.4"),
+     "metadata_relative_path": "cldf/Wordlist-metadata.json",
+     "conjugation_df_path": 'latin_conjugation_df.csv'},
+     "estonian":
+    {"archive_url": "https://zenodo.org/records/8392744/files/v1.0.1.zip",
+     "conjugation_df_path": "estonian_conjugation_df.csv"},
+    "portuguese":
+    {"archive_url": "https://zenodo.org/records/8392722/files/v2.0.1.zip"},
+    "arabic":
+    {"archive_url": "https://zenodo.org/records/10100678/files/aravelex-1.0.zip"},
+}
 
-LATIN_CONJUGATION_DF_FILE = 'latin_conjugation_df.csv'
 
 SAMPLE_FIRST = None # 1000
 N_RUNS = 10

@@ -9,12 +9,9 @@ import shutil
 import pandas as pd
 # from bpe import Encoder
 
-from conf import INFLECTION_CLASSES
+from conf import INFLECTION_CLASSES, DATA_PATH, paths
 
 # np.random.seed(11)
-currentdir = os.path.abspath("")
-DATA_PATH = os.path.join(currentdir, "data")
-
 # ROMANCE_ARCHIVE_PATH = "Romance_Verbal_Inflection_Dataset-v2.0.4.tar.gz"
 # ROMANCE_ARCHIVE_URL = "https://zenodo.org/records/4039059/files/v2.0.4.zip"
 # # Directory after unpacking archive
@@ -28,19 +25,7 @@ DATA_PATH = os.path.join(currentdir, "data")
 # ARABIC_ARCHIVE_URL = "https://zenodo.org/records/10100678/files/aravelex-1.0.zip"
 
 
-paths = {
-    "latin":
-    {"archive_url": "https://zenodo.org/records/4039059/files/v2.0.4.zip",
-     "archive_path": "Romance_Verbal_Inflection_Dataset-v2.0.4.zip",
-     "file_path": os.path.join(DATA_PATH, "Romance_Verbal_Inflection_Dataset-v2.0.4"),
-     "metadata_relative_path": "cldf/Wordlist-metadata.json"},
-     "estonian":
-    {"archive_url": "https://zenodo.org/records/8392744/files/v1.0.1.zip"},
-    "portuguese":
-    {"archive_url": "https://zenodo.org/records/8392722/files/v2.0.1.zip"},
-    "arabic":
-    {"archive_url": "https://zenodo.org/records/10100678/files/aravelex-1.0.zip"},
-}
+
 ############ Methods Romance dataset ##########
 
 
@@ -70,9 +55,18 @@ def load_romance_dataset():
     dataset = Dataset.from_metadata(os.path.join(paths["latin"]["file_path"], paths["latin"]["metadata_relative_path"]))
     forms_df = pd.DataFrame(dataset["FormTable"])
     cognates_df = pd.DataFrame(dataset["CognatesetTable"])
-    lects_df = pd.DataFrame(dataset["LanguageTable"])
-    print("Loaded data.")
-    return forms_df, cognates_df, lects_df
+    # lects_df = pd.DataFrame(dataset["LanguageTable"])
+    
+    # Filter data
+    forms_df_1cognate = filter_romance_empty_multicog(forms_df)
+    # Filter on Latin inflection classes + merge forms and cognates table
+    conjugation_df = merge_filter_romance_inflections(
+        forms_df_1cognate, cognates_df)
+    
+    return conjugation_df
+
+def load_paralex_dataset(language):
+    download_if_needed(paths[language], language)
 
 
 def filter_romance_empty_multicog(forms_df):
@@ -85,7 +79,7 @@ def filter_romance_empty_multicog(forms_df):
     return forms_df_1cognate
 
 
-def filter_romance_inflections(forms_df_1cognate, cognates_df):
+def merge_filter_romance_inflections(forms_df_1cognate, cognates_df):
     # Filter and keep only entries that have Latin inflection class
     forms_df_merge = forms_df_1cognate.merge(
         right=cognates_df, left_on="Cognateset_ID_first", right_on="ID")
@@ -187,9 +181,8 @@ def create_onehot_forms(forms, empty_symbol=True):
 #     # and try to get max word lengths almost equal by setting parameters right: Set parameters right to get quite even word lengths: https://arxiv.org/abs/1508.07909
 
 
-def create_language_dataset(df, language, Ngrams=2, empty_symbol=True, language_column="Language_ID", form_column="Form", inflection_column="Latin_Conjugation", cogid_column="Cognateset_ID_first", sample_first=None, use_only_present=True, use_only_3PL=False, squeeze_into_verbs=True, concat_verb_features=True, set_common_features_to_zero=False):
-    df_language = df[df[language_column] ==
-                     language]
+def create_language_dataset(df_language, Ngrams, empty_symbol, form_column, inflection_column, cogid_column, sample_first=None, use_only_present=True, use_only_3PL=False, squeeze_into_verbs=True, concat_verb_features=True, set_common_features_to_zero=False):
+    
     if sample_first:
         df_language = df_language.head(sample_first)
 

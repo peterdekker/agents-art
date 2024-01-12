@@ -1,5 +1,5 @@
 
-from conf import OUTPUT_DIR, LANGUAGE, LANGUAGE_ROMANCE_DATASET, EMPTY_SYMBOL,  SAMPLE_FIRST, N_RUNS, LATIN_CONJUGATION_DF_FILE, CONCAT_VERB_FEATURES, USE_ONLY_3PL, CONFIG_STRING, SQUEEZE_INTO_VERBS, NGRAMS, SET_COMMON_FEATURES_TO_ZERO, VIGILANCE_RANGE
+from conf import OUTPUT_DIR, LANGUAGE, EMPTY_SYMBOL,  SAMPLE_FIRST, N_RUNS, CONCAT_VERB_FEATURES, USE_ONLY_3PL, CONFIG_STRING, SQUEEZE_INTO_VERBS, NGRAMS, SET_COMMON_FEATURES_TO_ZERO, VIGILANCE_RANGE, paths
 from model import art, majority_baseline, random_baseline, kmeans_cluster_baseline
 import pandas as pd
 import os
@@ -24,22 +24,25 @@ def main():
 
     os.makedirs(OUTPUT_DIR, exist_ok=True)
 
-    if not os.path.exists(LATIN_CONJUGATION_DF_FILE):
-        # Load data
-        forms_df, cognates_df, _ = data.load_romance_dataset()
-        # Filter data
-        forms_df_1cognate = data.filter_romance_empty_multicog(forms_df)
-        # Filter on Latin inflection classes
-        latin_conjugation_df = data.filter_romance_inflections(
-            forms_df_1cognate, cognates_df)
-        latin_conjugation_df.to_csv(LATIN_CONJUGATION_DF_FILE)
-        # First time script is run, we write and then immediately read from CSV file. This makes Cell column right Python object
+    conjugation_df_path = paths[language]["conjugation_df_path"]
+    if language=="latin":
+        if not os.path.exists(conjugation_df_path):
+            # Load data
+            conjugation_df = data.load_romance_dataset()
+            
+            latin_conjugation_df = conjugation_df[conjugation_df["Language_ID"] == "Italic_Latino-Faliscan_Latin"]
+            latin_conjugation_df.to_csv(conjugation_df_path)
+            # First time script is run, we write and then immediately read from CSV file. This makes Cell column right Python object
 
-    latin_conjugation_df = pd.read_csv(LATIN_CONJUGATION_DF_FILE, index_col=0)
+        df_language = pd.read_csv(conjugation_df_path, index_col=0)
+        # Create dataset only for Latin
+        
+        forms_onehot, _, forms, inflections, cogids, bigram_inventory = data.create_language_dataset(df_language, Ngrams=NGRAMS, empty_symbol=EMPTY_SYMBOL, form_column="Form", inflection_column="Latin_Conjugation", cogid_column="Cognateset_ID_first",
+                                                                                                                    sample_first=SAMPLE_FIRST, use_only_3PL=USE_ONLY_3PL, squeeze_into_verbs=SQUEEZE_INTO_VERBS, concat_verb_features=CONCAT_VERB_FEATURES, set_common_features_to_zero=SET_COMMON_FEATURES_TO_ZERO)
+    elif language=="estonian":
+        if not os.path.exists(conjugation_df_path):
+            data.load_paralex_dataset()
 
-    # Create dataset per LANGUAGE_ROMANCE_DATASET
-    forms_onehot, _, forms, inflections, cogids, bigram_inventory = data.create_language_dataset(latin_conjugation_df, LANGUAGE_ROMANCE_DATASET, Ngrams=NGRAMS, empty_symbol=EMPTY_SYMBOL, 
-                                                                                                                  sample_first=SAMPLE_FIRST, use_only_3PL=USE_ONLY_3PL, squeeze_into_verbs=SQUEEZE_INTO_VERBS, concat_verb_features=CONCAT_VERB_FEATURES, set_common_features_to_zero=SET_COMMON_FEATURES_TO_ZERO)
     if args.single_run_plotdata:
         # Plot data before running model
         df, pca = plot.fit_pca(forms_onehot)
