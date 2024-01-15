@@ -68,13 +68,14 @@ def load_romance_dataset():
 def load_paralex_dataset(language):
     file_path = paths[language]["file_path"]
     download_if_needed(paths[language], language)
-    paradigms_df = pd.read_csv(os.path.join(file_path, f"{language}_paradigms.csv"))
-    print(paradigms_df)
-    lexemes_df = pd.read_csv(os.path.join(file_path, f"{language}_lexemes.csv"))
-    print(lexemes_df)
+    paradigms_df = pd.read_csv(os.path.join(file_path, f"{language}_paradigms.csv"), low_memory=False)
+    lexemes_df = pd.read_csv(os.path.join(file_path, f"{language}_lexemes.csv"), low_memory=False)
     paradigms_lexemes_merged = paradigms_df.merge(
         right=lexemes_df, left_on="lexeme", right_on="lexeme_id")
-    print(paradigms_lexemes_merged)
+    
+    # Filter on only verbs (dataset also contains other POS)
+    df_verbs = paradigms_lexemes_merged[paradigms_lexemes_merged["POS"]=="verb"]
+    return df_verbs
 
 
 def filter_romance_empty_multicog(forms_df):
@@ -189,27 +190,46 @@ def create_onehot_forms(forms, empty_symbol=True):
 #     # and try to get max word lengths almost equal by setting parameters right: Set parameters right to get quite even word lengths: https://arxiv.org/abs/1508.07909
 
 
-def create_language_dataset(df_language, Ngrams, empty_symbol, form_column, inflection_column, cogid_column, sample_first=None, use_only_present=True, use_only_3PL=False, squeeze_into_verbs=True, concat_verb_features=True, set_common_features_to_zero=False):
+def create_language_dataset(df_language, language, Ngrams, empty_symbol, data_format, sample_first=None, use_only_present=True, use_only_3PL=False, squeeze_into_verbs=True, concat_verb_features=True, set_common_features_to_zero=False):
     
+    if data_format=="paralex":
+        form_column = "phon_form"
+        inflection_column = "inflection_class"
+        lexeme_column = "lexeme_id"
+        cell_column = "cell"
+        tag_present = "ind.prs"
+        tag_present_3pl = "ind.prs.3pl"
+    else: # data_format=="romance"
+        form_column = "Form"
+        inflection_column = "Latin_Conjugation"
+        lexeme_column = "Cognateset_ID_first"
+        cell_column = "Cell"
+        tag_present = "'PRS-IND'"
+        tag_present_3pl = "'PRS-IND', '3PL'"
+
     if sample_first:
         df_language = df_language.head(sample_first)
 
     if use_only_present:
         if use_only_3PL:
-            df_used=df_language[df_language['Cell'].str.contains(
-                "'PRS-IND', '3PL'")]
+            df_used=df_language[df_language[cell_column].str.contains(
+                tag_present_3pl)]
         else:
-            df_used=df_language[df_language['Cell'].str.contains("'PRS-IND'")]
-
-            df_used.to_csv('only_used_Latin_stuff.csv')
+            df_used=df_language[df_language[cell_column].str.contains(tag_present)]
+        df_used.to_csv(f'only_used_{language}_stuff.csv')
+    else:
+        df_used = df_language
     forms = df_used[form_column]
     inflections = df_used[inflection_column]
-    cogids = df_used[cogid_column]
-    person_tags=df_used.Cell.str[-5:-2]
+    lexemes = df_used[lexeme_column]
+    if data_format == "paralex":
+        person_tags=df_used[cell_column].str[-3:]
+    else: #romance
+        person_tags=df_used[cell_column].str[-5:-2]
     unique_person_tags=person_tags.unique()
     # array(['1SG', '2SG', '3SG', ..., '1PL', '2PL', '3PL']
     person_tags=person_tags.values
-    unique_verbs=cogids.unique()
+    unique_verbs=lexemes.unique()
 
     forms_encoded, bigram_inventory = create_onehot_forms_from_Ngrams(
         forms, Ngrams, empty_symbol, concat_verb_features)
@@ -230,7 +250,7 @@ def create_language_dataset(df_language, Ngrams, empty_symbol, form_column, infl
             for i in range(0, len(unique_verbs)):
 
                 pooled_forms_encoded_for_verb=[]
-                indices_for_verb =np.where(cogids == unique_verbs[i])[0]
+                indices_for_verb =np.where(lexemes == unique_verbs[i])[0]
                 # Save inflection for this pooled verb, from the first position
                 pooled_inflections.append(
                     inflections.values[indices_for_verb[0]])
@@ -274,7 +294,7 @@ def create_language_dataset(df_language, Ngrams, empty_symbol, form_column, infl
 
                 pooled_forms_encoded_for_verb=np.zeros(
                     (1, len(bigram_inventory)))
-                indices_for_verb =np.where(cogids == unique_verbs[i])[0]
+                indices_for_verb =np.where(lexemes == unique_verbs[i])[0]
                 # Save inflection for this pooled verb, from the first position
                 pooled_inflections.append(
                     inflections.values[indices_for_verb[0]])
@@ -303,7 +323,7 @@ def create_language_dataset(df_language, Ngrams, empty_symbol, form_column, infl
 
     inflections_onehot, inflection_inventory = create_onehot_inflections(
         inflections)
-    return forms_encoded, inflections_onehot, list(forms), list(inflections), list(cogids), bigram_inventory
+    return forms_encoded, inflections_onehot, list(forms), list(inflections), list(lexemes), bigram_inventory
 
 ############### Methods binarized word embedings dataset #########
 

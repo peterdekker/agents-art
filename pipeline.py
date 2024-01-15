@@ -29,19 +29,24 @@ def main():
         if not os.path.exists(conjugation_df_path):
             # Load data
             conjugation_df = data.load_romance_dataset()
-            
-            latin_conjugation_df = conjugation_df[conjugation_df["Language_ID"] == "Italic_Latino-Faliscan_Latin"]
-            latin_conjugation_df.to_csv(conjugation_df_path)
-            # First time script is run, we write and then immediately read from CSV file. This makes Cell column right Python object
-
-        df_language = pd.read_csv(conjugation_df_path, index_col=0)
-        # Create dataset only for Latin
-        
-        forms_onehot, _, forms, inflections, cogids, bigram_inventory = data.create_language_dataset(df_language, Ngrams=NGRAMS, empty_symbol=EMPTY_SYMBOL, form_column="Form", inflection_column="Latin_Conjugation", cogid_column="Cognateset_ID_first",
-                                                                                                                    sample_first=SAMPLE_FIRST, use_only_3PL=USE_ONLY_3PL, squeeze_into_verbs=SQUEEZE_INTO_VERBS, concat_verb_features=CONCAT_VERB_FEATURES, set_common_features_to_zero=SET_COMMON_FEATURES_TO_ZERO)
+            conjugation_df_lang = conjugation_df[conjugation_df["Language_ID"] == "Italic_Latino-Faliscan_Latin"]
+            conjugation_df_lang.to_csv(conjugation_df_path)
+        data_format = "romance"
+        use_only_present_lang = True # for Latin, inflection classes define only present
     elif language=="estonian":
         if not os.path.exists(conjugation_df_path):
-            data.load_paralex_dataset(language)
+            conjugation_df_lang = data.load_paralex_dataset(language)
+            print(conjugation_df_lang)
+            conjugation_df_lang.to_csv(conjugation_df_path)
+        data_format = "paralex"
+        use_only_present_lang = False # for Estonian, inflection classes define all forms
+    
+
+    # First time script is run for a language, we write and then immediately read from CSV file. This makes Cell column from list to string (Romance)     
+    df_language = pd.read_csv(conjugation_df_path, index_col=0, low_memory=False)
+    
+    forms_onehot, _, forms, inflections, cogids, bigram_inventory = data.create_language_dataset(df_language, language, Ngrams=NGRAMS, empty_symbol=EMPTY_SYMBOL, data_format=data_format,
+                                                                                                                sample_first=SAMPLE_FIRST, use_only_present=use_only_present_lang, use_only_3PL=USE_ONLY_3PL, squeeze_into_verbs=SQUEEZE_INTO_VERBS, concat_verb_features=CONCAT_VERB_FEATURES, set_common_features_to_zero=SET_COMMON_FEATURES_TO_ZERO)
 
     if args.single_run_plotdata:
         # Plot data before running model
