@@ -220,90 +220,70 @@ def create_language_dataset(df_language, language, data_format, use_only_present
         forms, Ngrams, tokenize_form_spaces)
 
     if squeeze_into_verbs:
+       
+        # Make new pooled bigram inventory with person tags
         if concat_verb_features:
-            # Make new pooled bigram inventory with person tags
             pooled_bigram_inventory = []
             for p in range(len(unique_person_tags)):
                 pooled_bigram_inventory = np.append(pooled_bigram_inventory, ([
-                    i + '_'+unique_person_tags[p] for i in bigram_inventory]), axis=0)
+                    "".join(i) + '_'+unique_person_tags[p] for i in bigram_inventory]), axis=0)
+            bigram_inventory=pooled_bigram_inventory
 
-            pooled_forms_encoded = np.empty(
-                (0, len(unique_person_tags)*forms_encoded.shape[1]))
-            pooled_inflections = []
-            # array(['1SG', '2SG', '3SG', '1PL', '2PL', '3PL'],
-            pool_order = unique_person_tags
-            for i in range(0, len(unique_verbs)):
+        pooled_forms_encoded = np.empty(
+            (0, len(unique_person_tags)*forms_encoded.shape[1]))
+        pooled_inflections = []
+        # array(['1SG', '2SG', '3SG', '1PL', '2PL', '3PL'],
+        pool_order = unique_person_tags
+        for i in range(0, len(unique_verbs)):
 
-                pooled_forms_encoded_for_verb = []
-                indices_for_verb = np.where(lexemes == unique_verbs[i])[0]
-                # Save inflection for this pooled verb, from the first position
-                pooled_inflections.append(
-                    inflections.values[indices_for_verb[0]])
-                # Not necessarily in the same order as wanted
-                person_tags_for_verb = person_tags[indices_for_verb]
-                for p in range(len(pool_order)):
+            if concat_verb_features:
+                pooled_forms_encoded_for_verb = [[]] #add dimention
+            else:
+                pooled_forms_encoded_for_verb = np.zeros((1, len(bigram_inventory)))
 
-                    if pool_order[p] in person_tags_for_verb:
-                        index = np.where(pool_order[p] == person_tags_for_verb)
-                        index_in_forms_encoded = indices_for_verb[index[0][0]]
+            indices_for_verb = np.where(lexemes == unique_verbs[i])[0]
+            # Save inflection for this pooled verb, from the first position
+            pooled_inflections.append(
+                inflections.values[indices_for_verb[0]])
+            # Not necessarily in the same order as wanted
+            person_tags_for_verb = person_tags[indices_for_verb]
+            for p in range(len(pool_order)):
+
+                if pool_order[p] in person_tags_for_verb:
+                    index = np.where(pool_order[p] == person_tags_for_verb)
+                    index_in_forms_encoded = indices_for_verb[index[0][0]]
+                    if concat_verb_features:
                         pooled_forms_encoded_for_verb = np.append(
-                            pooled_forms_encoded_for_verb, forms_encoded[index_in_forms_encoded], axis=0)
+                            pooled_forms_encoded_for_verb, forms_encoded[None,index_in_forms_encoded], axis=1)
                     else:
+                            pooled_forms_encoded_for_verb = pooled_forms_encoded_for_verb + \
+                            forms_encoded[index_in_forms_encoded]
+                else:
+                    if concat_verb_features:
                         pooled_forms_encoded_for_verb = np.append(
                             pooled_forms_encoded_for_verb, np.zeros((forms_encoded.shape[1])), axis=0)
 
-                if set_common_features_to_zero:
+            if set_common_features_to_zero:
+                if concat_verb_features:
                     temp = np.reshape(pooled_forms_encoded_for_verb,
-                                      (len(pool_order), forms_encoded.shape[1]))
+                                        (len(pool_order), forms_encoded.shape[1]))
                     S = sum(temp)
                     # If the same gram was activated in all person tenses, their sum here is 6
                     temp[:, S == 6] = 0
                     pooled_forms_encoded_for_verb = np.reshape(
                         temp, (len(pool_order)*forms_encoded.shape[1]))
-
-                pooled_forms_encoded = np.append(
-                    pooled_forms_encoded, pooled_forms_encoded_for_verb[None, :], axis=0)
-            inflections = pooled_inflections
-
-            forms_encoded = pooled_forms_encoded
-            bigram_inventory = pooled_bigram_inventory
-        # Squeeze all persons into a single bigram vector, without concatenating (One hot of existing bigrams over all person tenses)
-        else:
-            # Make new pooled bigram inventory with person tags
-
-            pooled_forms_encoded = np.empty((0, forms_encoded.shape[1]))
-            pooled_inflections = []
-            # array(['1SG', '2SG', '3SG', '1PL', '2PL', '3PL'],
-            pool_order = unique_person_tags
-            for i in range(0, len(unique_verbs)):
-
-                pooled_forms_encoded_for_verb = np.zeros(
-                    (1, len(bigram_inventory)))
-                indices_for_verb = np.where(lexemes == unique_verbs[i])[0]
-                # Save inflection for this pooled verb, from the first position
-                pooled_inflections.append(
-                    inflections.values[indices_for_verb[0]])
-                # Not necessarily in the same order as wanted
-                person_tags_for_verb = person_tags[indices_for_verb]
-                for p in range(len(pool_order)):
-
-                    if pool_order[p] in person_tags_for_verb:
-                        index = np.where(pool_order[p] == person_tags_for_verb)
-                        index_in_forms_encoded = indices_for_verb[index[0][0]]
-                        pooled_forms_encoded_for_verb = pooled_forms_encoded_for_verb + \
-                            forms_encoded[index_in_forms_encoded]
-
-                if set_common_features_to_zero:
-                    # If the same gram was activated in all person tenses, their sum here is 6
+                else:
                     pooled_forms_encoded_for_verb[pooled_forms_encoded_for_verb == 6] = 0
 
-                pooled_forms_encoded_for_verb = np.clip(
-                    pooled_forms_encoded_for_verb, 0, 1)
-                pooled_forms_encoded = np.append(
-                    pooled_forms_encoded, pooled_forms_encoded_for_verb, axis=0)
-            inflections = pooled_inflections
+            #keeps only one activated n-gram, even though it may occur in several forms:
+            pooled_forms_encoded_for_verb = np.clip(pooled_forms_encoded_for_verb, 0, 1) 
+            pooled_forms_encoded = np.append(
+                pooled_forms_encoded, pooled_forms_encoded_for_verb, axis=0)
+        inflections = pooled_inflections
 
-            forms_encoded = pooled_forms_encoded
+        forms_encoded = pooled_forms_encoded
+            
+        
 
     inflections_onehot, inflection_inventory = create_onehot_inflections(
         inflections)
