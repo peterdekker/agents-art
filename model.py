@@ -1,4 +1,4 @@
-from conf import ART_VIGILANCE, ART_LEARNING_RATE, INFLECTION_CLASSES, N_INFLECTION_CLASSES, OUTPUT_DIR, INITIAL_CLUSTERS, CONFIG_STRING, VIGILANCE_RANGE
+from conf import ART_VIGILANCE, ART_LEARNING_RATE, INFLECTION_CLASSES, N_INFLECTION_CLASSES, OUTPUT_DIR, INITIAL_CLUSTERS, CONFIG_STRING, VIGILANCE_RANGE, EVAL_INTERVAL
 import plot
 from art import ART1
 from sklearn import cluster
@@ -35,7 +35,7 @@ def kmeans_cluster_baseline(data_onehot, inflections_gold):
 # 
 # opt = cluster.OPTICS(metric="hamming")
 
-def art(data_onehot, forms, bigram_inventory, inflections_gold, cogids, pca, language, n_runs=1, vigilances=[ART_VIGILANCE], repeat_dataset=False, batch_size=None, shuffle_data=False, data_plot=False, show=False):
+def art(data_onehot, forms, bigram_inventory, inflections_gold, cogids, pca, language, n_runs=1, vigilances=[ART_VIGILANCE], repeat_dataset=False, batch_size=None, shuffle_data=False, data_plot=False, show=False, eval_intervals=False):
     if cogids is not None:
         cogids = np.array(cogids)
     records = []
@@ -50,7 +50,11 @@ def art(data_onehot, forms, bigram_inventory, inflections_gold, cogids, pca, lan
         if eval_vigilances:
             print(f"Vigilance: {vig}")
         
+        ari_per_interval_per_run=[]
         for r in range(n_runs):
+
+            
+
             artnet = ART1(
                 step=ART_LEARNING_RATE,
                 rho=vig,
@@ -65,8 +69,9 @@ def art(data_onehot, forms, bigram_inventory, inflections_gold, cogids, pca, lan
             if not batch_size:
                 batch_size = len_data
             n_batches = len_data//batch_size
-
-            for rep in range(5 if repeat_dataset else 1):
+            plottedIndices=[]
+            ari_per_interval=[]
+            for rep in range(2 if repeat_dataset else 1):
                 if shuffle_data:
                     # Makes taking batches sampling without replacement
                     shf = np.random.permutation(len(input_data))
@@ -79,13 +84,31 @@ def art(data_onehot, forms, bigram_inventory, inflections_gold, cogids, pca, lan
                     # do exactly the same as processing the whole dataset at once.
                     # Experiment with sampling with replacement.
                     batch = np.arange(b*batch_size, (b+1)*batch_size)
-                    clusters_art_batch, prototypes = artnet.train(input_data[batch], F[batch])
+                    clusters_art_batch, prototypes, incrementalClasses, incrementalIndices  = artnet.train(input_data[batch], F[batch], EVAL_INTERVAL)
+                    
                     N_found_clusters=len(prototypes)
                     clusters_gold_batch = clusters_gold[batch]
                     # print(clusters_art_batch)
                     ri_batch, ari_batch, nmi_batch, ami_batch, min_cluster_size_batch, max_cluster_size_batch = eval_results(
                         clusters_art_batch, clusters_gold_batch)
-                        
+                    
+                    
+                    if eval_intervals:
+                        if rep==0:
+                            
+                            N_evals=len(incrementalClasses)
+                            
+                            for i in range(0,N_evals):
+                                Nsamples=len(incrementalClasses[i])
+                                ri_batch, ari_batch, nmi_batch, ami_batch, min_cluster_size_batch, max_cluster_size_batch = eval_results(
+                                    incrementalClasses[i], clusters_gold_batch[0:Nsamples])
+                                ari_per_interval.append(ari_batch)
+                                plottedIndices.append(incrementalIndices[i])
+                        else:
+                            ari_per_interval.append(ari_batch)
+                            plottedIndices.append(incrementalIndices[-1]+plottedIndices[-1])
+
+                    
 
                     histo=np.histogram(clusters_art_batch, bins=list(np.arange(0,N_found_clusters+1)))[0]
                     order=np.flip(np.argsort(histo))
@@ -131,12 +154,16 @@ def art(data_onehot, forms, bigram_inventory, inflections_gold, cogids, pca, lan
                     records.append(
                     {"vigilance": vig, "run": r, "batch": rep*n_batches+b,
                      "ri": ri_batch, "ari": ari_batch, "nmi": nmi_batch, "ami": ami_batch,
+                     "ari_per_interval": ari_per_interval,
+                     "ari_per_interval_indices" :  plottedIndices,
                      "cluster_population": cluster_population,
                      "category_bigrams": category_bigrams,
                      "prototypes": prototypes,
                      "cluster_inflection_stats":cluster_inflection_stats,
                      "cluster_inflection_stats_percent":cluster_inflection_stats_percent,
                      "min_cluster_size": min_cluster_size_batch, "max_cluster_size": max_cluster_size_batch})
+
+            ari_per_interval_per_run.append(ari_per_interval)
 
 
 
@@ -159,7 +186,11 @@ def art(data_onehot, forms, bigram_inventory, inflections_gold, cogids, pca, lan
                         file_label=f"pca-art-vig{vig}-run{r}-{language}_protos_{CONFIG_STRING}", show=show)
                 plot.plot_barchart(cluster_inflection_stats, category_bigrams, always_activated_bigrams,
                         file_label=f"pca-art-vig{vig}-run{r}-{language}_protos_{CONFIG_STRING}", show=show)
-                
+
+
+        if eval_intervals:
+            plot.plot_intervals(ari_per_interval_per_run,plottedIndices,
+                file_label=f"pca-art-vig{vig}-run{r}-{language}_protos_{CONFIG_STRING}", show=show)         
             
     df_results = pd.DataFrame(records)
     df_results.to_csv(os.path.join(OUTPUT_DIR, f"histogram_per_vigilance-{language}_{CONFIG_STRING}_out.csv"))
@@ -212,7 +243,7 @@ def art(data_onehot, forms, bigram_inventory, inflections_gold, cogids, pca, lan
         plt.clf()
         df_results.to_csv(
             "clusters-scores-art-end.tex", sep="&", lineterminator="\\\\\n")
-
+    
 
 def eval_results(results, inflections_gold):
     # Calculate scores

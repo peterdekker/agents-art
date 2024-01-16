@@ -4,6 +4,7 @@ import seaborn as sns
 import matplotlib.pyplot as plt
 import pandas as pd
 import numpy as np
+import matplotlib
 from matplotlib.lines import Line2D
 from sklearn.metrics import silhouette_score
 from sklearn.preprocessing import StandardScaler
@@ -11,7 +12,7 @@ import prince
 
 import os
 
-from conf import LABEL_DENSITY, INFLECTION_CLASSES, FILLED_MARKERS, OUTPUT_DIR
+from conf import LABEL_DENSITY, INFLECTION_CLASSES, FILLED_MARKERS, OUTPUT_DIR, EVAL_INTERVAL
 
 plt.rcParams['figure.figsize'] = [10, 6]
 plt.rcParams['figure.dpi'] = 200
@@ -44,12 +45,31 @@ def plot_data(df, clusters, labels=None, micro_clusters=None, sample_points = No
     #score = silhouette_score(X=data_bin, labels=clusters, metric="hamming")
     # return score
 
+def plot_intervals(ari_intervals, incrementalIndices, file_label=None, show=True):
+    matplotlib.rcParams.update({'font.size': 22})
+    fig, ax = plt.subplots()
+    stackedResults=np.array(ari_intervals)
+    # cols=list(map(str, incrementalIndices))
+    df = pd.DataFrame(data=stackedResults, columns=incrementalIndices)
+    df = df.melt(var_name="Number of input paradigms", value_name="ARI")
+
+    sns.lineplot(data=df,x="Number of input paradigms", y="ARI")
+    ax.axvline(x=229, linewidth=2, color='orange', ls=':')
+    if file_label:
+        plt.savefig(os.path.join(OUTPUT_DIR,f"data-{file_label}.pdf"))
+    if show:
+        plt.show()
+
 def plot_barchart(cluster_inflection_stats, category_bigrams, always_activated_bigrams,
                         file_label=None, show=False):
     sums=np.sum(cluster_inflection_stats,axis=1)
     order=np.argsort(-sums) #Get indeces from largest cluster to smallest (minus reverses default ascending sorting order)
     orderedStats=cluster_inflection_stats[order]
+    matplotlib.rcParams.update({'font.size': 22})
     fig, ax = plt.subplots()
+    
+    
+    
     bottom = np.zeros(orderedStats.shape[0])
     xCoords=list(range(0,orderedStats.shape[0]))
 
@@ -58,21 +78,24 @@ def plot_barchart(cluster_inflection_stats, category_bigrams, always_activated_b
         p = ax.bar(xCoords, members, 0.4, bottom=bottom, label=INFLECTION_CLASSES[i],alpha=0.5)
         bottom += members
     ax.legend()
-
-    for bar in range(orderedStats.shape[0]):
-        for bigram in range(len(category_bigrams[bar])):
-            if category_bigrams[bar][bigram] in always_activated_bigrams:
-                #Is not unique feature
-                plt.text(bar-0.15, bigram*3+5, category_bigrams[bar][bigram], fontsize=7)
-            else:
-                #Is unique feature
-                plt.text(bar-0.15, bigram*3+5, category_bigrams[bar][bigram], fontsize=9, weight='bold')
+    ax.set_xticks([])
+    
+    # for bar in range(orderedStats.shape[0]):
+    #     for bigram in range(len(category_bigrams[bar])):
+    #         if category_bigrams[bar][bigram] in always_activated_bigrams:
+    #             #Is not unique feature
+    #             plt.text(bar-0.30, bigram*6+5, category_bigrams[bar][bigram], fontsize=20)
+    #         else:
+    #             #Is unique feature
+    #             plt.text(bar-0.30, bigram*6+5, category_bigrams[bar][bigram], fontsize=20, weight='bold')
     
     # category_bigrams
+    # plt.figure(figsize=(10,6))
     if show:
         plt.show()
+        
     if file_label:
-        plt.savefig(os.path.join(OUTPUT_DIR,f"barchart-{file_label}.pdf"))
+        plt.savefig(os.path.join(OUTPUT_DIR,f"barchart-{file_label}.pdf"),bbox_inches='tight')
 
 def plot_heikki(df, clusters, labels=None, micro_clusters = None, file_label=None, sample_points=None, prototypes=None, show=False):
     # assert len(clusters) == data_bin.shape[0]

@@ -631,12 +631,15 @@ class ART1(BaseNetwork):
     rho = ProperFractionProperty(default=0.5)
     n_clusters = IntProperty(default=1, minval=1)
 
-    def train(self, X, forms):
+    def train(self, X, forms, save_interval):
         X = format_data(X)
 
         if X.ndim != 2:
             raise ValueError("Input value must be 2 dimensional, got "
                              "{}".format(X.ndim))
+
+        incrementalClasses=[]
+        incrementalIndices=[]
 
         n_samples, n_features = X.shape
         n_clusters = self.n_clusters
@@ -725,13 +728,17 @@ class ART1(BaseNetwork):
                     if np.isnan(winner_index):
                         print('MSMSMS')
                     classes[i] = winner_index
+            print(i)
+            if ((i+1) % save_interval)==0 or i==len(X):
+                incrementalClasses.append(np.copy(classes[0:i]))
+                incrementalIndices.append(i+1)
 
         self.weight_12=weight_12
         self.weight_21=weight_21
         self.n_clusters=n_clusters
 
         prototypes = weight_21.T ## TODO: this is not correct, prototypes should contain winning weights_21 for all data points
-        return classes, prototypes
+        return classes, prototypes, incrementalClasses, incrementalIndices
 
     def predict(self, X):
         return self.train(X)

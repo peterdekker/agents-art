@@ -8,7 +8,7 @@ import argparse
 import os
 import pandas as pd
 from model import art, majority_baseline, random_baseline, agg_cluster_baseline, kmeans_cluster_baseline
-from conf import OUTPUT_DIR, LANGUAGE, EMPTY_SYMBOL, BYTEPAIR_ENCODING, SAMPLE_FIRST, N_RUNS, LATIN_CONJUGATION_DF_FILE, CONCAT_VERB_FEATURES, USE_ONLY_3PL, CONFIG_STRING, SQUEEZE_INTO_VERBS, NGRAMS, SET_COMMON_FEATURES_TO_ZERO, VIGILANCE_RANGE
+from conf import OUTPUT_DIR, LANGUAGE, EMPTY_SYMBOL, BYTEPAIR_ENCODING, SAMPLE_FIRST, N_RUNS, LATIN_CONJUGATION_DF_FILE, CONCAT_VERB_FEATURES, USE_ONLY_3PL, CONFIG_STRING, SQUEEZE_INTO_VERBS, NGRAMS, SET_COMMON_FEATURES_TO_ZERO, VIGILANCE_RANGE, EVAL_INTERVAL
 
 
 def main():
@@ -16,6 +16,7 @@ def main():
     parser.add_argument('--single_run_plotdata', action='store_true')
     parser.add_argument('--eval_batches', action='store_true')
     parser.add_argument('--eval_vigilances', action='store_true')
+    parser.add_argument('--eval_intervals', action='store_true')
     parser.add_argument('--baseline', action='store_true')
     args = parser.parse_args()
 
@@ -44,6 +45,7 @@ def main():
                                 micro_clusters=None, file_label=f"pca-art-data_bigram_hamming_original_MCA_-{LANGUAGE}_{CONFIG_STRING}", show=False)  
         # print(f"Full data shuffle, {N_RUNS} runs")
         art(forms_onehot, forms, bigram_inventory,inflections, cogids, pca,LANGUAGE, n_runs=1, shuffle_data=True, repeat_dataset=True, data_plot=True)
+        
     
     if args.eval_batches:
         print(f"Full data shuffle, {N_RUNS} runs:")
@@ -54,6 +56,10 @@ def main():
         art(forms_onehot, forms, bigram_inventory, inflections, cogids, None, LANGUAGE, batch_size=10, n_runs=N_RUNS, shuffle_data=True)
         print(f"batch 50 shuffle, {N_RUNS} runs:")
         art(forms_onehot, forms, bigram_inventory, inflections, cogids, None, LANGUAGE, batch_size=50, n_runs=N_RUNS, shuffle_data=True)
+
+    if args.eval_intervals:
+        print(f"Full data shuffle, {N_RUNS} runs:")
+        art(forms_onehot, forms, bigram_inventory, inflections, cogids, None, LANGUAGE, n_runs=N_RUNS, shuffle_data=True, repeat_dataset=True, eval_intervals=True)
 
     if args.eval_vigilances:
         art(forms_onehot, forms, bigram_inventory, inflections, cogids, None, LANGUAGE, n_runs=N_RUNS, shuffle_data=True, repeat_dataset=True, vigilances = VIGILANCE_RANGE)
