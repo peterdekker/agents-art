@@ -20,10 +20,16 @@ paths = {
      "archive_path": "estonian-v.1.0.1.zip",
      "file_path": os.path.join(DATA_PATH, "estonian-v.1.0.1"),
      "conjugation_df_path": "estonian_conjugation_df.csv"},
-    # "portuguese":
-    # {"archive_url": "https://zenodo.org/records/8392722/files/v2.0.1.zip"},
-    # "arabic":
-    # {"archive_url": "https://zenodo.org/records/10100678/files/aravelex-1.0.zip"},
+    "portuguese":
+    {"archive_url": "https://zenodo.org/records/8392722/files/v2.0.1.zip",
+     "archive_path": "portuguese-v.2.0.1.zip",
+     "file_path": os.path.join(DATA_PATH, "portuguese-v.2.0.1"),
+     "conjugation_df_path": "portuguese_conjugation_df.csv"},
+    "arabic":
+    {"archive_url": "https://zenodo.org/records/10100678/files/aravelex-1.0.zip",
+     "archive_path": "arabic-v.1.0.zip",
+     "file_path": os.path.join(DATA_PATH, "arabic-v.1.0"),
+     "conjugation_df_path": "arabic_conjugation_df.csv"},
 }
 
 
