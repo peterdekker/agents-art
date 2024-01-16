@@ -8,7 +8,7 @@ import matplotlib
 from matplotlib.lines import Line2D
 from sklearn.metrics import silhouette_score
 from sklearn.preprocessing import StandardScaler
-import prince
+# import prince
 
 import os
 

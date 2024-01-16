@@ -1,13 +1,13 @@
 numpy
 scikit-learn
 scipy
-seaborn
-pandas
+seaborn>0.12.2
+pandas>=1.5
 #minisom
 pycldf
 requests
-prince
-bpe
+# prince
+# bpe
 six
 # For Jupyter notebook
 jupyter

@@ -4,7 +4,7 @@ from neupy.core.properties import (ProperFractionProperty,
 from neupy.algorithms import ART1
 
 
-class IncrementalArt(ART1):
+class Art(ART1):
     rho = ProperFractionProperty(default=0.5)
     n_clusters = IntProperty(default=2, minval=2)
 
@@ -58,7 +58,7 @@ class IncrementalArt(ART1):
                 expectation = np.dot(weight_21, output2) # expectation = critical feature pattern V (Grossberg 2020, p. 8)
                 output1 = np.logical_and(p, expectation).astype(int) # Put 1 on position if in both arrays (original data and expectation) there is a 1 at that position
 
-                reset_value = np.dot(output1.T, output1) / np.dot(p.T, p) 
+                reset_value = np.dot(output1.T, output1) / np.dot(p.T, p) # Category with higher activation (input2, winner_index), because it is via weight_12 scaled by norm, can still have a worse reset_value (less matching 1s with input)
                 reset = reset_value < rho
 
                 if reset:
@@ -75,7 +75,7 @@ class IncrementalArt(ART1):
                         weight_12[winner_index, :] = (step * output1) / (
                             step + np.dot(output1.T, output1) - 1
                         )
-                        weight_21[:, winner_index] = output1 # Set that combined array (line 59) as new weights
+                        weight_21[:, winner_index] = output1 # Set intersection as new weights. So the more datapoints, the more features get thrown away. Only intersection of all datapoints in class is kept.
                     else:
                         # Get result with the best `rho`
                         winner_index = max(reseted_values)[1]

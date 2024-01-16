@@ -1,4 +1,7 @@
+.ipynb_checkpoints/
+data/
 *.pdf
+*.txt
 *.tex
 *.vec
 __pycache__
