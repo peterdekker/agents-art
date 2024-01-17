@@ -42,7 +42,7 @@ def main():
     df_language = pd.read_csv(
         conjugation_df_path, index_col=0, low_memory=False)
 
-    forms_onehot, _, forms, inflections, cogids, bigram_inventory = data.create_language_dataset(df_language, language, data_format=data_format, use_only_present=use_only_present_lang, Ngrams=NGRAMS, empty_symbol=EMPTY_SYMBOL,
+    forms_onehot, forms, inflections, cogids, bigram_inventory = data.create_language_dataset(df_language, language, data_format=data_format, use_only_present=use_only_present_lang, Ngrams=NGRAMS, empty_symbol=EMPTY_SYMBOL,
                                                                                                  sample_first=SAMPLE_FIRST,  use_only_3PL=USE_ONLY_3PL, squeeze_into_verbs=SQUEEZE_INTO_VERBS, concat_verb_features=CONCAT_VERB_FEATURES, set_common_features_to_zero=SET_COMMON_FEATURES_TO_ZERO)
 
     if args.single_run_plotdata:
@@ -94,12 +94,10 @@ def main():
         kmeans_cluster_baseline(forms_onehot, inflections)
 
         print("Comparison to inflection classes:")
-        language_df = latin_conjugation_df[latin_conjugation_df["Language_ID"]
-                                           == LANGUAGE_ROMANCE_DATASET]
         print("Token count:")
-        print(language_df["Latin_Conjugation"].value_counts(normalize=True))
+        print(df_language["Latin_Conjugation"].value_counts(normalize=True))
         # print("Type count")
-        # print(language_df.drop_duplicates(subset="Cognateset_ID_first")["Latin_Conjugation"].value_counts(normalize=True))
+        # print(df_language.drop_duplicates(subset="Cognateset_ID_first")["Latin_Conjugation"].value_counts(normalize=True))
 
     # if iterated_run:
     #   forms_inflections_onehot = np.concatenate((forms_onehot, inflections_onehot), axis=1)
