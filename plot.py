@@ -1,18 +1,18 @@
-from sklearn.manifold import TSNE
+# from sklearn.manifold import TSNE
 from sklearn.decomposition import PCA
 import seaborn as sns
 import matplotlib.pyplot as plt
 import pandas as pd
 import numpy as np
 import matplotlib
-from matplotlib.lines import Line2D
-from sklearn.metrics import silhouette_score
-from sklearn.preprocessing import StandardScaler
+# from matplotlib.lines import Line2D
+# from sklearn.metrics import silhouette_score
+# from sklearn.preprocessing import StandardScaler
 # import prince
 
 import os
 
-from conf import LABEL_DENSITY, INFLECTION_CLASSES, FILLED_MARKERS, OUTPUT_DIR, EVAL_INTERVAL
+from conf import LABEL_DENSITY, FILLED_MARKERS, OUTPUT_DIR
 
 plt.rcParams['figure.figsize'] = [10, 6]
 plt.rcParams['figure.dpi'] = 200
@@ -60,7 +60,7 @@ def plot_intervals(ari_intervals, incrementalIndices, file_label=None, show=True
     if show:
         plt.show()
 
-def plot_barchart(cluster_inflection_stats, category_bigrams, always_activated_bigrams,
+def plot_barchart(cluster_inflection_stats, inflection_classes, #category_bigrams, always_activated_bigrams,
                         file_label=None, show=False):
     sums=np.sum(cluster_inflection_stats,axis=1)
     order=np.argsort(-sums) #Get indeces from largest cluster to smallest (minus reverses default ascending sorting order)
@@ -73,9 +73,9 @@ def plot_barchart(cluster_inflection_stats, category_bigrams, always_activated_b
     bottom = np.zeros(orderedStats.shape[0])
     xCoords=list(range(0,orderedStats.shape[0]))
 
-    for i in range(len(INFLECTION_CLASSES)):
+    for i in range(len(inflection_classes)):
         members=orderedStats[:,i]
-        p = ax.bar(xCoords, members, 0.4, bottom=bottom, label=INFLECTION_CLASSES[i],alpha=0.5)
+        p = ax.bar(xCoords, members, 0.4, bottom=bottom, label=inflection_classes[i],alpha=0.5)
         bottom += members
     ax.legend()
     ax.set_xticks([])

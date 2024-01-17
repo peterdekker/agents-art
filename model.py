@@ -1,4 +1,4 @@
-from conf import ART_VIGILANCE, ART_LEARNING_RATE, INFLECTION_CLASSES, N_INFLECTION_CLASSES, OUTPUT_DIR, INITIAL_CLUSTERS, CONFIG_STRING, VIGILANCE_RANGE, EVAL_INTERVAL
+from conf import ART_VIGILANCE, ART_LEARNING_RATE, OUTPUT_DIR, INITIAL_CLUSTERS, CONFIG_STRING, VIGILANCE_RANGE, EVAL_INTERVAL
 import plot
 from art import ART1
 from sklearn import cluster
@@ -11,46 +11,62 @@ import os
 
 import numpy as np
 
-def random_baseline(inflections_gold):
-    base = np.random.choice(range(0,N_INFLECTION_CLASSES),len(inflections_gold))
-    rand, adj_rand, norm_mutual_info, adj_mutual_info, min_cluster_size, max_cluster_size = eval_results(base, inflections_gold)
-    print(f" - Random baseline. RI: {rand}. ARI: {adj_rand} NMI: {norm_mutual_info}. AMI: {adj_mutual_info}")
+
+def random_baseline(inflections_gold, n_inflection_classes):
+    base = np.random.choice(
+        range(0, n_inflection_classes), len(inflections_gold))
+    rand, adj_rand, norm_mutual_info, adj_mutual_info, min_cluster_size, max_cluster_size = eval_results(
+        base, inflections_gold)
+    print(
+        f" - Random baseline. RI: {rand}. ARI: {adj_rand} NMI: {norm_mutual_info}. AMI: {adj_mutual_info}")
+
 
 def majority_baseline(inflections_gold):
     base = np.zeros(len(inflections_gold))
-    rand, adj_rand, norm_mutual_info, adj_mutual_info, min_cluster_size, max_cluster_size = eval_results(base, inflections_gold)
-    print(f" - Random baseline. RI: {rand}. ARI: {adj_rand} NMI: {norm_mutual_info}. AMI: {adj_mutual_info}")
+    rand, adj_rand, norm_mutual_info, adj_mutual_info, min_cluster_size, max_cluster_size = eval_results(
+        base, inflections_gold)
+    print(
+        f" - Random baseline. RI: {rand}. ARI: {adj_rand} NMI: {norm_mutual_info}. AMI: {adj_mutual_info}")
 
-def agg_cluster_baseline(data_onehot, inflections_gold):
-    agg_labels = cluster.AgglomerativeClustering(n_clusters=N_INFLECTION_CLASSES, affinity="manhattan", linkage="average").fit_predict(data_onehot)
-    rand, adj_rand, norm_mutual_info, adj_mutual_info, min_cluster_size, max_cluster_size = eval_results(agg_labels, inflections_gold)
-    print(f" - Agg clustering baseline. RI: {rand}. ARI: {adj_rand} NMI: {norm_mutual_info}. AMI: {adj_mutual_info}")
 
-def kmeans_cluster_baseline(data_onehot, inflections_gold):
-    kmeans_labels = cluster.KMeans(n_clusters=N_INFLECTION_CLASSES).fit_predict(data_onehot)
+def agg_cluster_baseline(data_onehot, inflections_gold, n_inflection_classes):
+    agg_labels = cluster.AgglomerativeClustering(
+        n_clusters=n_inflection_classes, affinity="manhattan", linkage="average").fit_predict(data_onehot)
+    rand, adj_rand, norm_mutual_info, adj_mutual_info, min_cluster_size, max_cluster_size = eval_results(
+        agg_labels, inflections_gold)
+    print(
+        f" - Agg clustering baseline. RI: {rand}. ARI: {adj_rand} NMI: {norm_mutual_info}. AMI: {adj_mutual_info}")
+
+
+def kmeans_cluster_baseline(data_onehot, inflections_gold, n_inflection_classes):
+    kmeans_labels = cluster.KMeans(
+        n_clusters=n_inflection_classes).fit_predict(data_onehot)
     # print(cluster.KMeans.cluster_centers_)
-    rand, adj_rand, norm_mutual_info, adj_mutual_info, min_cluster_size, max_cluster_size = eval_results(kmeans_labels, inflections_gold)
-    print(f" - Kmeans clustering baseline. RI: {rand}. ARI: {adj_rand} NMI: {norm_mutual_info}. AMI: {adj_mutual_info}")
+    rand, adj_rand, norm_mutual_info, adj_mutual_info, min_cluster_size, max_cluster_size = eval_results(
+        kmeans_labels, inflections_gold)
+    print(
+        f" - Kmeans clustering baseline. RI: {rand}. ARI: {adj_rand} NMI: {norm_mutual_info}. AMI: {adj_mutual_info}")
 
-# 
+#
 # opt = cluster.OPTICS(metric="hamming")
 
-def art(data_onehot, forms, bigram_inventory, inflections_gold, cogids, pca, language, n_runs=1, vigilances=[ART_VIGILANCE], repeat_dataset=False, batch_size=None, shuffle_data=False, data_plot=False, show=False, eval_intervals=False):
+
+def art(data_onehot, forms, bigram_inventory, inflections_gold, inflection_classes, cogids, pca, language, n_runs=1, vigilances=[ART_VIGILANCE], repeat_dataset=False, batch_size=None, shuffle_data=False, data_plot=False, show=False, eval_intervals=False):
     if cogids is not None:
         cogids = np.array(cogids)
     records = []
     eval_vigilances = False
-    ################# Make evaluation random, to test if model is doing something
-    #np.random.shuffle(inflections_gold)
+    # Make evaluation random, to test if model is doing something
+    # np.random.shuffle(inflections_gold)
     #################
     if len(vigilances) > 1:
         eval_vigilances = True
-    
+
     for vig in vigilances:
         if eval_vigilances:
             print(f"Vigilance: {vig}")
-        
-        ari_per_interval_per_run=[]
+
+        ari_per_interval_per_run = []
         for r in range(n_runs):
             artnet = ART1(
                 step=ART_LEARNING_RATE,
@@ -59,151 +75,161 @@ def art(data_onehot, forms, bigram_inventory, inflections_gold, cogids, pca, lan
             )
             # Make copy of data, because we will possibly shuffle
             input_data = data_onehot.copy()
-            clusters_gold = np.array(inflections_gold) #this is also copy
+            clusters_gold = np.array(inflections_gold)  # this is also copy
 
             # If batching off, use full dataset
             len_data = len(input_data)
             if not batch_size:
                 batch_size = len_data
             n_batches = len_data//batch_size
-            plottedIndices=[]
-            ari_per_interval=[]
+            plottedIndices = []
+            ari_per_interval = []
             for rep in range(2 if repeat_dataset else 1):
                 if shuffle_data:
                     # Makes taking batches sampling without replacement
                     shf = np.random.permutation(len(input_data))
                     input_data = input_data[shf]
-                    F=np.array(forms)
-                    F=F[shf]
+                    F = np.array(forms)
+                    F = F[shf]
                     clusters_gold = clusters_gold[shf]
                 for b in range(n_batches):
                     # TODO: batches right now (without replacement)
                     # do exactly the same as processing the whole dataset at once.
                     # Experiment with sampling with replacement.
                     batch = np.arange(b*batch_size, (b+1)*batch_size)
-                    clusters_art_batch, prototypes, incrementalClasses, incrementalIndices  = artnet.train(input_data[batch], F[batch], EVAL_INTERVAL)
-                    
-                    N_found_clusters=len(prototypes)
+                    clusters_art_batch, prototypes, incrementalClasses, incrementalIndices = artnet.train(
+                        input_data[batch], F[batch], EVAL_INTERVAL)
+
+                    N_found_clusters = len(prototypes)
                     clusters_gold_batch = clusters_gold[batch]
                     # print(clusters_art_batch)
                     ri_batch, ari_batch, nmi_batch, ami_batch, min_cluster_size_batch, max_cluster_size_batch = eval_results(
                         clusters_art_batch, clusters_gold_batch)
-                    
-                    
+
                     if eval_intervals:
-                        if rep==0:
-                            
-                            N_evals=len(incrementalClasses)
-                            
-                            for i in range(0,N_evals):
-                                Nsamples=len(incrementalClasses[i])
+                        if rep == 0:
+
+                            N_evals = len(incrementalClasses)
+
+                            for i in range(0, N_evals):
+                                Nsamples = len(incrementalClasses[i])
                                 ri_batch, ari_batch, nmi_batch, ami_batch, min_cluster_size_batch, max_cluster_size_batch = eval_results(
                                     incrementalClasses[i], clusters_gold_batch[0:Nsamples])
                                 ari_per_interval.append(ari_batch)
                                 plottedIndices.append(incrementalIndices[i])
                         else:
                             ari_per_interval.append(ari_batch)
-                            plottedIndices.append(incrementalIndices[-1]+plottedIndices[-1])
+                            plottedIndices.append(
+                                incrementalIndices[-1]+plottedIndices[-1])
 
-                    
+                    histo = np.histogram(clusters_art_batch, bins=list(
+                        np.arange(0, N_found_clusters+1)))[0]
+                    order = np.flip(np.argsort(histo))
+                    cluster_population = histo[order]
+                    prototypes = prototypes[order, :]
+                    S = np.sum(prototypes, axis=0)
+                    bigram_inventory = np.array(bigram_inventory)
+                    always_activated_features = np.argwhere(
+                        S == N_found_clusters)
+                    # always_activated_bigrams=bigram_inventory[always_activated_features]
 
-                    histo=np.histogram(clusters_art_batch, bins=list(np.arange(0,N_found_clusters+1)))[0]
-                    order=np.flip(np.argsort(histo))
-                    cluster_population=histo[order]
-                    prototypes=prototypes[order,:]
-                    S=np.sum(prototypes,axis=0)
-                    bigram_inventory=np.array(bigram_inventory)
-                    always_activated_features=np.argwhere(S==N_found_clusters)
-                    always_activated_bigrams=bigram_inventory[always_activated_features]
-  
-                    category_bigrams=[]
-                    for p in range(0,N_found_clusters):
-                        ones=np.nonzero(prototypes[p,:])[0]
-                        ones=list(ones)
-                        cluster_bigrams=[]
+                    category_bigrams = []
+                    for p in range(0, N_found_clusters):
+                        ones = np.nonzero(prototypes[p, :])[0]
+                        ones = list(ones)
+                        cluster_bigrams = []
                         for i in ones:
                             if i in always_activated_features:
-                                cluster_bigrams.insert(0,bigram_inventory[i]) # If always activated feature, add in position 0 -> clearer for barplot
+                                # If always activated feature, add in position 0 -> clearer for barplot
+                                cluster_bigrams.insert(0, bigram_inventory[i])
                             else:
                                 cluster_bigrams.append(bigram_inventory[i])
                         category_bigrams.append(cluster_bigrams)
 
-                    clusters_gold_int=[]
-                    ORDER=np.array(INFLECTION_CLASSES)
-                    for i in range(0,len(clusters_gold_batch)):
-                        clusters_gold_int.append(np.where(ORDER==clusters_gold_batch[i])[0][0])
+                    clusters_gold_int = []
+                    ORDER = np.array(inflection_classes)
+                    for i in range(0, len(clusters_gold_batch)):
+                        clusters_gold_int.append(
+                            np.where(ORDER == clusters_gold_batch[i])[0][0])
                     # Number of clusters (rows) that are not unused (unused=all 1s)
-                    n_used_clusters = np.sum(1-np.all(prototypes,axis=1))
+                    n_used_clusters = np.sum(1-np.all(prototypes, axis=1))
 
                     # This counts how many of each gold-standard words per each inflection class is clustered in each of the clusters coming from ART
                     # Eg. 0th row being [2,3,0,4,6] would mean that cluster 0 (coming out from ART) includes 2 words from inflection class 'I', 3 words from 'II', and so on
-                    cluster_inflection_stats=np.zeros((n_used_clusters,N_INFLECTION_CLASSES))
-                    for i in range(0,len(clusters_gold_int)):
-                        cluster_inflection_stats[int(clusters_art_batch[i]),clusters_gold_int[i]]+=1
+                    cluster_inflection_stats = np.zeros(
+                        (n_used_clusters, len(inflection_classes)))
+                    for i in range(0, len(clusters_gold_int)):
+                        cluster_inflection_stats[int(
+                            clusters_art_batch[i]), clusters_gold_int[i]] += 1
                     row_sums = cluster_inflection_stats.sum(axis=1)
-                    
-                    #With multiple batches/repeats, it's possible that on the next batch, no input samples are set into a category created on a previous batch. In this case the new category will be empty.
-                    #This is done to avoid division by zero.
-                    row_sums[np.where(row_sums==0)]=1
+
+                    # With multiple batches/repeats, it's possible that on the next batch, no input samples are set into a category created on a previous batch. In this case the new category will be empty.
+                    # This is done to avoid division by zero.
+                    row_sums[np.where(row_sums == 0)] = 1
 
                     # Here the counts are changed in percentages
-                    cluster_inflection_stats_percent = cluster_inflection_stats / row_sums[:, np.newaxis]
+                    cluster_inflection_stats_percent = cluster_inflection_stats / \
+                        row_sums[:, np.newaxis]
                     records.append(
-                    {"vigilance": vig, "run": r, "batch": rep*n_batches+b,
-                     "ri": ri_batch, "ari": ari_batch, "nmi": nmi_batch, "ami": ami_batch,
-                     "ari_per_interval": ari_per_interval,
-                     "ari_per_interval_indices" :  plottedIndices,
-                     "cluster_population": cluster_population,
-                     "category_bigrams": category_bigrams,
-                     "prototypes": prototypes,
-                     "cluster_inflection_stats":cluster_inflection_stats,
-                     "cluster_inflection_stats_percent":cluster_inflection_stats_percent,
-                     "min_cluster_size": min_cluster_size_batch, "max_cluster_size": max_cluster_size_batch})
+                        {"vigilance": vig, "run": r, "batch": rep*n_batches+b,
+                         "ri": ri_batch, "ari": ari_batch, "nmi": nmi_batch, "ami": ami_batch,
+                         "ari_per_interval": ari_per_interval,
+                         "ari_per_interval_indices":  plottedIndices,
+                         "cluster_population": cluster_population,
+                         "category_bigrams": category_bigrams,
+                         "prototypes": prototypes,
+                         "cluster_inflection_stats": cluster_inflection_stats,
+                         "cluster_inflection_stats_percent": cluster_inflection_stats_percent,
+                         "min_cluster_size": min_cluster_size_batch, "max_cluster_size": max_cluster_size_batch})
 
             ari_per_interval_per_run.append(ari_per_interval)
-
-
 
             if data_plot:
                 # Use result from last batch to plot TODO: think about this
                 df = plot.transform_using_fitted_pca(prototypes, pca)
                 # plot.plot_data(df, labels=None, clusters=range(0,20),
-                                    #  micro_clusters=cogids[batch], file_label=f"pca-art-vig{vig}-run{r}-{language}", show=show)
-                df.columns=['dim1', 'dim2']
-                prototype_based_new_coords=[]
-                for i in range(0,len(clusters_gold)):
-                    prototype_N=int(clusters_art_batch[i])
-                    matching_prototype_coord=df.values[prototype_N]
-                    with_noise = matching_prototype_coord+np.random.randn(2)*0.02
+                #  micro_clusters=cogids[batch], file_label=f"pca-art-vig{vig}-run{r}-{language}", show=show)
+                df.columns = ['dim1', 'dim2']
+                prototype_based_new_coords = []
+                for i in range(0, len(clusters_gold)):
+                    prototype_N = int(clusters_art_batch[i])
+                    matching_prototype_coord = df.values[prototype_N]
+                    with_noise = matching_prototype_coord + \
+                        np.random.randn(2)*0.02
                     prototype_based_new_coords.append(with_noise)
-                
-                df2=pd.DataFrame(prototype_based_new_coords)
-                df2.columns=['dim1', 'dim2']
-                plot.plot_data(df2, labels=None, clusters=clusters_gold, prototypes=df,
-                        file_label=f"pca-art-vig{vig}-run{r}-{language}_protos_{CONFIG_STRING}", show=show)
-                plot.plot_barchart(cluster_inflection_stats, category_bigrams, always_activated_bigrams,
-                        file_label=f"pca-art-vig{vig}-run{r}-{language}_protos_{CONFIG_STRING}", show=show)
 
+                df2 = pd.DataFrame(prototype_based_new_coords)
+                df2.columns = ['dim1', 'dim2']
+                plot.plot_data(df2, labels=None, clusters=clusters_gold, prototypes=df,
+                               file_label=f"pca-art-vig{vig}-run{r}-{language}_protos_{CONFIG_STRING}", show=show)
+                plot.plot_barchart(cluster_inflection_stats, inflection_classes,  # category_bigrams, always_activated_bigrams,
+                                   file_label=f"pca-art-vig{vig}-run{r}-{language}_protos_{CONFIG_STRING}", show=show)
 
         if eval_intervals:
-            plot.plot_intervals(ari_per_interval_per_run,plottedIndices,
-                file_label=f"pca-art-vig{vig}-run{r}-{language}_protos_{CONFIG_STRING}", show=show)         
-            
+            plot.plot_intervals(ari_per_interval_per_run, plottedIndices,
+                                file_label=f"pca-art-vig{vig}-run{r}-{language}_protos_{CONFIG_STRING}", show=show)
+
     df_results = pd.DataFrame(records)
-    df_results.to_csv(os.path.join(OUTPUT_DIR, f"histogram_per_vigilance-{language}_{CONFIG_STRING}_out.csv"))
-    print(df_results.groupby("vigilance")[["ri", "ari", "nmi", "ami", "min_cluster_size", "max_cluster_size"]].mean())
-    df_results_small=df_results[["vigilance", "run", "cluster_population","category_bigrams","cluster_inflection_stats","ari","batch"]]
-    df_results_small.to_csv(os.path.join(OUTPUT_DIR, f"cluster_stats_{CONFIG_STRING}.csv"))
-    
+    df_results.to_csv(os.path.join(
+        OUTPUT_DIR, f"histogram_per_vigilance-{language}_{CONFIG_STRING}_out.csv"))
+    print(df_results.groupby("vigilance")[
+          ["ri", "ari", "nmi", "ami", "min_cluster_size", "max_cluster_size"]].mean())
+    df_results_small = df_results[["vigilance", "run", "cluster_population",
+                                   "category_bigrams", "cluster_inflection_stats", "ari", "batch"]]
+    df_results_small.to_csv(os.path.join(
+        OUTPUT_DIR, f"cluster_stats_{CONFIG_STRING}.csv"))
 
     # Only create vigilance plot when comparing multiple vigilances
     if eval_vigilances:
         # Plot results
 
-        df_melt_scores = pd.melt(df_results, id_vars=["vigilance", "run", "batch"], value_vars=["ari"], var_name="metric", value_name="score")
+        df_melt_scores = pd.melt(df_results, id_vars=["vigilance", "run", "batch"], value_vars=[
+                                 "ari"], var_name="metric", value_name="score")
         # df_melt_scores = pd.melt(df_results, id_vars=["vigilance", "run", "batch"], value_vars=["ri","ari", "nmi", "ami"], var_name="metric", value_name="score")
-        df_melt_clusters = pd.melt(df_results, id_vars=["vigilance", "run", "batch"], value_vars=["min_cluster_size","max_cluster_size"], var_name="metric", value_name="size")
-        df_melt_ci = pd.melt(df_results, id_vars=["vigilance"], value_vars=["cluster_population"], var_name="metric", value_name="N_in_cluster")
+        df_melt_clusters = pd.melt(df_results, id_vars=["vigilance", "run", "batch"], value_vars=[
+                                   "min_cluster_size", "max_cluster_size"], var_name="metric", value_name="size")
+        df_melt_ci = pd.melt(df_results, id_vars=["vigilance"], value_vars=[
+                             "cluster_population"], var_name="metric", value_name="N_in_cluster")
 
         from matplotlib import cm
 
@@ -221,12 +247,15 @@ def art(data_onehot, forms, bigram_inventory, inflections_gold, cogids, pca, lan
 
         sns.lineplot(data=df_melt_scores, x="vigilance",
                      y="score", hue="metric")
-        rep_kmeans_ARI=np.ones((1,len(VIGILANCE_RANGE)))*0.782 #This is obtained from one baseline run
+        # This is obtained from one baseline run
+        rep_kmeans_ARI = np.ones((1, len(VIGILANCE_RANGE)))*0.782
         # rep_kmeans_AMI=np.ones((1,len(VIGILANCE_RANGE)))*0.835 #This is obtained from one baseline run
         sns.lineplot(x=VIGILANCE_RANGE,
                      y=rep_kmeans_ARI[0], dashes=True, hue=1)
-        plt.legend(labels=["ARI","_ss", "AMI", "_ss","Baseline ARI (kmeans)", "Baseline AMI (kmeans)"])
-        plt.savefig(os.path.join(OUTPUT_DIR, f"scores-art-end-{language}-{CONFIG_STRING}.pdf"))
+        plt.legend(labels=["ARI", "_ss", "AMI", "_ss",
+                   "Baseline ARI (kmeans)", "Baseline AMI (kmeans)"])
+        plt.savefig(os.path.join(
+            OUTPUT_DIR, f"scores-art-end-{language}-{CONFIG_STRING}.pdf"))
         if show:
             plt.show()
         plt.clf()
@@ -240,7 +269,7 @@ def art(data_onehot, forms, bigram_inventory, inflections_gold, cogids, pca, lan
         plt.clf()
         df_results.to_csv(
             "clusters-scores-art-end.tex", sep="&", lineterminator="\\\\\n")
-    
+
 
 def eval_results(results, inflections_gold):
     # Calculate scores
@@ -253,7 +282,6 @@ def eval_results(results, inflections_gold):
     min_cluster_size = np.min(cluster_sizes)
     max_cluster_size = np.max(cluster_sizes)
     return rand, adj_rand, norm_mutual_info, adj_mutual_info, min_cluster_size, max_cluster_size
-
 
 
 # def art_iterated(data_onehot, n_runs, n_timesteps, batch_size_iterated, inflections_gold, cogids, language, vigilances=[ART_VIGILANCE], data_plot=False):

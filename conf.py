@@ -41,8 +41,8 @@ ART_LEARNING_RATE=2
 LABEL_DENSITY = 5
 VIGILANCE_RANGE = np.arange(0.0,1.02,0.02)
 
-INFLECTION_CLASSES = ["I", "II", "III", "IV", "special"]
-N_INFLECTION_CLASSES = len(INFLECTION_CLASSES)
+# INFLECTION_CLASSES = ["I", "II", "III", "IV", "special"]
+# N_INFLECTION_CLASSES = len(INFLECTION_CLASSES)
 INITIAL_CLUSTERS = 1
 
 FILLED_MARKERS = ['o', 'v', '^', '<', '>', '8', 's', 'p', '*', 'h', 'H', 'D', 'd', 'P', 'X']*16

@@ -193,6 +193,9 @@ def create_language_dataset(df_language, language, data_format, use_only_present
     # array(['1SG', '2SG', '3SG', ..., '1PL', '2PL', '3PL']
     lexemes_unique = lexemes.unique()
     print(f"Number of unique lexemes: {len(lexemes_unique)}")
+    # Inflection classes calculated based on only used dataset (possibly not full dataset)
+    inflection_classes = list(inflections.unique())
+    print(f"Inflection classes: {inflection_classes}")
 
     forms_encoded, bigram_inventory = create_onehot_forms_from_Ngrams(
         forms_list, Ngrams, tokenize_form_spaces)
@@ -269,12 +272,12 @@ def create_language_dataset(df_language, language, data_format, use_only_present
         inflections = pooled_inflections
         forms_encoded = pooled_forms_encoded
 
-    print_diagnostic_encoding(form_column, lexeme_column,
-                              df_used, lexemes_unique, forms_encoded, bigram_inventory)
+    # print_diagnostic_encoding(form_column, lexeme_column,
+    #                           df_used, lexemes_unique, forms_encoded, bigram_inventory)
 
     # inflections_onehot, inflection_inventory = create_onehot_inflections(
     #     inflections)
-    return forms_encoded, forms_list, list(inflections), list(lexemes), bigram_inventory
+    return forms_encoded, forms_list, list(inflections), inflection_classes, list(lexemes), bigram_inventory
 
 
 def print_diagnostic_encoding(form_column, lexeme_column, df_used, lexemes_unique, forms_encoded, bigram_inventory):

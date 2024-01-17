@@ -4,6 +4,7 @@ data/
 *.txt
 *.tex
 *.vec
+*.zip
 __pycache__
 Romance_Verbal_Inflection_Dataset-v2.0.4
 neupy

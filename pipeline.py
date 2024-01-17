@@ -42,7 +42,7 @@ def main():
     df_language = pd.read_csv(
         conjugation_df_path, index_col=0, low_memory=False)
 
-    forms_onehot, forms, inflections, cogids, bigram_inventory = data.create_language_dataset(df_language, language, data_format=data_format, use_only_present=use_only_present_lang, Ngrams=NGRAMS,
+    forms_onehot, forms, inflections, inflection_classes, cogids, bigram_inventory = data.create_language_dataset(df_language, language, data_format=data_format, use_only_present=use_only_present_lang, Ngrams=NGRAMS,
                                                                                               sample_first=SAMPLE_FIRST,  use_only_3PL=USE_ONLY_3PL, squeeze_into_verbs=SQUEEZE_INTO_VERBS, concat_verb_features=CONCAT_VERB_FEATURES, set_common_features_to_zero=SET_COMMON_FEATURES_TO_ZERO)
 
     if args.single_run_plotdata:
@@ -53,46 +53,46 @@ def main():
         plot.plot_data(df, labels=None, clusters=inflections,
                        micro_clusters=None, file_label=f"pca-art-data_bigram_hamming_original_MCA_-{language}_{CONFIG_STRING}", show=False)
         # print(f"Full data shuffle, {N_RUNS} runs")
-        art(forms_onehot, forms, bigram_inventory, inflections, cogids, pca,
+        art(forms_onehot, forms, bigram_inventory, inflections, inflection_classes, cogids, pca,
             language, n_runs=1, shuffle_data=True, repeat_dataset=True, data_plot=True)
 
     if args.eval_batches:
         print(f"Full data shuffle, {N_RUNS} runs:")
-        art(forms_onehot, forms, bigram_inventory, inflections,
+        art(forms_onehot, forms, bigram_inventory, inflections,inflection_classes, 
             cogids, None, language, n_runs=N_RUNS, shuffle_data=True)
         print(f"Repeat dataset shuffle, {N_RUNS} runs:")
-        art(forms_onehot, forms, bigram_inventory, inflections, cogids, None,
+        art(forms_onehot, forms, bigram_inventory, inflections, inflection_classes, cogids, None,
             language, n_runs=N_RUNS, repeat_dataset=True, shuffle_data=True)
         print(f"batch 10 shuffle, {N_RUNS} runs:")
-        art(forms_onehot, forms, bigram_inventory, inflections, cogids,
+        art(forms_onehot, forms, bigram_inventory, inflections, inflection_classes, cogids,
             None, language, batch_size=10, n_runs=N_RUNS, shuffle_data=True)
         print(f"batch 50 shuffle, {N_RUNS} runs:")
-        art(forms_onehot, forms, bigram_inventory, inflections, cogids,
+        art(forms_onehot, forms, bigram_inventory, inflections, inflection_classes, cogids,
             None, language, batch_size=50, n_runs=N_RUNS, shuffle_data=True)
 
     if args.eval_intervals:
         print(f"Full data shuffle, {N_RUNS} runs:")
-        art(forms_onehot, forms, bigram_inventory, inflections, cogids, None, LANGUAGE,
+        art(forms_onehot, forms, bigram_inventory, inflections, inflection_classes, cogids, None, LANGUAGE,
             n_runs=N_RUNS, shuffle_data=True, repeat_dataset=True, eval_intervals=True)
 
     if args.eval_vigilances:
-        art(forms_onehot, forms, bigram_inventory, inflections, cogids, None, language,
+        art(forms_onehot, forms, bigram_inventory, inflections, inflection_classes, cogids, None, language,
             n_runs=N_RUNS, shuffle_data=True, repeat_dataset=True, vigilances=VIGILANCE_RANGE)
 
     if args.baseline:
         # print("Full data shuffle, n runs")
         # art_one(forms_onehot, inflections, cogids, language, n_runs=N_RUNS, shuffle_data=True)
         print("Majority baseline:")
-        majority_baseline(inflections)
+        majority_baseline(inflections, n_inflection_classes=5) # TODO: Infer #classes from data
 
         print("Random baseline:")
-        random_baseline(inflections)
+        random_baseline(inflections, n_inflection_classes=5) # TODO: Infer #classes from data
 
         # print("Agg clustering baseline:")
-        # agg_cluster_baseline(forms_onehot, inflections)
+        # agg_cluster_baseline(forms_onehot, inflections, n_inflection_classes=5) # TODO: Infer #classes from data
 
         print("Kmeans clustering baseline:")
-        kmeans_cluster_baseline(forms_onehot, inflections)
+        kmeans_cluster_baseline(forms_onehot, inflections, n_inflection_classes=5) # TODO: Infer #classes from data
 
         print("Comparison to inflection classes:")
         print("Token count:")
