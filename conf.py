@@ -25,11 +25,11 @@ paths = {
      "archive_path": "portuguese-v.2.0.1.zip",
      "file_path": os.path.join(DATA_PATH, "portuguese-v.2.0.1"),
      "conjugation_df_path": "portuguese_conjugation_df.csv"},
-    "arabic":
-    {"archive_url": "https://zenodo.org/records/10100678/files/aravelex-1.0.zip",
-     "archive_path": "arabic-v.1.0.zip",
-     "file_path": os.path.join(DATA_PATH, "arabic-v.1.0"),
-     "conjugation_df_path": "arabic_conjugation_df.csv"},
+    # "arabic":
+    # {"archive_url": "https://zenodo.org/records/10100678/files/aravelex-1.0.zip",
+    #  "archive_path": "arabic-v.1.0.zip",
+    #  "file_path": os.path.join(DATA_PATH, "arabic-v.1.0"),
+    #  "conjugation_df_path": "arabic_conjugation_df.csv"},
 }
 
 
@@ -46,7 +46,7 @@ N_INFLECTION_CLASSES = len(INFLECTION_CLASSES)
 INITIAL_CLUSTERS = 1
 
 FILLED_MARKERS = ['o', 'v', '^', '<', '>', '8', 's', 'p', '*', 'h', 'H', 'D', 'd', 'P', 'X']*16
-EMPTY_SYMBOL = True
+# EMPTY_SYMBOL = True
 
 OUTPUT_DIR = "output"
 

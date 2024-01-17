@@ -1,28 +1,14 @@
 import numpy as np
-import io
-import time
 from pycldf.dataset import Dataset
 import os
-import pathlib
 import requests
 import shutil
 import pandas as pd
 # from bpe import Encoder
 
-from conf import INFLECTION_CLASSES, DATA_PATH, paths
+from conf import paths
 
 # np.random.seed(11)
-# ROMANCE_ARCHIVE_PATH = "Romance_Verbal_Inflection_Dataset-v2.0.4.tar.gz"
-# ROMANCE_ARCHIVE_URL = "https://zenodo.org/records/4039059/files/v2.0.4.zip"
-# # Directory after unpacking archive
-# ROMANCE_FILE_PATH = os.path.join(
-#     DATA_PATH, "Romance_Verbal_Inflection_Dataset-v2.0.4")
-# ROMANCE_METADATA_PATH = os.path.join(
-#     ROMANCE_PATH, "cldf/Wordlist-metadata.json")
-
-# PORTUGUESE_ARCHIVE_URL = "https://zenodo.org/records/8392722/files/v2.0.1.zip"
-# ESTONIAN_ARCHIVE_URL = "https://zenodo.org/records/8392744/files/v1.0.1.zip"
-# ARABIC_ARCHIVE_URL = "https://zenodo.org/records/10100678/files/aravelex-1.0.zip"
 
 
 ############ Methods Romance dataset ##########
@@ -65,18 +51,22 @@ def load_romance_dataset(conjugation_df_path, only_latin):
     conjugation_df = merge_filter_romance_inflections(
         forms_df_1cognate, cognates_df)
 
+    conjugation_df["Cell"] = conjugation_df["Cell"].apply(
+        lambda tense_person_list: ".".join(tense_person_list))
+
     if only_latin:
         conjugation_df = conjugation_df[conjugation_df["Language_ID"]
                                         == "Italic_Latino-Faliscan_Latin"]
 
     # Write table to file, so it can be read by our script later
     conjugation_df.to_csv(conjugation_df_path)
+    print("Done loading data from archive, wrote to csv.")
 
 
 def load_paralex_dataset(language, conjugation_df_path):
     download_if_needed(paths[language], language)
     file_path = paths[language]["file_path"]
-    language_filename = "std_modern_arabic" if language=="arabic" else language
+    language_filename = language #"std_modern_arabic" if language == "arabic" else language
     paradigms_df = pd.read_csv(os.path.join(
         file_path, f"{language_filename}_paradigms.csv"), low_memory=False)
     lexemes_df = pd.read_csv(os.path.join(
@@ -89,6 +79,7 @@ def load_paralex_dataset(language, conjugation_df_path):
 
     # Write table to file, so it can be read by our script later
     df_verbs.to_csv(conjugation_df_path)
+    print("Done loading data from archive, wrote to csv.")
 
 
 def filter_romance_empty_multicog(forms_df):
@@ -110,14 +101,6 @@ def merge_filter_romance_inflections(forms_df_1cognate, cognates_df):
     return latin_conjugation_df
 
 
-# Diacritics are counted as separate character
-
-
-def get_sound_inventory(forms):
-    sound_inventory = list(set(list("".join(forms))))
-    max_form_len = max([len(x) for x in forms])
-    return sound_inventory, max_form_len
-
 
 def get_existing_sound_Ngrams(forms_tokenized, Ngrams):  # NOT FINISHED!!
     # sound_inventory = list(set(list("".join(forms))))
@@ -126,13 +109,14 @@ def get_existing_sound_Ngrams(forms_tokenized, Ngrams):  # NOT FINISHED!!
         for token_ix in range(0, len(form)-(Ngrams-1)):
             # tuple can be deduplicated using set
             Ngram = tuple(form[token_ix:token_ix+Ngrams])
-            #if Ngram not in Ngram_list:
+            # if Ngram not in Ngram_list:
             Ngram_list.append(Ngram)
     Ngram_list = list(set(Ngram_list))
     return Ngram_list
 
 
-def create_onehot_forms_from_Ngrams(forms_list, Ngrams, tokenize_form_spaces): # empty_symbol=True, pool_verb_features=False
+# empty_symbol=True, pool_verb_features=False
+def create_onehot_forms_from_Ngrams(forms_list, Ngrams, tokenize_form_spaces):
     if tokenize_form_spaces:
         forms_tokenized = [f.split(" ") for f in forms_list]
     else:
@@ -140,7 +124,6 @@ def create_onehot_forms_from_Ngrams(forms_list, Ngrams, tokenize_form_spaces): #
         forms_tokenized = [list(f) for f in forms_list]
     n_forms = len(forms_tokenized)
     assert n_forms == len(forms_list)
-
 
     Ngram_list = get_existing_sound_Ngrams(forms_tokenized, Ngrams)
     n_Ngrams = len(Ngram_list)
@@ -160,96 +143,105 @@ def create_onehot_forms_from_Ngrams(forms_list, Ngrams, tokenize_form_spaces): #
     return array, Ngram_list
 
 
-def create_language_dataset(df_language, language, data_format, use_only_present, Ngrams, empty_symbol, sample_first,  use_only_3PL, squeeze_into_verbs, concat_verb_features, set_common_features_to_zero):
-
+def create_language_dataset(df_language, language, data_format, use_only_present, Ngrams, sample_first,  use_only_3PL, squeeze_into_verbs, concat_verb_features, set_common_features_to_zero):
     if data_format == "paralex":
         form_column = "phon_form"
         inflection_column = "inflection_class"
         lexeme_column = "lexeme_id"
         cell_column = "cell"
-        tag_present = "ind.prs"
-        tag_present_3pl = "ind.prs.3pl"
+        if language == "portuguese":
+            tag_present = "prs.ind"
+        else:
+            tag_present = "ind.prs"
+        tag_present_3pl = f"{tag_present}.3pl"
         tokenize_form_spaces = True
     else:  # data_format=="romance"
         form_column = "Form"
         inflection_column = "Latin_Conjugation"
         lexeme_column = "Cognateset_ID_first"
         cell_column = "Cell"
-        tag_present = "'PRS-IND'"
-        tag_present_3pl = "'PRS-IND', '3PL'"
+        tag_present = "PRS-IND"
+        tag_present_3pl = f"{tag_present}.3PL"  # "'PRS-IND', '3PL'"
         tokenize_form_spaces = False
 
     if sample_first:
         df_language = df_language.head(sample_first)
 
     if use_only_present:
-        if use_only_3PL:
-            df_used = df_language[df_language[cell_column].str.contains(
-                tag_present_3pl)]
-        else:
-            df_used = df_language[df_language[cell_column].str.contains(
-                tag_present)]
+        df_used = df_language[df_language[cell_column].str.contains(
+            tag_present_3pl if use_only_3PL else tag_present)]
         df_used.to_csv(f'only_used_{language}_stuff.csv')
     else:
         df_used = df_language
+
+    # All these variables have length and follow order of df_used
     forms = df_used[form_column]
     forms_list = list(forms)
     inflections = df_used[inflection_column]
     lexemes = df_used[lexeme_column]
-    if data_format == "paralex":
-        person_tags = df_used[cell_column].str[-3:]
-    else:  # romance
-        person_tags = df_used[cell_column].str[-5:-2]
-    unique_person_tags = person_tags.unique()
+    cells = df_used[cell_column]
+    # if data_format == "paralex":
+    #     cells = df_used[cell_column].str[-3:]
+    # else:  # romance
+    #     cells = df_used[cell_column].str[-3] #-5:-2]
+    cells_np = cells.values
+    assert len(forms) == len(forms_list) == len(inflections) == len(
+        lexemes) == len(cells) == len(cells_np) == len(df_used)
+
+    # Variables representing unique set (not length df_used)
+    unique_cells_ordered = cells.unique()
     # array(['1SG', '2SG', '3SG', ..., '1PL', '2PL', '3PL']
-    person_tags = person_tags.values
-    unique_verbs = lexemes.unique()
+    lexemes_unique = lexemes.unique()
+    print(f"Number of unique lexemes: {len(lexemes_unique)}")
 
     forms_encoded, bigram_inventory = create_onehot_forms_from_Ngrams(
         forms_list, Ngrams, tokenize_form_spaces)
+    assert forms_encoded.shape[0] == len(df_used)
     assert forms_encoded.shape[1] == len(bigram_inventory)
 
     if squeeze_into_verbs:
-       
         # Make new pooled bigram inventory with person tags
         if concat_verb_features:
-            pooled_bigram_inventory = []
-            for p in range(len(unique_person_tags)):
-                pooled_bigram_inventory = np.append(pooled_bigram_inventory, ([
-                    "".join(i) + '_'+unique_person_tags[p] for i in bigram_inventory]), axis=0)
-            bigram_inventory=pooled_bigram_inventory
+            # pooled_bigram_inventory_old = []
+            # for p in range(len(unique_person_tags_ordered)):
+            #     pooled_bigram_inventory_old = np.append(pooled_bigram_inventory_old, ([
+            #         "".join(i) + '_'+unique_person_tags_ordered[p] for i in bigram_inventory]), axis=0)
+
+            # Pooled bigram inventory only used for plotting, not in encoding processing
+            pooled_bigram_inventory = ["".join(
+                i) + '_'+unique_cell for unique_cell in unique_cells_ordered for i in bigram_inventory]
+            bigram_inventory = pooled_bigram_inventory
 
             pooled_forms_encoded = np.empty(
-                (0, len(unique_person_tags)*forms_encoded.shape[1]))
-        else: # Set representation
+                (0, len(unique_cells_ordered)*forms_encoded.shape[1]))
+        else:  # Set representation
             pooled_forms_encoded = np.empty(
                 (0, forms_encoded.shape[1]))
         pooled_inflections = []
-        # array(['1SG', '2SG', '3SG', '1PL', '2PL', '3PL'],
-        pool_order = unique_person_tags
-        for i in range(0, len(unique_verbs)):
-
+        # lexemes_unique: array(['1SG', '2SG', '3SG', '1PL', '2PL', '3PL'],
+        for lexeme_unique in lexemes_unique:
             if concat_verb_features:
-                pooled_forms_encoded_for_verb = [[]] #add dimension
+                pooled_forms_encoded_for_verb = [[]]  # add dimension
             else:
-                pooled_forms_encoded_for_verb = np.zeros((1, len(bigram_inventory)))
+                pooled_forms_encoded_for_verb = np.zeros(
+                    (1, len(bigram_inventory)))
 
-            indices_for_verb = np.where(lexemes == unique_verbs[i])[0]
+            indices_for_verb = np.where(lexemes == lexeme_unique)[0]
             # Save inflection for this pooled verb, from the first position
             pooled_inflections.append(
                 inflections.values[indices_for_verb[0]])
             # Not necessarily in the same order as wanted
-            person_tags_for_verb = person_tags[indices_for_verb]
-            for p in range(len(pool_order)):
-
-                if pool_order[p] in person_tags_for_verb:
-                    index = np.where(pool_order[p] == person_tags_for_verb)
+            cells_for_verb = cells_np[indices_for_verb]
+            for unique_cell in unique_cells_ordered:
+                if unique_cell in cells_for_verb:
+                    index = np.where(
+                        unique_cell == cells_for_verb)
                     index_in_forms_encoded = indices_for_verb[index[0][0]]
                     if concat_verb_features:
                         pooled_forms_encoded_for_verb = np.append(
-                            pooled_forms_encoded_for_verb, forms_encoded[None,index_in_forms_encoded], axis=1)
+                            pooled_forms_encoded_for_verb, forms_encoded[None, index_in_forms_encoded], axis=1)
                     else:
-                            pooled_forms_encoded_for_verb = pooled_forms_encoded_for_verb + \
+                        pooled_forms_encoded_for_verb = pooled_forms_encoded_for_verb + \
                             forms_encoded[index_in_forms_encoded]
                 else:
                     if concat_verb_features:
@@ -260,30 +252,46 @@ def create_language_dataset(df_language, language, data_format, use_only_present
                 # NOTE: This functionality assumes number of paradigm cells is 6: only works for Latin
                 if concat_verb_features:
                     temp = np.reshape(pooled_forms_encoded_for_verb,
-                                        (len(pool_order), forms_encoded.shape[1]))
+                                      (len(unique_cells_ordered), forms_encoded.shape[1]))
                     S = sum(temp)
                     # If the same gram was activated in all person tenses, their sum here is 6
                     temp[:, S == 6] = 0
                     pooled_forms_encoded_for_verb = np.reshape(
-                        temp, (len(pool_order)*forms_encoded.shape[1]))
+                        temp, (len(unique_cells_ordered)*forms_encoded.shape[1]))
                 else:
                     pooled_forms_encoded_for_verb[pooled_forms_encoded_for_verb == 6] = 0
 
-            #keeps only one activated n-gram, even though it may occur in several forms (for set representation, does nothing for concat)
-            pooled_forms_encoded_for_verb = np.clip(pooled_forms_encoded_for_verb, 0, 1) 
+            # keeps only one activated n-gram, even though it may occur in several forms (for set representation, does nothing for concat)
+            pooled_forms_encoded_for_verb = np.clip(
+                pooled_forms_encoded_for_verb, 0, 1)
             pooled_forms_encoded = np.append(
                 pooled_forms_encoded, pooled_forms_encoded_for_verb, axis=0)
         inflections = pooled_inflections
         forms_encoded = pooled_forms_encoded
 
-    encoding_diagnostic_df = pd.DataFrame(data=forms_encoded, index=unique_verbs, columns=bigram_inventory)
-    for i, row in encoding_diagnostic_df.iterrows():
-        print(i, [row[row==1]])
-        
+    print_diagnostic_encoding(form_column, lexeme_column,
+                              df_used, lexemes_unique, forms_encoded, bigram_inventory)
 
     # inflections_onehot, inflection_inventory = create_onehot_inflections(
     #     inflections)
     return forms_encoded, forms_list, list(inflections), list(lexemes), bigram_inventory
+
+
+def print_diagnostic_encoding(form_column, lexeme_column, df_used, lexemes_unique, forms_encoded, bigram_inventory):
+    encoding_diagnostic_df = pd.DataFrame(
+        data=forms_encoded, index=lexemes_unique, columns=bigram_inventory)
+    for lexeme, lexeme_row in encoding_diagnostic_df.iterrows():
+        activated_ngrams = ["".join(ngram)
+                            for ngram in lexeme_row[lexeme_row == 1].index]
+        used_forms = list(
+            df_used[df_used[lexeme_column] == lexeme][form_column])
+        print(f"{lexeme}: {activated_ngrams}")
+        print(f"Forms used for encoding: {used_forms}\n")
+
+# def get_sound_inventory(forms):
+#     sound_inventory = list(set(list("".join(forms))))
+#     max_form_len = max([len(x) for x in forms])
+#     return sound_inventory, max_form_len
 
 # def create_onehot_forms(forms, empty_symbol=True):
 #     sounds, max_form_len = get_sound_inventory(forms)

@@ -52,9 +52,6 @@ def art(data_onehot, forms, bigram_inventory, inflections_gold, cogids, pca, lan
         
         ari_per_interval_per_run=[]
         for r in range(n_runs):
-
-            
-
             artnet = ART1(
                 step=ART_LEARNING_RATE,
                 rho=vig,

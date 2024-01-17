@@ -728,7 +728,7 @@ class ART1(BaseNetwork):
                     if np.isnan(winner_index):
                         print('MSMSMS')
                     classes[i] = winner_index
-            print(i)
+            # print(i)
             if ((i+1) % save_interval)==0 or i==len(X):
                 incrementalClasses.append(np.copy(classes[0:i]))
                 incrementalIndices.append(i+1)

@@ -1,14 +1,14 @@
 
-from conf import OUTPUT_DIR, LANGUAGE, EMPTY_SYMBOL,  SAMPLE_FIRST, N_RUNS, CONCAT_VERB_FEATURES, USE_ONLY_3PL, CONFIG_STRING, SQUEEZE_INTO_VERBS, NGRAMS, SET_COMMON_FEATURES_TO_ZERO, VIGILANCE_RANGE, paths, EVAL_INTERVAL
+from conf import OUTPUT_DIR, LANGUAGE, SAMPLE_FIRST, N_RUNS, CONCAT_VERB_FEATURES, USE_ONLY_3PL, CONFIG_STRING, SQUEEZE_INTO_VERBS, NGRAMS, SET_COMMON_FEATURES_TO_ZERO, VIGILANCE_RANGE, paths, EVAL_INTERVAL
 from model import art, majority_baseline, random_baseline, kmeans_cluster_baseline
 import pandas as pd
 import os
 import argparse
-import numpy as np
 import plot
 import data
 import warnings
 warnings.simplefilter(action='ignore', category=FutureWarning)
+
 
 def main():
     parser = argparse.ArgumentParser(description='Command line ART model.')
@@ -31,19 +31,19 @@ def main():
             data.load_romance_dataset(conjugation_df_path, only_latin=True)
         data_format = "romance"
         use_only_present_lang = True  # for Latin, inflection classes define only present
-    elif language == "estonian" or language == "portuguese" or language == "arabic":
+    elif language == "estonian" or language == "portuguese":
         if not os.path.exists(conjugation_df_path):
             data.load_paralex_dataset(language, conjugation_df_path)
         data_format = "paralex"
-        # Language-specific Estonian and Portuguese (but probably also Arabic): inflection classes define all forms
-        use_only_present_lang = False
+        # Estonian and Portuguese: inflection classes define all forms
+        use_only_present_lang = True
 
-    # First time script is run for a language, we write and then immediately read from CSV file. This makes Cell column from list to string (Romance)
+    # First time script is run for a language, we write and then immediately read from CSV file.
     df_language = pd.read_csv(
         conjugation_df_path, index_col=0, low_memory=False)
 
-    forms_onehot, forms, inflections, cogids, bigram_inventory = data.create_language_dataset(df_language, language, data_format=data_format, use_only_present=use_only_present_lang, Ngrams=NGRAMS, empty_symbol=EMPTY_SYMBOL,
-                                                                                                 sample_first=SAMPLE_FIRST,  use_only_3PL=USE_ONLY_3PL, squeeze_into_verbs=SQUEEZE_INTO_VERBS, concat_verb_features=CONCAT_VERB_FEATURES, set_common_features_to_zero=SET_COMMON_FEATURES_TO_ZERO)
+    forms_onehot, forms, inflections, cogids, bigram_inventory = data.create_language_dataset(df_language, language, data_format=data_format, use_only_present=use_only_present_lang, Ngrams=NGRAMS,
+                                                                                              sample_first=SAMPLE_FIRST,  use_only_3PL=USE_ONLY_3PL, squeeze_into_verbs=SQUEEZE_INTO_VERBS, concat_verb_features=CONCAT_VERB_FEATURES, set_common_features_to_zero=SET_COMMON_FEATURES_TO_ZERO)
 
     if args.single_run_plotdata:
         # Plot data before running model
@@ -72,7 +72,8 @@ def main():
 
     if args.eval_intervals:
         print(f"Full data shuffle, {N_RUNS} runs:")
-        art(forms_onehot, forms, bigram_inventory, inflections, cogids, None, LANGUAGE, n_runs=N_RUNS, shuffle_data=True, repeat_dataset=True, eval_intervals=True)
+        art(forms_onehot, forms, bigram_inventory, inflections, cogids, None, LANGUAGE,
+            n_runs=N_RUNS, shuffle_data=True, repeat_dataset=True, eval_intervals=True)
 
     if args.eval_vigilances:
         art(forms_onehot, forms, bigram_inventory, inflections, cogids, None, language,
