@@ -132,26 +132,14 @@ def get_existing_sound_Ngrams(forms_tokenized, Ngrams):  # NOT FINISHED!!
     return Ngram_list
 
 
-def create_onehot_inflections(inflections):
-    n_inflections = len(inflections)
-    inflection_inventory = list(set(inflections))
-    inflection_inventory_size = len(inflection_inventory)
-    array = np.zeros(shape=(n_inflections, inflection_inventory_size))
-    for infl_row, inflection in enumerate(inflections):
-        hot_index = inflection_inventory.index(inflection)
-        array[infl_row, hot_index] = 1
-    return array, inflection_inventory
-
-
-def create_onehot_forms_from_Ngrams(forms, Ngrams, tokenize_form_spaces): # empty_symbol=True, pool_verb_features=False
-    forms_l = list(forms) #forms.values
+def create_onehot_forms_from_Ngrams(forms_list, Ngrams, tokenize_form_spaces): # empty_symbol=True, pool_verb_features=False
     if tokenize_form_spaces:
-        forms_tokenized = [f.split(" ") for f in forms_l]
+        forms_tokenized = [f.split(" ") for f in forms_list]
     else:
         # If not space-tokenized, tokenize by character: form string becomes list of characters, so format is interoperable
-        forms_tokenized = [list(f) for f in forms_l]
+        forms_tokenized = [list(f) for f in forms_list]
     n_forms = len(forms_tokenized)
-    assert n_forms == len(forms)
+    assert n_forms == len(forms_list)
 
 
     Ngram_list = get_existing_sound_Ngrams(forms_tokenized, Ngrams)
@@ -205,6 +193,7 @@ def create_language_dataset(df_language, language, data_format, use_only_present
     else:
         df_used = df_language
     forms = df_used[form_column]
+    forms_list = list(forms)
     inflections = df_used[inflection_column]
     lexemes = df_used[lexeme_column]
     if data_format == "paralex":
@@ -217,7 +206,8 @@ def create_language_dataset(df_language, language, data_format, use_only_present
     unique_verbs = lexemes.unique()
 
     forms_encoded, bigram_inventory = create_onehot_forms_from_Ngrams(
-        forms, Ngrams, tokenize_form_spaces)
+        forms_list, Ngrams, tokenize_form_spaces)
+    assert forms_encoded.shape[1] == len(bigram_inventory)
 
     if squeeze_into_verbs:
        
@@ -229,15 +219,18 @@ def create_language_dataset(df_language, language, data_format, use_only_present
                     "".join(i) + '_'+unique_person_tags[p] for i in bigram_inventory]), axis=0)
             bigram_inventory=pooled_bigram_inventory
 
-        pooled_forms_encoded = np.empty(
-            (0, len(unique_person_tags)*forms_encoded.shape[1]))
+            pooled_forms_encoded = np.empty(
+                (0, len(unique_person_tags)*forms_encoded.shape[1]))
+        else: # Set representation
+            pooled_forms_encoded = np.empty(
+                (0, forms_encoded.shape[1]))
         pooled_inflections = []
         # array(['1SG', '2SG', '3SG', '1PL', '2PL', '3PL'],
         pool_order = unique_person_tags
         for i in range(0, len(unique_verbs)):
 
             if concat_verb_features:
-                pooled_forms_encoded_for_verb = [[]] #add dimention
+                pooled_forms_encoded_for_verb = [[]] #add dimension
             else:
                 pooled_forms_encoded_for_verb = np.zeros((1, len(bigram_inventory)))
 
@@ -264,6 +257,7 @@ def create_language_dataset(df_language, language, data_format, use_only_present
                             pooled_forms_encoded_for_verb, np.zeros((forms_encoded.shape[1])), axis=0)
 
             if set_common_features_to_zero:
+                # NOTE: This functionality assumes number of paradigm cells is 6: only works for Latin
                 if concat_verb_features:
                     temp = np.reshape(pooled_forms_encoded_for_verb,
                                         (len(pool_order), forms_encoded.shape[1]))
@@ -275,19 +269,21 @@ def create_language_dataset(df_language, language, data_format, use_only_present
                 else:
                     pooled_forms_encoded_for_verb[pooled_forms_encoded_for_verb == 6] = 0
 
-            #keeps only one activated n-gram, even though it may occur in several forms:
+            #keeps only one activated n-gram, even though it may occur in several forms (for set representation, does nothing for concat)
             pooled_forms_encoded_for_verb = np.clip(pooled_forms_encoded_for_verb, 0, 1) 
             pooled_forms_encoded = np.append(
                 pooled_forms_encoded, pooled_forms_encoded_for_verb, axis=0)
         inflections = pooled_inflections
-
         forms_encoded = pooled_forms_encoded
-            
+
+    encoding_diagnostic_df = pd.DataFrame(data=forms_encoded, index=unique_verbs, columns=bigram_inventory)
+    for i, row in encoding_diagnostic_df.iterrows():
+        print(i, [row[row==1]])
         
 
-    inflections_onehot, inflection_inventory = create_onehot_inflections(
-        inflections)
-    return forms_encoded, inflections_onehot, list(forms), list(inflections), list(lexemes), bigram_inventory
+    # inflections_onehot, inflection_inventory = create_onehot_inflections(
+    #     inflections)
+    return forms_encoded, forms_list, list(inflections), list(lexemes), bigram_inventory
 
 # def create_onehot_forms(forms, empty_symbol=True):
 #     sounds, max_form_len = get_sound_inventory(forms)
@@ -317,6 +313,16 @@ def create_language_dataset(df_language, language, data_format, use_only_present
 #                     # print(f"Char position {char_position} OUTSIDE form. Hot index: {empty_hot_index}. Index: {form_row, char_position*n_sounds+empty_hot_index}")
 #                 # Else: just leave the 0000s for empty symbol
 #     return array, sounds
+
+# def create_onehot_inflections(inflections):
+#     n_inflections = len(inflections)
+#     inflection_inventory = list(set(inflections))
+#     inflection_inventory_size = len(inflection_inventory)
+#     array = np.zeros(shape=(n_inflections, inflection_inventory_size))
+#     for infl_row, inflection in enumerate(inflections):
+#         hot_index = inflection_inventory.index(inflection)
+#         array[infl_row, hot_index] = 1
+#     return array, inflection_inventory
 
 # def create_bytepair_forms(forms):
 #     encoder = Encoder(200, pct_bpe=0.88)
