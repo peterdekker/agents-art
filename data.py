@@ -127,6 +127,7 @@ def create_onehot_forms_from_Ngrams(forms_list, Ngrams, tokenize_form_spaces):
 
     Ngram_list = get_existing_sound_Ngrams(forms_tokenized, Ngrams)
     n_Ngrams = len(Ngram_list)
+    Ngram_list_indexes = {ngram: idx for idx, ngram in enumerate(Ngram_list)}
     # print(sounds)
     # print(f"n_forms: {n_forms}")
     # print(f"n_sounds: {n_sounds}")
@@ -137,7 +138,8 @@ def create_onehot_forms_from_Ngrams(forms_list, Ngrams, tokenize_form_spaces):
         for char_position in range(0, len(form)-(Ngrams-1)):
             # convert to tuple, because Ngram_list contains tuples
             current_Ngram = tuple(form[char_position:char_position+Ngrams])
-            index = Ngram_list.index(current_Ngram)
+            index = Ngram_list_indexes[current_Ngram]
+            # index = Ngram_list.index(current_Ngram)
             array[form_row, index] = 1
 
     return array, Ngram_list
@@ -272,8 +274,8 @@ def create_language_dataset(df_language, language, data_format, use_only_present
         inflections = pooled_inflections
         forms_encoded = pooled_forms_encoded
 
-    # print_diagnostic_encoding(form_column, lexeme_column,
-    #                           df_used, lexemes_unique, forms_encoded, bigram_inventory)
+    print_diagnostic_encoding(form_column, lexeme_column,
+                              df_used, lexemes_unique, forms_encoded, bigram_inventory)
 
     # inflections_onehot, inflection_inventory = create_onehot_inflections(
     #     inflections)

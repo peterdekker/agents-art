@@ -35,7 +35,7 @@ def main():
         if not os.path.exists(conjugation_df_path):
             data.load_paralex_dataset(language, conjugation_df_path)
         data_format = "paralex"
-        # Estonian and Portuguese: inflection classes define all forms
+        # Estonian and Portuguese: inflection classes define all forms. But for now: only use present
         use_only_present_lang = True
 
     # First time script is run for a language, we write and then immediately read from CSV file.
