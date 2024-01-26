@@ -194,7 +194,8 @@ def create_language_dataset(df_language, language, data_format, use_only_present
     unique_cells_ordered = cells.unique()
     # array(['1SG', '2SG', '3SG', ..., '1PL', '2PL', '3PL']
     lexemes_unique = lexemes.unique()
-    print(f"Number of unique lexemes: {len(lexemes_unique)}")
+    n_lexemes_unique = len(lexemes_unique)
+    print(f"Number of unique lexemes: {n_lexemes_unique}")
     # Inflection classes calculated based on only used dataset (possibly not full dataset)
     inflection_classes = list(inflections.unique())
     print(f"Inflection classes: {inflection_classes}")
@@ -217,14 +218,18 @@ def create_language_dataset(df_language, language, data_format, use_only_present
                 i) + '_'+unique_cell for unique_cell in unique_cells_ordered for i in bigram_inventory]
             bigram_inventory = pooled_bigram_inventory
 
+            # pooled_forms_encoded = np.empty(
+            #     (0, len(unique_cells_ordered)*forms_encoded.shape[1]))
             pooled_forms_encoded = np.empty(
-                (0, len(unique_cells_ordered)*forms_encoded.shape[1]))
+                (n_lexemes_unique, len(unique_cells_ordered)*forms_encoded.shape[1]))
         else:  # Set representation
+            # pooled_forms_encoded = np.empty(
+            #     (0, forms_encoded.shape[1]))
             pooled_forms_encoded = np.empty(
-                (0, forms_encoded.shape[1]))
+                (n_lexemes_unique, forms_encoded.shape[1]))
         pooled_inflections = []
         # lexemes_unique: array(['1SG', '2SG', '3SG', '1PL', '2PL', '3PL'],
-        for lexeme_unique in lexemes_unique:
+        for lexeme_ix, lexeme_unique in enumerate(lexemes_unique):
             if concat_verb_features:
                 pooled_forms_encoded_for_verb = [[]]  # add dimension
             else:
@@ -269,13 +274,14 @@ def create_language_dataset(df_language, language, data_format, use_only_present
             # keeps only one activated n-gram, even though it may occur in several forms (for set representation, does nothing for concat)
             pooled_forms_encoded_for_verb = np.clip(
                 pooled_forms_encoded_for_verb, 0, 1)
-            pooled_forms_encoded = np.append(
-                pooled_forms_encoded, pooled_forms_encoded_for_verb, axis=0)
+            # pooled_forms_encoded = np.append(
+            #     pooled_forms_encoded, pooled_forms_encoded_for_verb, axis=0)
+            pooled_forms_encoded[lexeme_ix,:] = pooled_forms_encoded_for_verb
         inflections = pooled_inflections
         forms_encoded = pooled_forms_encoded
 
-    print_diagnostic_encoding(form_column, lexeme_column,
-                              df_used, lexemes_unique, forms_encoded, bigram_inventory)
+    # print_diagnostic_encoding(form_column, lexeme_column,
+    #                           df_used, lexemes_unique, forms_encoded, bigram_inventory)
 
     # inflections_onehot, inflection_inventory = create_onehot_inflections(
     #     inflections)
