@@ -175,6 +175,9 @@ def create_language_dataset(df_language, language, data_format, use_only_present
         df_used.to_csv(f'only_used_{language}_stuff.csv')
     else:
         df_used = df_language
+    
+    # Reset index, so it starts from 0, and we can use these indices to distinguish items
+    df_used = df_used.reset_index()
 
     # All these variables have length and follow order of df_used
     forms = df_used[form_column]
@@ -186,33 +189,32 @@ def create_language_dataset(df_language, language, data_format, use_only_present
     #     cells = df_used[cell_column].str[-3:]
     # else:  # romance
     #     cells = df_used[cell_column].str[-3] #-5:-2]
-    cells_np = cells.values
     assert len(forms) == len(forms_list) == len(inflections) == len(
-        lexemes) == len(cells) == len(cells_np) == len(df_used)
+        lexemes) == len(cells) == len(df_used)
 
     # Variables representing unique set (not length df_used)
     unique_cells_ordered = cells.unique()
-    # array(['1SG', '2SG', '3SG', ..., '1PL', '2PL', '3PL']
     lexemes_unique = lexemes.unique()
+    lexemes_unique.sort()
     n_lexemes_unique = len(lexemes_unique)
     print(f"Number of unique lexemes: {n_lexemes_unique}")
     # Inflection classes calculated based on only used dataset (possibly not full dataset)
     inflection_classes = list(inflections.unique())
     print(f"Inflection classes: {inflection_classes}")
 
-    forms_encoded, bigram_inventory = create_onehot_forms_from_Ngrams(
+    forms_encoded, ngram_inventory = create_onehot_forms_from_Ngrams(
         forms_list, Ngrams, tokenize_form_spaces)
     assert forms_encoded.shape[0] == len(df_used)
-    assert forms_encoded.shape[1] == len(bigram_inventory)
+    assert forms_encoded.shape[1] == len(ngram_inventory)
 
     if squeeze_into_verbs:
-        # Make new pooled bigram inventory with person tags
+        # Make new pooled ngram inventory with person tags
         if concat_verb_features:
 
-            # Pooled bigram inventory only used for plotting, not in encoding processing
-            pooled_bigram_inventory = ["".join(
-                i) + '_'+unique_cell for unique_cell in unique_cells_ordered for i in bigram_inventory]
-            bigram_inventory = pooled_bigram_inventory
+            # Pooled ngram inventory only used for plotting, not in encoding processing
+            pooled_ngram_inventory = ["".join(
+                ngram) + '_'+unique_cell for unique_cell in unique_cells_ordered for ngram in ngram_inventory]
+            ngram_inventory = pooled_ngram_inventory
 
             pooled_forms_encoded = np.empty(
                 (n_lexemes_unique, len(unique_cells_ordered)*forms_encoded.shape[1]))
@@ -220,24 +222,27 @@ def create_language_dataset(df_language, language, data_format, use_only_present
             pooled_forms_encoded = np.empty(
                 (n_lexemes_unique, forms_encoded.shape[1]))
         pooled_inflections = []
+        #for lexeme_ix, lexeme_unique in enumerate(lexemes_unique):
         for lexeme_ix, lexeme_unique in enumerate(lexemes_unique):
+            rows_lexeme_unique = df_used[df_used[lexeme_column]==lexeme_unique]
             if concat_verb_features:
                 pooled_forms_encoded_for_verb = [[]]  # add dimension
             else:
                 pooled_forms_encoded_for_verb = np.zeros(
-                    (1, len(bigram_inventory)))
+                    (1, len(ngram_inventory)))
+            indices_for_verb = list(rows_lexeme_unique.index) #np.where(lexemes == lexeme_unique)[0]
 
-            indices_for_verb = np.where(lexemes == lexeme_unique)[0]
             # Save inflection for this pooled verb, from the first position
             pooled_inflections.append(
-                inflections.values[indices_for_verb[0]])
+                rows_lexeme_unique[inflection_column].values[0]) # inflections.values[indices_for_verb[0]]
             # Not necessarily in the same order as wanted
-            cells_for_verb = cells_np[indices_for_verb]
+            cells_for_verb = list(rows_lexeme_unique[cell_column]) # cells_np[indices_for_verb]
             for unique_cell in unique_cells_ordered:
                 if unique_cell in cells_for_verb:
-                    index = np.where(
-                        unique_cell == cells_for_verb)
-                    index_in_forms_encoded = indices_for_verb[index[0][0]]
+                    # index = np.where(
+                    #     unique_cell == cells_for_verb)
+                    index = cells_for_verb.index(unique_cell)
+                    index_in_forms_encoded = indices_for_verb[index] # indices_for_verb[index[0][0]]
                     if concat_verb_features:
                         pooled_forms_encoded_for_verb = np.append(
                             pooled_forms_encoded_for_verb, forms_encoded[None, index_in_forms_encoded], axis=1)
@@ -251,6 +256,7 @@ def create_language_dataset(df_language, language, data_format, use_only_present
 
             if set_common_features_to_zero:
                 # NOTE: This functionality assumes number of paradigm cells is 6: only works for Latin
+                # NOTE: Not tested anymore after changing data processing code
                 if concat_verb_features:
                     temp = np.reshape(pooled_forms_encoded_for_verb,
                                       (len(unique_cells_ordered), forms_encoded.shape[1]))
@@ -271,16 +277,14 @@ def create_language_dataset(df_language, language, data_format, use_only_present
         forms_encoded = pooled_forms_encoded
 
     # print_diagnostic_encoding(form_column, lexeme_column,
-    #                           df_used, lexemes_unique, forms_encoded, bigram_inventory)
+    #                           df_used, lexemes_unique, forms_encoded, ngram_inventory)
 
-    # inflections_onehot, inflection_inventory = create_onehot_inflections(
-    #     inflections)
-    return forms_encoded, forms_list, list(inflections), inflection_classes, list(lexemes), bigram_inventory
+    return forms_encoded, forms_list, list(inflections), inflection_classes, list(lexemes), ngram_inventory
 
 
-def print_diagnostic_encoding(form_column, lexeme_column, df_used, lexemes_unique, forms_encoded, bigram_inventory):
+def print_diagnostic_encoding(form_column, lexeme_column, df_used, lexemes_unique, forms_encoded, ngram_inventory):
     encoding_diagnostic_df = pd.DataFrame(
-        data=forms_encoded, index=lexemes_unique, columns=bigram_inventory)
+        data=forms_encoded, index=lexemes_unique, columns=ngram_inventory)
     for lexeme, lexeme_row in encoding_diagnostic_df.iterrows():
         activated_ngrams = ["".join(ngram)
                             for ngram in lexeme_row[lexeme_row == 1].index]

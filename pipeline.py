@@ -1,5 +1,5 @@
 
-from conf import OUTPUT_DIR, LANGUAGE, SAMPLE_FIRST, N_RUNS, CONCAT_VERB_FEATURES, USE_ONLY_3PL, CONFIG_STRING, SQUEEZE_INTO_VERBS, NGRAMS, SET_COMMON_FEATURES_TO_ZERO, VIGILANCE_RANGE, paths, EVAL_INTERVAL
+from conf import OUTPUT_DIR, LANGUAGE, SAMPLE_FIRST, N_RUNS, CONCAT_VERB_FEATURES, USE_ONLY_3PL, CONFIG_STRING, SQUEEZE_INTO_VERBS, NGRAMS, SET_COMMON_FEATURES_TO_ZERO, VIGILANCE_RANGE, paths
 from model import art, majority_baseline, random_baseline, kmeans_cluster_baseline
 import pandas as pd
 import os
@@ -42,57 +42,58 @@ def main():
     df_language = pd.read_csv(
         conjugation_df_path, index_col=0, low_memory=False)
 
-    forms_onehot, forms, inflections, inflection_classes, cogids, bigram_inventory = data.create_language_dataset(df_language, language, data_format=data_format, use_only_present=use_only_present_lang, Ngrams=NGRAMS,
-                                                                                              sample_first=SAMPLE_FIRST,  use_only_3PL=USE_ONLY_3PL, squeeze_into_verbs=SQUEEZE_INTO_VERBS, concat_verb_features=CONCAT_VERB_FEATURES, set_common_features_to_zero=SET_COMMON_FEATURES_TO_ZERO)
-
+    forms_onehot, forms, inflections, inflection_classes, _, ngram_inventory = data.create_language_dataset(df_language, language, data_format=data_format, use_only_present=use_only_present_lang, Ngrams=NGRAMS,
+                                                                                                                 sample_first=SAMPLE_FIRST,  use_only_3PL=USE_ONLY_3PL, squeeze_into_verbs=SQUEEZE_INTO_VERBS, concat_verb_features=CONCAT_VERB_FEATURES, set_common_features_to_zero=SET_COMMON_FEATURES_TO_ZERO)
     if args.single_run_plotdata:
         # Plot data before running model
         df, pca = plot.fit_pca(forms_onehot)
-        # plot.plot_data(df, labels=None, clusters=inflectionss,
-        # micro_clusters=cogids, file_label=f"pca-art-data_bigram_hamming_original_MCA_-{LANGUAGE_ROMANCE_DATASET}", show=False)
         plot.plot_data(df, labels=None, clusters=inflections,
-                       micro_clusters=None, file_label=f"pca-art-data_bigram_hamming_original_MCA_-{language}_{CONFIG_STRING}", show=False)
+                       micro_clusters=None, file_label=f"pca-art-data_ngram_hamming_original_MCA_-{language}_{CONFIG_STRING}", show=False)
         # print(f"Full data shuffle, {N_RUNS} runs")
-        art(forms_onehot, forms, bigram_inventory, inflections, inflection_classes, cogids, pca,
+        art(forms_onehot, forms, ngram_inventory, inflections, inflection_classes, pca,
             language, n_runs=1, shuffle_data=True, repeat_dataset=True, data_plot=True)
 
     if args.eval_batches:
         print(f"Full data shuffle, {N_RUNS} runs:")
-        art(forms_onehot, forms, bigram_inventory, inflections,inflection_classes, 
-            cogids, None, language, n_runs=N_RUNS, shuffle_data=True)
+        art(forms_onehot, forms, ngram_inventory, inflections, inflection_classes,
+            None, language, n_runs=N_RUNS, shuffle_data=True)
         print(f"Repeat dataset shuffle, {N_RUNS} runs:")
-        art(forms_onehot, forms, bigram_inventory, inflections, inflection_classes, cogids, None,
+        art(forms_onehot, forms, ngram_inventory, inflections, inflection_classes, None,
             language, n_runs=N_RUNS, repeat_dataset=True, shuffle_data=True)
         print(f"batch 10 shuffle, {N_RUNS} runs:")
-        art(forms_onehot, forms, bigram_inventory, inflections, inflection_classes, cogids,
+        art(forms_onehot, forms, ngram_inventory, inflections, inflection_classes,
             None, language, batch_size=10, n_runs=N_RUNS, shuffle_data=True)
         print(f"batch 50 shuffle, {N_RUNS} runs:")
-        art(forms_onehot, forms, bigram_inventory, inflections, inflection_classes, cogids,
+        art(forms_onehot, forms, ngram_inventory, inflections, inflection_classes,
             None, language, batch_size=50, n_runs=N_RUNS, shuffle_data=True)
 
     if args.eval_intervals:
         print(f"Full data shuffle, {N_RUNS} runs:")
-        art(forms_onehot, forms, bigram_inventory, inflections, inflection_classes, cogids, None, LANGUAGE,
+        art(forms_onehot, forms, ngram_inventory, inflections, inflection_classes, None, LANGUAGE,
             n_runs=N_RUNS, shuffle_data=True, repeat_dataset=True, eval_intervals=True)
 
     if args.eval_vigilances:
-        art(forms_onehot, forms, bigram_inventory, inflections, inflection_classes, cogids, None, language,
+        art(forms_onehot, forms, ngram_inventory, inflections, inflection_classes, None, language,
             n_runs=N_RUNS, shuffle_data=True, repeat_dataset=True, vigilances=VIGILANCE_RANGE)
 
     if args.baseline:
         # print("Full data shuffle, n runs")
         # art_one(forms_onehot, inflections, cogids, language, n_runs=N_RUNS, shuffle_data=True)
         print("Majority baseline:")
-        majority_baseline(inflections, n_inflection_classes=5) # TODO: Infer #classes from data
+        # TODO: Infer #classes from data
+        majority_baseline(inflections, n_inflection_classes=5)
 
         print("Random baseline:")
-        random_baseline(inflections, n_inflection_classes=5) # TODO: Infer #classes from data
+        # TODO: Infer #classes from data
+        random_baseline(inflections, n_inflection_classes=5)
 
         # print("Agg clustering baseline:")
         # agg_cluster_baseline(forms_onehot, inflections, n_inflection_classes=5) # TODO: Infer #classes from data
 
         print("Kmeans clustering baseline:")
-        kmeans_cluster_baseline(forms_onehot, inflections, n_inflection_classes=5) # TODO: Infer #classes from data
+        # TODO: Infer #classes from data
+        kmeans_cluster_baseline(
+            forms_onehot, inflections, n_inflection_classes=5)
 
         print("Comparison to inflection classes:")
         print("Token count:")

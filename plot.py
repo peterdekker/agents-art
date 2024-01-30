@@ -3,6 +3,7 @@ from sklearn.decomposition import PCA
 import seaborn as sns
 import matplotlib.pyplot as plt
 import pandas as pd
+from conf import LABEL_DENSITY, FILLED_MARKERS, OUTPUT_DIR
 import numpy as np
 import matplotlib
 # from matplotlib.lines import Line2D
@@ -12,7 +13,6 @@ import matplotlib
 
 import os
 
-from conf import LABEL_DENSITY, FILLED_MARKERS, OUTPUT_DIR
 
 plt.rcParams['figure.figsize'] = [10, 6]
 plt.rcParams['figure.dpi'] = 200
@@ -60,7 +60,7 @@ def plot_intervals(ari_intervals, incrementalIndices, file_label=None, show=True
     if show:
         plt.show()
 
-def plot_barchart(cluster_inflection_stats, inflection_classes, #category_bigrams, always_activated_bigrams,
+def plot_barchart(cluster_inflection_stats, inflection_classes, #category_ngrams, always_activated_ngrams,
                         file_label=None, show=False):
     sums=np.sum(cluster_inflection_stats,axis=1)
     order=np.argsort(-sums) #Get indeces from largest cluster to smallest (minus reverses default ascending sorting order)
@@ -81,15 +81,15 @@ def plot_barchart(cluster_inflection_stats, inflection_classes, #category_bigram
     ax.set_xticks([])
     
     # for bar in range(orderedStats.shape[0]):
-    #     for bigram in range(len(category_bigrams[bar])):
-    #         if category_bigrams[bar][bigram] in always_activated_bigrams:
+    #     for ngram in range(len(category_ngrams[bar])):
+    #         if category_ngrams[bar][ngram] in always_activated_ngrams:
     #             #Is not unique feature
-    #             plt.text(bar-0.30, bigram*6+5, category_bigrams[bar][bigram], fontsize=20)
+    #             plt.text(bar-0.30, ngram*6+5, category_ngrams[bar][ngram], fontsize=20)
     #         else:
     #             #Is unique feature
-    #             plt.text(bar-0.30, bigram*6+5, category_bigrams[bar][bigram], fontsize=20, weight='bold')
+    #             plt.text(bar-0.30, ngram*6+5, category_ngrams[bar][ngram], fontsize=20, weight='bold')
     
-    # category_bigrams
+    # category_ngrams
     # plt.figure(figsize=(10,6))
     if show:
         plt.show()

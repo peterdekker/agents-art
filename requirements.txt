@@ -12,3 +12,4 @@ six
 # For Jupyter notebook
 jupyter
 ipykernel
+# For GPU acceleration: cupy-cuda12x

@@ -1,7 +1,12 @@
 # ART algorithm adapted from Neupy version 0.8.2: https://github.com/itdxer/neupy/releases/tag/v0.8.2
 
 from __future__ import division
+from conf import USE_GPU
 
+if USE_GPU:
+    import cupy as cp
+else:
+    import numpy as cp
 import numpy as np
 import numbers
 import inspect
@@ -12,7 +17,7 @@ from collections import namedtuple
 from scipy.sparse import issparse
 
 Option = namedtuple('Option', 'class_name value')
-number_type = (int, float, np.floating, np.integer)
+number_type = (int, float, cp.floating, cp.integer)
 
 def preformat_value(value):
     if inspect.isfunction(value) or inspect.isclass(value):
@@ -21,7 +26,7 @@ def preformat_value(value):
     elif isinstance(value, (list, tuple, set)):
         return [preformat_value(v) for v in value]
 
-    elif isinstance(value, (np.ndarray, np.matrix)):
+    elif isinstance(value, (np.ndarray, np.matrix, cp.ndarray)): # support both numpy and cupy arrays
         return value.shape
 
     return value
@@ -64,8 +69,8 @@ def format_data(data, is_feature1d=True, copy=False, make_float=True):
     if make_float:
         data = asfloat(data)
 
-    if not isinstance(data, np.ndarray) or copy:
-        data = np.array(data, copy=copy)
+    if not isinstance(data, (np.ndarray, cp.ndarray)) or copy: # numpy or cupy array
+        data = cp.array(data, copy=copy)
 
     # Valid number of features for one or two dimensions
     n_features = data.shape[-1]
@@ -122,8 +127,8 @@ def asfloat(value):
     """
     float_type = 'float32'
 
-    if isinstance(value, (np.matrix, np.ndarray)):
-        if value.dtype != np.dtype(float_type):
+    if isinstance(value, (np.matrix, np.ndarray, cp.ndarray)): # nummpy or cupy array
+        if value.dtype != cp.dtype(float_type): #cupy dtype should be alias for numpy dtype
             return value.astype(float_type)
 
         return value
@@ -134,7 +139,7 @@ def asfloat(value):
     elif issparse(value):
         return value
 
-    float_x_type = np.cast[float_type]
+    float_x_type = cp.cast[float_type]
     return float_x_type(value)
 
 class BaseProperty:
@@ -269,7 +274,7 @@ class BoundedProperty(BaseProperty):
     {BaseProperty.Parameters}
     """
 
-    def __init__(self, minval=-np.inf, maxval=np.inf, *args, **kwargs):
+    def __init__(self, minval=-cp.inf, maxval=cp.inf, *args, **kwargs):
         self.minval = minval
         self.maxval = maxval
         super(BoundedProperty, self).__init__(*args, **kwargs)
@@ -316,7 +321,7 @@ class IntProperty(BoundedProperty):
     ----------
     {BoundedProperty.Parameters}
     """
-    expected_type = (numbers.Integral, np.integer)
+    expected_type = (numbers.Integral, cp.integer)
 
     def __set__(self, instance, value):
         if isinstance(value, float) and value.is_integer():
@@ -334,7 +339,7 @@ class ExtractParameters(object):
             #     value = tensorflow_eval(value)
 
             property_ = option.value
-            is_numpy_array = isinstance(value, np.ndarray)
+            is_numpy_array = isinstance(value, (np.ndarray, cp.ndarray)) # numpy or cupy
 
             if hasattr(option.value, 'choices'):
                 choices = property_.choices
@@ -589,13 +594,11 @@ class ART1(BaseNetwork):
     Parameters
     ----------
     rho : float
-        Control reset action in training process. Value must be
-        between ``0`` and ``1``, defaults to ``0.5``.
+        Control reset action in training process.
 
     n_clusters : int
         Number of clusters, defaults to ``2``. Min value is also ``2``.
 
-    {BaseNetwork.Parameters}
 
     Methods
     -------
@@ -603,36 +606,15 @@ class ART1(BaseNetwork):
         ART trains until all clusters are found.
 
     predict(X)
-        Each prediction trains a new network. It's an alias to
-        the ``train`` method.
-
-    {BaseSkeleton.fit}
-
-    Examples
-    --------
-    >>> import numpy as np
-    >>> from neupy import algorithms
-    >>>
-    >>> data = np.array([
-    ...     [0, 1, 0],
-    ...     [1, 0, 0],
-    ...     [1, 1, 0],
-    ... ])
-    >>>>
-    >>> artnet = algorithms.ART1(
-    ...     step=2,
-    ...     rho=0.7,
-    ...     n_clusters=2,
-    ...     verbose=False
-    ... )
-    >>> artnet.predict(data)
-    array([ 0.,  1.,  1.])
+        alias to the ``train`` method.
     """
     rho = ProperFractionProperty(default=0.5)
     n_clusters = IntProperty(default=1, minval=1)
 
-    def train(self, X, forms, save_interval):
+    def train(self, X, save_interval):
         X = format_data(X)
+        if USE_GPU: # convert to Cupy array
+            X = cp.array(X)
 
         if X.ndim != 2:
             raise ValueError("Input value must be 2 dimensional, got "
@@ -646,11 +628,11 @@ class ART1(BaseNetwork):
         step = self.step
         rho = self.rho
 
-        if np.any((X != 0) & (X != 1)):
+        if cp.any((X != 0) & (X != 1)):
             raise ValueError("ART1 Network works only with binary matrices")
 
         if not hasattr(self, 'weight_21'):
-            self.weight_21 = np.ones((n_features, n_clusters))
+            self.weight_21 = cp.ones((n_features, n_clusters))
 
         if not hasattr(self, 'weight_12'):
             scaler = step / (step + n_features - 1)
@@ -664,7 +646,7 @@ class ART1(BaseNetwork):
                              "Got {} instead of {}"
                              "".format(n_features, weight_21.shape[0]))
 
-        classes = np.zeros(n_samples)
+        classes = cp.zeros(n_samples)
         
         # Train network
         for i, p in enumerate(X):
@@ -674,17 +656,17 @@ class ART1(BaseNetwork):
 
             while reset:
                 output1 = p
-                input2 = np.dot(weight_12, output1.T)
+                input2 = cp.dot(weight_12, output1.T)
                 
-                output2 = np.zeros(input2.size)
-                input2[disabled_neurons] = -np.inf
+                output2 = cp.zeros(input2.size)
+                input2[disabled_neurons] = -cp.inf
                 winner_index = input2.argmax()
                 output2[winner_index] = 1
                 
-                expectation = np.dot(weight_21, output2)
-                output1 = np.logical_and(p, expectation).astype(int)
+                expectation = cp.dot(weight_21, output2)
+                output1 = cp.logical_and(p, expectation).astype(int)
 
-                reset_value = np.dot(output1.T, output1) / np.dot(p.T, p)
+                reset_value = cp.dot(output1.T, output1) / cp.dot(p.T, p)
                 reset = reset_value < rho # Below vigilance = reset = keep searching
 
                 if reset:
@@ -699,17 +681,17 @@ class ART1(BaseNetwork):
                 if not reset:
                     if winner_index is not None:
                         weight_12[winner_index, :] = (step * output1) / (
-                            step + np.dot(output1.T, output1) - 1
+                            step + cp.dot(output1.T, output1) - 1
                         )
                         weight_21[:, winner_index] = output1
                     
                         if winner_index==n_clusters-1:    #If the input was set into an unused category, initialize a new one
                             n_clusters=n_clusters+1
-                            new_top_down_weights=np.ones((n_features, 1))
-                            weight_21 = np.append(weight_21,new_top_down_weights,axis=1) #Assuming the new weights would've been initialized to ones, after the logical and, the input features p would be the ones left activated
+                            new_top_down_weights=cp.ones((n_features, 1))
+                            weight_21 = cp.append(weight_21,new_top_down_weights,axis=1) #Assuming the new weights would've been initialized to ones, after the logical and, the input features p would be the ones left activated
                             new_bottom_up_weights=(step * new_top_down_weights) / (
                                 step + n_features - 1)
-                            weight_12 = np.append(weight_12,new_bottom_up_weights.T,axis=0) 
+                            weight_12 = cp.append(weight_12,new_bottom_up_weights.T,axis=0) 
                     # else:
                     #     # Create new category - Heikki edit
 
@@ -717,27 +699,31 @@ class ART1(BaseNetwork):
                     #     # n_clusters=n_clusters+1
                     #     # winner_index = n_clusters-1 #-1 because 0 is a cluster
                     #     # output1=p[None,:].T #Make input a 2d column vector for appending
-                    #     # weight_21 = np.append(weight_21,output1,axis=1) #Assuming the new weights would've been initialized to ones, after the logical and, the input features p would be the ones left activated
+                    #     # weight_21 = cp.append(weight_21,output1,axis=1) #Assuming the new weights would've been initialized to ones, after the logical and, the input features p would be the ones left activated
                     #     # new_bottom_up_weights=(step * output1) / (
-                    #     #     step + np.dot(output1.T, output1) - 1
+                    #     #     step + cp.dot(output1.T, output1) - 1
                     #     # )
-                    #     # weight_12 = np.append(weight_12,new_bottom_up_weights.T,axis=0) 
+                    #     # weight_12 = cp.append(weight_12,new_bottom_up_weights.T,axis=0) 
 
                         
                         
-                    if np.isnan(winner_index):
+                    if cp.isnan(winner_index):
                         print('MSMSMS')
                     classes[i] = winner_index
             # print(i)
             if ((i+1) % save_interval)==0 or i==len(X):
-                incrementalClasses.append(np.copy(classes[0:i]))
+                incrementalClasses.append(cp.copy(classes[0:i]))
                 incrementalIndices.append(i+1)
 
         self.weight_12=weight_12
         self.weight_21=weight_21
         self.n_clusters=n_clusters
 
-        prototypes = weight_21.T ## TODO: this is not correct, prototypes should contain winning weights_21 for all data points
+        prototypes = weight_21.T
+
+        # Convert to numpy
+        classes = classes.get() if USE_GPU else classes
+        prototypes = prototypes.get() if USE_GPU else prototypes
         return classes, prototypes, incrementalClasses, incrementalIndices
 
     def predict(self, X):
