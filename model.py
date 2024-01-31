@@ -177,7 +177,6 @@ def art(data_onehot, forms, ngram_inventory, inflections_gold, inflection_classe
                          "cluster_inflection_stats_percent": cluster_inflection_stats_percent,
                          "min_cluster_size": min_cluster_size_batch, "max_cluster_size": max_cluster_size_batch})
 
-            ari_per_interval_per_run.append(ari_per_interval)
 
             if data_plot:
                 # Use result from last batch to plot TODO: think about this
@@ -199,6 +198,8 @@ def art(data_onehot, forms, ngram_inventory, inflections_gold, inflection_classe
                                file_label=f"pca-art-vig{vig}-run{r}-{language}_protos_{CONFIG_STRING}", show=show)
                 plot.plot_barchart(cluster_inflection_stats, inflection_classes,  # category_ngrams, always_activated_ngrams,
                                    file_label=f"pca-art-vig{vig}-run{r}-{language}_protos_{CONFIG_STRING}", show=show)
+            
+            ari_per_interval_per_run.append(ari_per_interval)
 
         if eval_intervals:
             plot.plot_intervals(ari_per_interval_per_run, plottedIndices,
@@ -278,73 +279,3 @@ def eval_results(results, inflections_gold):
     return rand, adj_rand, norm_mutual_info, adj_mutual_info, min_cluster_size, max_cluster_size
 
 
-# def art_iterated(data_onehot, n_runs, n_timesteps, batch_size_iterated, inflections_gold, cogids, language, vigilances=[ART_VIGILANCE], data_plot=False):
-#     inflections_gold = np.array(inflections_gold)
-#     if cogids is not None:
-#         cogids = np.array(cogids)
-#     records_end_scores = []
-#     records_end_clusters = []
-#     records_course_scores = []
-#     records_course_clusters = []
-#     for vig in vigilances:
-#         print(f" - Vigilance: {vig}")
-#         for r in range(n_runs):
-#             print(f" -- Run: {r}")
-#             # Initialize original data for new run
-#             input_next_gen = data_onehot.copy()
-#             for i in range(n_timesteps):
-#                 batch = np.random.choice(
-#                     len(input_next_gen), batch_size_iterated, replace=False)
-
-#                 artnet = ART1(
-#                     step=ART_LEARNING_RATE,
-#                     rho=vig,
-#                     n_clusters=N_INFLECTION_CLASSES,
-#                 )
-#                 clusters_art = artnet.predict(input_next_gen[batch])
-
-#                 # Calculate scores
-#                 silhouette = silhouette_score(
-#                     X=data_onehot[batch], labels=clusters_art, metric="hamming")
-#                 rand = rand_score(inflections_gold[batch], clusters_art)
-#                 adj_rand = adjusted_rand_score(
-#                     inflections_gold[batch], clusters_art)
-#                 cluster_sizes = np.bincount(np.array(clusters_art, dtype=int))
-#                 min_cluster_size = np.min(cluster_sizes)
-#                 max_cluster_size = np.max(cluster_sizes)
-
-#                 # Transfer information to next generation
-#                 clusters_art_onehot, _ = data.create_onehot_inflections(
-#                     clusters_art)
-#                 # Replace last columns, represeting inflection class, by one-hot vector of inferred inflection classes
-#                 input_next_gen[batch, -
-#                                N_INFLECTION_CLASSES:] = clusters_art_onehot
-#                 records_course_scores.append(
-#                     {"run": r, "timestep": i, "vigilance": vig, "metric": "silhouette", "score": silhouette})
-#                 #records_course_scores.append({"run": r, "timestep": i, "vigilance": vig, "metric": "rand", "score": rand})
-#                 records_course_scores.append(
-#                     {"run": r, "timestep": i, "vigilance": vig, "metric": "adj_rand", "score": adj_rand})
-#                 records_course_clusters.append(
-#                     {"run": r, "timestep": i, "vigilance": vig, "metric": "min_cluster_size", "n_forms": min_cluster_size})
-#                 records_course_clusters.append(
-#                     {"run": r, "timestep": i, "vigilance": vig, "metric": "max_cluster_size", "n_forms": max_cluster_size})
-#             if data_plot:
-#                 evaluation.plot_data(data_onehot[batch], labels=None, clusters=clusters_art,
-#                                      micro_clusters=cogids[batch], file_label=f"art-{n_timesteps}-end-vig{vig}-{language}")
-
-#     # Plot results
-#     print("Plotting graphs.")
-#     df_course_scores = pd.DataFrame.from_records(records_course_scores)
-#     sns.lineplot(data=df_course_scores, x="timestep",
-#                  y="score", hue="metric", style="vigilance")
-#     plt.savefig(os.path.join(
-#         OUTPUT_DIR, f"scores-art-course-batch{batch_size_iterated}-{language}.pdf"))
-#     plt.clf()
-
-#     df_course_clusters = pd.DataFrame.from_records(records_course_clusters)
-#     sns.lineplot(data=df_course_clusters, x="timestep",
-#                  y="n_forms", hue="metric", style="vigilance")
-#     plt.savefig(os.path.join(
-#         OUTPUT_DIR, f"clusters-art-course-batch{batch_size_iterated}-{language}.pdf"))
-#     plt.clf()
-#     print("Done plotting.")
