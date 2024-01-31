@@ -101,18 +101,6 @@ def main():
         # print("Type count")
         # print(df_language.drop_duplicates(subset="Cognateset_ID_first")["Latin_Conjugation"].value_counts(normalize=True))
 
-    # if iterated_run:
-    #   forms_inflections_onehot = np.concatenate((forms_onehot, inflections_onehot), axis=1)
-    #     if plot_data_before:
-    #         score = evaluation.plot_data(forms_inflections_onehot, labels=None, clusters=inflections, micro_clusters=cogids, file_label=f"inflections-{language}")
-    #         print (f"Silhouette score, data before run (with inflection class): {score}")
-    #     inflections_empty = np.zeros(inflections_onehot.shape)
-    #     forms_empty_inflections_onehot = np.concatenate((forms_onehot, inflections_empty), axis=1)
-
-    #     for bs in [10,20,50,100,200,500]:
-    #         print(f"Batch size: {bs}")
-    #         art_iterated(forms_empty_inflections_onehot, n_runs=20, n_timesteps=500, batch_size_iterated=bs, inflections_gold=inflections, cogids=cogids, vigilances=[0.25, 0.5, 0.75] )
-
 
 if __name__ == "__main__":
     main()

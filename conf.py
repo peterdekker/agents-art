@@ -1,19 +1,21 @@
 import os
+import numpy as np
 
 ### Default for Argparse options: settable by user via command line options
 LANGUAGE = "latin"
 ###
 
 ### Parameters settable for users via this config file
-USE_GPU = True
-import numpy as np
-SAMPLE_FIRST = None # 1000
-N_RUNS = 10
+MULTIPROCESSING = True
+USE_GPU = False
 
+N_RUNS = 5 # 10
 ART_VIGILANCE=0.25
 ART_LEARNING_RATE=2
-LABEL_DENSITY = 5
-VIGILANCE_RANGE = np.arange(0.0,1.02,0.02)
+
+VIGILANCE_RANGE_STEP = 0.05 #0.02
+MAX_VIGILANCE = 0.6
+VIGILANCE_RANGE = [x/100 for x in range(0,int(MAX_VIGILANCE*100), int(VIGILANCE_RANGE_STEP*100))]
 
 
 
@@ -24,13 +26,14 @@ CONCAT_VERB_FEATURES=False
 SET_COMMON_FEATURES_TO_ZERO=False
 USE_ONLY_3PL=False
 NGRAMS=3
+SAMPLE_FIRST = None # 1000
 CONFIG_STRING=f"--use_only_3PL={USE_ONLY_3PL}---squeeze_into_verbs=={SQUEEZE_INTO_VERBS}---Concat_verb_features={CONCAT_VERB_FEATURES}---CommonFeat0={SET_COMMON_FEATURES_TO_ZERO}---Ngram={NGRAMS}"
 ###
 
 
 
 #### Not to be changed by user
-
+LABEL_DENSITY = 5
 EVAL_INTERVAL=20
 # INFLECTION_CLASSES = ["I", "II", "III", "IV", "special"]
 # N_INFLECTION_CLASSES = len(INFLECTION_CLASSES)

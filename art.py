@@ -635,7 +635,7 @@ class ART1(BaseNetwork):
             self.weight_21 = cp.ones((n_features, n_clusters))
 
         if not hasattr(self, 'weight_12'):
-            scaler = step / (step + n_features - 1)
+            scaler = step / (step + n_features - 1) # In original code: n_clusteres instead of n_features
             self.weight_12 = scaler * self.weight_21.T
 
         weight_21 = self.weight_21
@@ -712,12 +712,16 @@ class ART1(BaseNetwork):
                     classes[i] = winner_index
             # print(i)
             if ((i+1) % save_interval)==0 or i==len(X):
-                incrementalClasses.append(cp.copy(classes[0:i]))
+                classes_obj = cp.copy(classes[0:i])
+                classes_obj = classes_obj.get() if USE_GPU else classes_obj
+                incrementalClasses.append(classes_obj)
                 incrementalIndices.append(i+1)
 
+        # Save weights and #clusters in object field, so model can be trained in batches (not in NeuPy implementation)
         self.weight_12=weight_12
         self.weight_21=weight_21
         self.n_clusters=n_clusters
+        
 
         prototypes = weight_21.T
 

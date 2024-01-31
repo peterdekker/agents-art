@@ -172,7 +172,7 @@ def create_language_dataset(df_language, language, data_format, use_only_present
     if use_only_present:
         df_used = df_language[df_language[cell_column].str.contains(
             tag_present_3pl if use_only_3PL else tag_present)]
-        df_used.to_csv(f'only_used_{language}_stuff.csv')
+        # df_used.to_csv(f'only_used_{language}_stuff.csv')
     else:
         df_used = df_language
     
@@ -197,15 +197,15 @@ def create_language_dataset(df_language, language, data_format, use_only_present
     lexemes_unique = lexemes.unique()
     lexemes_unique.sort()
     n_lexemes_unique = len(lexemes_unique)
-    print(f"Number of unique lexemes: {n_lexemes_unique}")
     # Inflection classes calculated based on only used dataset (possibly not full dataset)
     inflection_classes = list(inflections.unique())
-    print(f"Inflection classes: {inflection_classes}")
 
     forms_encoded, ngram_inventory = create_onehot_forms_from_Ngrams(
         forms_list, Ngrams, tokenize_form_spaces)
     assert forms_encoded.shape[0] == len(df_used)
     assert forms_encoded.shape[1] == len(ngram_inventory)
+    print(f"{language}. unique lexemes: {n_lexemes_unique}. Inflection classes: {len(inflection_classes)}. Ngrams: {len(ngram_inventory)}")
+
 
     if squeeze_into_verbs:
         # Make new pooled ngram inventory with person tags
