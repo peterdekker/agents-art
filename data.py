@@ -4,6 +4,7 @@ import os
 import requests
 import shutil
 import pandas as pd
+from lingpy import ipa2tokens
 # from bpe import Encoder
 
 from conf import paths, WRITE_CSV
@@ -53,6 +54,9 @@ def load_romance_dataset(conjugation_df_path, only_latin):
 
     conjugation_df["Cell"] = conjugation_df["Cell"].apply(
         lambda tense_person_list: ".".join(tense_person_list))
+    
+    # Tokenize forms using Lingpy
+    conjugation_df["Form_tokenized"] = conjugation_df["Form"].apply(lambda f: " ".join(ipa2tokens(f, merge_vowels=False, merge_geminates=False)))
 
     if only_latin:
         conjugation_df = conjugation_df[conjugation_df["Language_ID"]
@@ -158,13 +162,13 @@ def create_language_dataset(df_language, language, data_format, use_only_present
         tag_present_3pl = f"{tag_present}.3pl"
         tokenize_form_spaces = True
     else:  # data_format=="romance"
-        form_column = "Form"
+        form_column = "Form_tokenized" # form_column = "Form"
         inflection_column = "Latin_Conjugation"
         lexeme_column = "Cognateset_ID_first"
         cell_column = "Cell"
         tag_present = "PRS-IND"
         tag_present_3pl = f"{tag_present}.3PL"  # "'PRS-IND', '3PL'"
-        tokenize_form_spaces = False
+        tokenize_form_spaces = True
 
     if sample_first:
         df_language = df_language.head(sample_first)

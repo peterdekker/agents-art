@@ -7,8 +7,9 @@ LANGUAGE = "latin"
 
 ### Parameters settable for users via this config file
 MULTIPROCESSING = True
-USE_GPU = False
-WRITE_CSV = False
+N_PROCESSES = None # None for using all
+USE_GPU = True # GPU often slower than CPU, but saves CPU availability
+WRITE_CSV = True 
 
 N_RUNS = 5 # 10
 ART_VIGILANCE=0.25

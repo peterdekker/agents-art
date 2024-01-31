@@ -1,4 +1,4 @@
-from conf import ART_VIGILANCE, ART_LEARNING_RATE, OUTPUT_DIR, INITIAL_CLUSTERS, CONFIG_STRING, VIGILANCE_RANGE, EVAL_INTERVAL, MULTIPROCESSING, WRITE_CSV
+from conf import ART_VIGILANCE, ART_LEARNING_RATE, OUTPUT_DIR, INITIAL_CLUSTERS, CONFIG_STRING, VIGILANCE_RANGE, EVAL_INTERVAL, MULTIPROCESSING, WRITE_CSV, N_PROCESSES
 import plot
 from art import ART1
 from sklearn import cluster
@@ -62,7 +62,7 @@ def art(data_onehot, forms, ngram_inventory, inflections_gold, inflection_classe
             raise ValueError("eval_intervals is not possible in multiprocessing mode.")
         # Param settings: only vig and r are variable
         param_settings = [(data_onehot, forms, ngram_inventory, inflections_gold, inflection_classes, pca, language, repeat_dataset, batch_size, shuffle_data, data_plot, show, eval_intervals, vig, r) for vig in vigilances for r in range(n_runs)]
-        with Pool(processes=None) as pool:
+        with Pool(processes=N_PROCESSES) as pool:
             records_listlist = pool.starmap(art_run_parallel_wrapper, param_settings) # take only first return value
     else: # If multiprocessing is off, this allows to do eval_intervals, which is done once per vigilance
         records_listlist = []

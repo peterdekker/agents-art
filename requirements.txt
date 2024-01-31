@@ -9,6 +9,7 @@ requests
 # prince
 # bpe
 six
+lingpy
 # For Jupyter notebook
 jupyter
 ipykernel
