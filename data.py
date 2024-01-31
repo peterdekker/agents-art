@@ -6,7 +6,7 @@ import shutil
 import pandas as pd
 # from bpe import Encoder
 
-from conf import paths
+from conf import paths, WRITE_CSV
 
 # np.random.seed(11)
 
@@ -172,7 +172,8 @@ def create_language_dataset(df_language, language, data_format, use_only_present
     if use_only_present:
         df_used = df_language[df_language[cell_column].str.contains(
             tag_present_3pl if use_only_3PL else tag_present)]
-        # df_used.to_csv(f'only_used_{language}_stuff.csv')
+        if WRITE_CSV:
+            df_used.to_csv(f'only_used_{language}_stuff.csv')
     else:
         df_used = df_language
     

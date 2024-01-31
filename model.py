@@ -1,4 +1,4 @@
-from conf import ART_VIGILANCE, ART_LEARNING_RATE, OUTPUT_DIR, INITIAL_CLUSTERS, CONFIG_STRING, VIGILANCE_RANGE, EVAL_INTERVAL, MULTIPROCESSING
+from conf import ART_VIGILANCE, ART_LEARNING_RATE, OUTPUT_DIR, INITIAL_CLUSTERS, CONFIG_STRING, VIGILANCE_RANGE, EVAL_INTERVAL, MULTIPROCESSING, WRITE_CSV
 import plot
 from art import ART1
 from sklearn import cluster
@@ -79,13 +79,15 @@ def art(data_onehot, forms, ngram_inventory, inflections_gold, inflection_classe
     
     records = list(itertools.chain.from_iterable(records_listlist))
     df_results = pd.DataFrame(records)
-    df_results.to_csv(os.path.join(
-        OUTPUT_DIR, f"histogram_per_vigilance-{language}_{CONFIG_STRING}_out.csv"))
+    if WRITE_CSV:
+        df_results.to_csv(os.path.join(
+            OUTPUT_DIR, f"histogram_per_vigilance-{language}_{CONFIG_STRING}_out.csv"))
     print(df_results.groupby("vigilance")[["ri", "ari", "nmi", "ami", "min_cluster_size", "max_cluster_size", "n_clusters"]].mean()) # 
     df_results_small = df_results[["vigilance", "run", "cluster_population",
                                    "category_ngrams", "cluster_inflection_stats", "ari", "batch"]]
-    df_results_small.to_csv(os.path.join(
-        OUTPUT_DIR, f"cluster_stats_{CONFIG_STRING}.csv"))
+    if WRITE_CSV:
+        df_results_small.to_csv(os.path.join(
+            OUTPUT_DIR, f"cluster_stats_{CONFIG_STRING}.csv"))
 
     # Only create vigilance plot when comparing multiple vigilances
     if eval_vigilances:
@@ -134,8 +136,9 @@ def art(data_onehot, forms, ngram_inventory, inflections_gold, inflection_classe
         if show:
             plt.show()
         plt.clf()
-        # df_results.to_csv(
-        #     "clusters-scores-art-end.tex", sep="&", lineterminator="\\\\\n")
+        if WRITE_CSV:
+            df_results.to_csv(
+                "clusters-scores-art-end.tex", sep="&", lineterminator="\\\\\n")
 
 def art_run_parallel_wrapper(*args):
     return art_run_parallel(*args)[0]
