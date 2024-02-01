@@ -13,4 +13,4 @@ lingpy
 # For Jupyter notebook
 jupyter
 ipykernel
-# For GPU acceleration: cupy-cuda12x
+cupy-cuda12x # For GPU acceleration. (or possibly different cupy package for different cuda version)

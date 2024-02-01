@@ -98,9 +98,9 @@ def art(data_onehot, forms, ngram_inventory, inflections_gold, inflection_classe
         # df_melt_scores = pd.melt(df_results, id_vars=["vigilance", "run", "batch"], value_vars=["ri","ari", "nmi", "ami"], var_name="metric", value_name="score")
         df_melt_clusters = pd.melt(df_results, id_vars=["vigilance", "run", "batch"], value_vars=[
                                    "min_cluster_size", "max_cluster_size"], var_name="metric", value_name="size")
-        df_melt_ci = pd.melt(df_results, id_vars=["vigilance"], value_vars=[
-                             "cluster_population"], var_name="metric", value_name="N_in_cluster")
-
+        
+        # df_melt_ci = pd.melt(df_results, id_vars=["vigilance"], value_vars=[
+        #                      "cluster_population"], var_name="metric", value_name="N_in_cluster")
         # from matplotlib import cm
         # x = df_melt_ci["vigilance"].values
         # xrep=np.repeat(x, 50)
@@ -117,12 +117,12 @@ def art(data_onehot, forms, ngram_inventory, inflections_gold, inflection_classe
         sns.lineplot(data=df_melt_scores, x="vigilance",
                      y="score", hue="metric")
         # This is obtained from one baseline run
-        rep_kmeans_ARI = np.ones((1, len(VIGILANCE_RANGE)))*0.782
+        # rep_kmeans_ARI = np.ones((1, len(VIGILANCE_RANGE)))*0.782
         # rep_kmeans_AMI=np.ones((1,len(VIGILANCE_RANGE)))*0.835 #This is obtained from one baseline run
-        sns.lineplot(x=VIGILANCE_RANGE,
-                     y=rep_kmeans_ARI[0], dashes=True, hue=1)
-        plt.legend(labels=["ARI", "_ss", "AMI", "_ss",
-                   "Baseline ARI (kmeans)", "Baseline AMI (kmeans)"])
+        # sns.lineplot(x=VIGILANCE_RANGE,
+        #              y=rep_kmeans_ARI[0], dashes=True, hue=1)
+        # plt.legend(labels=["ARI", "_ss", "AMI", "_ss",
+        #            "Baseline ARI (kmeans)", "Baseline AMI (kmeans)"])
         plt.savefig(os.path.join(
             OUTPUT_DIR, f"scores-art-end-{language}-{CONFIG_STRING}.pdf"))
         if show:
