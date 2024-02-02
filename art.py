@@ -651,7 +651,7 @@ class ART1(BaseNetwork):
         # Train network
         for i, p in enumerate(X):
             disabled_neurons = []
-            reseted_values = []
+            # reseted_values = []
             reset = True
 
             while reset:
@@ -660,18 +660,27 @@ class ART1(BaseNetwork):
                 
                 output2 = cp.zeros(input2.size)
                 input2[disabled_neurons] = -cp.inf
+
+
                 winner_index = input2.argmax()
                 output2[winner_index] = 1
+
                 
                 expectation = cp.dot(weight_21, output2)
                 output1 = cp.logical_and(p, expectation).astype(int)
+                if USE_GPU:
+                    del input2
+                    del output2
+                    del expectation
+                    cp._default_memory_pool.free_all_blocks()
+
 
                 reset_value = cp.dot(output1.T, output1) / cp.dot(p.T, p)
                 reset = reset_value < rho # Below vigilance = reset = keep searching
 
                 if reset:
                     disabled_neurons.append(winner_index)
-                    reseted_values.append((reset_value, winner_index))
+                    # reseted_values.append((reset_value, winner_index))
                 
                 if len(disabled_neurons) >= n_clusters:
                     # Got this case only if we test all possible clusters
@@ -691,7 +700,13 @@ class ART1(BaseNetwork):
                             weight_21 = cp.append(weight_21,new_top_down_weights,axis=1) #Assuming the new weights would've been initialized to ones, after the logical and, the input features p would be the ones left activated
                             new_bottom_up_weights=(step * new_top_down_weights) / (
                                 step + n_features - 1)
-                            weight_12 = cp.append(weight_12,new_bottom_up_weights.T,axis=0) 
+                            if USE_GPU:
+                                del new_top_down_weights
+                                cp._default_memory_pool.free_all_blocks()
+                            weight_12 = cp.append(weight_12,new_bottom_up_weights.T,axis=0)
+                            if USE_GPU:
+                                del new_bottom_up_weights
+                                cp._default_memory_pool.free_all_blocks()
                     # else:
                     #     # Create new category - Heikki edit
 
@@ -703,13 +718,16 @@ class ART1(BaseNetwork):
                     #     # new_bottom_up_weights=(step * output1) / (
                     #     #     step + cp.dot(output1.T, output1) - 1
                     #     # )
-                    #     # weight_12 = cp.append(weight_12,new_bottom_up_weights.T,axis=0) 
-
-                        
+                    #     # weight_12 = cp.append(weight_12,new_bottom_up_weights.T,axis=0)         
                         
                     if cp.isnan(winner_index):
                         print('MSMSMS')
                     classes[i] = winner_index
+                
+                if USE_GPU:
+                    del output1
+                    # Frees up memory of all the blocks that have now been deleted
+                    cp._default_memory_pool.free_all_blocks()
             # print(i)
             if ((i+1) % save_interval)==0 or i==len(X):
                 classes_obj = cp.copy(classes[0:i])
@@ -726,9 +744,15 @@ class ART1(BaseNetwork):
         prototypes = weight_21.T
 
         # Convert to numpy
-        classes = classes.get() if USE_GPU else classes
-        prototypes = prototypes.get() if USE_GPU else prototypes
-        return classes, prototypes, incrementalClasses, incrementalIndices
+        classes_np = classes.get() if USE_GPU else classes
+        prototypes_np = prototypes.get() if USE_GPU else prototypes
+        if USE_GPU:
+            del weight_12
+            del weight_21
+            del classes_np
+            del prototypes_np
+            cp._default_memory_pool.free_all_blocks()
+        return classes_np, prototypes_np, incrementalClasses, incrementalIndices
 
     def predict(self, X):
         return self.train(X)
