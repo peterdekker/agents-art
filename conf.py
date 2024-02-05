@@ -7,8 +7,8 @@ LANGUAGE = "latin"
 
 ### Parameters settable for users via this config file
 MULTIPROCESSING = True
-N_PROCESSES = 4 # None # None for using all
-USE_GPU = True # GPU often slower than CPU, but saves CPU availability
+N_PROCESSES = 6 # None # None for using all
+USE_GPU = False # GPU often slower than CPU, and runs out of memory for concat representation. but saves CPU availability
 WRITE_CSV = True 
 
 N_RUNS = 5 # 10
@@ -21,7 +21,8 @@ MAX_VIGILANCE = 0.6
 OUTPUT_DIR = "output"
 
 SQUEEZE_INTO_VERBS=True
-CONCAT_VERB_FEATURES=True
+CONCAT_VERB_FEATURES=False
+REMOVE_FEATURES_ALLZERO = True
 SET_COMMON_FEATURES_TO_ZERO=False
 USE_ONLY_3PL=False
 NGRAMS=3

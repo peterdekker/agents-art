@@ -1,5 +1,5 @@
 
-from conf import OUTPUT_DIR, LANGUAGE, SAMPLE_FIRST, N_RUNS, CONCAT_VERB_FEATURES, USE_ONLY_3PL, CONFIG_STRING, SQUEEZE_INTO_VERBS, NGRAMS, SET_COMMON_FEATURES_TO_ZERO, VIGILANCE_RANGE, paths
+from conf import OUTPUT_DIR, LANGUAGE, SAMPLE_FIRST, N_RUNS, CONCAT_VERB_FEATURES, USE_ONLY_3PL, CONFIG_STRING, SQUEEZE_INTO_VERBS, NGRAMS, SET_COMMON_FEATURES_TO_ZERO, REMOVE_FEATURES_ALLZERO, VIGILANCE_RANGE, paths
 from model import art, majority_baseline, random_baseline, kmeans_cluster_baseline
 import pandas as pd
 import os
@@ -43,7 +43,7 @@ def main():
         conjugation_df_path, index_col=0, low_memory=False)
 
     forms_onehot, forms, inflections, inflection_classes, _, ngram_inventory = data.create_language_dataset(df_language, language, data_format=data_format, use_only_present=use_only_present_lang, Ngrams=NGRAMS,
-                                                                                                                 sample_first=SAMPLE_FIRST,  use_only_3PL=USE_ONLY_3PL, squeeze_into_verbs=SQUEEZE_INTO_VERBS, concat_verb_features=CONCAT_VERB_FEATURES, set_common_features_to_zero=SET_COMMON_FEATURES_TO_ZERO)
+                                                                                                                 sample_first=SAMPLE_FIRST,  use_only_3PL=USE_ONLY_3PL, squeeze_into_verbs=SQUEEZE_INTO_VERBS, concat_verb_features=CONCAT_VERB_FEATURES, set_common_features_to_zero=SET_COMMON_FEATURES_TO_ZERO, remove_features_allzero=REMOVE_FEATURES_ALLZERO)
     if args.single_run_plotdata:
         # Plot data before running model
         df, pca = plot.fit_pca(forms_onehot)

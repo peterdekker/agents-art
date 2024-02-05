@@ -106,14 +106,14 @@ def merge_filter_romance_inflections(forms_df_1cognate, cognates_df):
 
 
 
-def get_existing_sound_Ngrams(forms_tokenized, Ngrams):  # NOT FINISHED!!
+def get_existing_sound_Ngrams(forms_tokenized, Ngrams):
     # sound_inventory = list(set(list("".join(forms))))
     Ngram_list = []
     for form in forms_tokenized:
         for token_ix in range(0, len(form)-(Ngrams-1)):
             # tuple can be deduplicated using set
             Ngram = tuple(form[token_ix:token_ix+Ngrams])
-            # if Ngram not in Ngram_list:
+            #if Ngram not in Ngram_list:
             Ngram_list.append(Ngram)
     Ngram_list = list(set(Ngram_list))
     return Ngram_list
@@ -132,24 +132,19 @@ def create_onehot_forms_from_Ngrams(forms_list, Ngrams, tokenize_form_spaces):
     Ngram_list = get_existing_sound_Ngrams(forms_tokenized, Ngrams)
     n_Ngrams = len(Ngram_list)
     Ngram_list_indexes = {ngram: idx for idx, ngram in enumerate(Ngram_list)}
-    # print(sounds)
-    # print(f"n_forms: {n_forms}")
-    # print(f"n_sounds: {n_sounds}")
-    # print(f"max_form_len: {max_form_len}")
     array = np.zeros(shape=(n_forms, n_Ngrams))
 
     for form_row, form in enumerate(forms_tokenized):
-        for char_position in range(0, len(form)-(Ngrams-1)):
+        for token_ix in range(0, len(form)-(Ngrams-1)):
             # convert to tuple, because Ngram_list contains tuples
-            current_Ngram = tuple(form[char_position:char_position+Ngrams])
+            current_Ngram = tuple(form[token_ix:token_ix+Ngrams])
             index = Ngram_list_indexes[current_Ngram]
             # index = Ngram_list.index(current_Ngram)
             array[form_row, index] = 1
-
     return array, Ngram_list
 
 
-def create_language_dataset(df_language, language, data_format, use_only_present, Ngrams, sample_first,  use_only_3PL, squeeze_into_verbs, concat_verb_features, set_common_features_to_zero):
+def create_language_dataset(df_language, language, data_format, use_only_present, Ngrams, sample_first,  use_only_3PL, squeeze_into_verbs, concat_verb_features, set_common_features_to_zero, remove_features_allzero):
     if data_format == "paralex":
         form_column = "phon_form"
         inflection_column = "inflection_class"
@@ -169,6 +164,9 @@ def create_language_dataset(df_language, language, data_format, use_only_present
         tag_present = "PRS-IND"
         tag_present_3pl = f"{tag_present}.3PL"  # "'PRS-IND', '3PL'"
         tokenize_form_spaces = True
+    
+    # Keep only first form for a cell (Estonian has doubles)
+    df_language = df_language.groupby([lexeme_column,cell_column], as_index=False).first()
 
     if sample_first:
         df_language = df_language.head(sample_first)
@@ -209,7 +207,7 @@ def create_language_dataset(df_language, language, data_format, use_only_present
         forms_list, Ngrams, tokenize_form_spaces)
     assert forms_encoded.shape[0] == len(df_used)
     assert forms_encoded.shape[1] == len(ngram_inventory)
-    print(f"{language}. unique lexemes: {n_lexemes_unique}. Inflection classes: {len(inflection_classes)}. Ngrams: {len(ngram_inventory)}")
+    orig_ngram_inventory = ngram_inventory
 
 
     if squeeze_into_verbs:
@@ -260,6 +258,7 @@ def create_language_dataset(df_language, language, data_format, use_only_present
                             pooled_forms_encoded_for_verb, np.zeros((forms_encoded.shape[1])), axis=0)
 
             if set_common_features_to_zero:
+                print("This should not be executed when set_common_features_to_zero is not on.")
                 # NOTE: This functionality assumes number of paradigm cells is 6: only works for Latin
                 # NOTE: Not tested anymore after changing data processing code
                 if concat_verb_features:
@@ -280,9 +279,20 @@ def create_language_dataset(df_language, language, data_format, use_only_present
             pooled_forms_encoded[lexeme_ix,:] = pooled_forms_encoded_for_verb
         inflections = pooled_inflections
         forms_encoded = pooled_forms_encoded
+    
+    # Remove features for which whole column is 0:
+    # mostly relevant in concat mode, where some ngrams do not occur for some cells
+    # in set mode (or if not squeezing into verbs) there should not be all zeros features
+    if remove_features_allzero: 
+        features_all_zero = np.all(forms_encoded == 0, axis=0)
+        print(features_all_zero.sum())
+        print([' '.join(f) for f in np.array(ngram_inventory)[features_all_zero]])
+        print(features_all_zero.nonzero())
+    #[print(ngram) for ngram in ngram_inventory if "æ" in ngram]
 
     # print_diagnostic_encoding(form_column, lexeme_column,
     #                           df_used, lexemes_unique, forms_encoded, ngram_inventory)
+    print(f"{language}. unique lexemes: {n_lexemes_unique}. Inflection classes: {len(inflection_classes)}. Ngrams: {len(orig_ngram_inventory)}. Cells: {len(unique_cells_ordered)}. Features: {forms_encoded.shape[1]}")
 
     return forms_encoded, forms_list, list(inflections), inflection_classes, list(lexemes), ngram_inventory
 

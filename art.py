@@ -734,6 +734,9 @@ class ART1(BaseNetwork):
                 classes_obj = classes_obj.get() if USE_GPU else classes_obj
                 incrementalClasses.append(classes_obj)
                 incrementalIndices.append(i+1)
+                if USE_GPU:
+                    del classes_obj
+                    cp._default_memory_pool.free_all_blocks()
 
         # Save weights and #clusters in object field, so model can be trained in batches (not in NeuPy implementation)
         self.weight_12=weight_12
@@ -741,16 +744,14 @@ class ART1(BaseNetwork):
         self.n_clusters=n_clusters
         
 
-        prototypes = weight_21.T
 
         # Convert to numpy
         classes_np = classes.get() if USE_GPU else classes
-        prototypes_np = prototypes.get() if USE_GPU else prototypes
+        prototypes_np = weight_21.T.get() if USE_GPU else weight_21.T
         if USE_GPU:
             del weight_12
             del weight_21
-            del classes_np
-            del prototypes_np
+            del classes
             cp._default_memory_pool.free_all_blocks()
         return classes_np, prototypes_np, incrementalClasses, incrementalIndices
 
