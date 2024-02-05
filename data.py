@@ -285,10 +285,7 @@ def create_language_dataset(df_language, language, data_format, use_only_present
     # in set mode (or if not squeezing into verbs) there should not be all zeros features
     if remove_features_allzero: 
         features_all_zero = np.all(forms_encoded == 0, axis=0)
-        print(features_all_zero.sum())
-        print([' '.join(f) for f in np.array(ngram_inventory)[features_all_zero]])
-        print(features_all_zero.nonzero())
-    #[print(ngram) for ngram in ngram_inventory if "æ" in ngram]
+        # print(features_all_zero.sum())
 
     # print_diagnostic_encoding(form_column, lexeme_column,
     #                           df_used, lexemes_unique, forms_encoded, ngram_inventory)

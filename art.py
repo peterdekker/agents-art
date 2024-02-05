@@ -31,7 +31,7 @@ def preformat_value(value):
 
     return value
 
-def format_data(data, is_feature1d=True, copy=False, make_float=True):
+def format_data(data, is_feature1d=True, copy=False, make_float=False):
     """
     Transform data in a standardized format.
 
@@ -66,8 +66,8 @@ def format_data(data, is_feature1d=True, copy=False, make_float=True):
     if data is None or issparse(data):
         return data
 
-    if make_float:
-        data = asfloat(data)
+    # if make_float:
+    #     data = asfloat(data)
 
     if not isinstance(data, (np.ndarray, cp.ndarray)) or copy: # numpy or cupy array
         data = cp.array(data, copy=copy)
@@ -78,6 +78,8 @@ def format_data(data, is_feature1d=True, copy=False, make_float=True):
     if data.ndim == 1:
         data_shape = (n_features, 1) if is_feature1d else (1, n_features)
         data = data.reshape(data_shape)
+    
+    data = data.astype(bool)
 
     return data
 
@@ -614,7 +616,7 @@ class ART1(BaseNetwork):
     def train(self, X, save_interval):
         X = format_data(X)
         if USE_GPU: # convert to Cupy array
-            X = cp.array(X)
+            X = cp.array(X, dtype=bool)
 
         if X.ndim != 2:
             raise ValueError("Input value must be 2 dimensional, got "
@@ -632,7 +634,7 @@ class ART1(BaseNetwork):
             raise ValueError("ART1 Network works only with binary matrices")
 
         if not hasattr(self, 'weight_21'):
-            self.weight_21 = cp.ones((n_features, n_clusters))
+            self.weight_21 = cp.ones((n_features, n_clusters), dtype=bool)
 
         if not hasattr(self, 'weight_12'):
             scaler = step / (step + n_features - 1) # In original code: n_clusteres instead of n_features
@@ -646,7 +648,7 @@ class ART1(BaseNetwork):
                              "Got {} instead of {}"
                              "".format(n_features, weight_21.shape[0]))
 
-        classes = cp.zeros(n_samples)
+        classes = cp.zeros(n_samples, dtype=int)
         
         # Train network
         for i, p in enumerate(X):
