@@ -79,7 +79,7 @@ def format_data(data, is_feature1d=True, copy=False, make_float=False):
         data_shape = (n_features, 1) if is_feature1d else (1, n_features)
         data = data.reshape(data_shape)
     
-    data = data.astype(bool)
+    # data = data.astype(bool)
 
     return data
 
