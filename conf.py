@@ -12,7 +12,7 @@ USE_GPU = False # GPU often slower than CPU, and runs out of memory for concat r
 WRITE_CSV = True 
 
 N_RUNS = 5 # 10
-ART_VIGILANCE=0.10
+ART_VIGILANCE=0.25
 ART_LEARNING_RATE=2
 
 VIGILANCE_RANGE_STEP = 0.05 #0.02

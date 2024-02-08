@@ -639,7 +639,7 @@ class ART1(BaseNetwork):
 
         if not hasattr(self, 'weight_12'):
             scaler = (step / (step + n_features - 1)) # In original code: n_clusteres instead of n_features
-            self.weight_12 = scaler * self.weight_21.T.astype(cp.float32)
+            self.weight_12 = scaler * self.weight_21.T#.astype(cp.float32)
 
         weight_21 = self.weight_21
         weight_12 = self.weight_12
@@ -676,7 +676,7 @@ class ART1(BaseNetwork):
                 # equals:
                 # output2[winner_index] = 1
                 # expectation = cp.dot(weight_21, output2)
-                output1 = cp.logical_and(p, expectation)
+                output1 = cp.logical_and(p, expectation) #.astype(int) or even bool???
                 if USE_GPU:
                     del input2
                     del output2
