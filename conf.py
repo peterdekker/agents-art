@@ -24,16 +24,16 @@ SQUEEZE_INTO_VERBS=True
 CONCAT_VERB_FEATURES=True
 REMOVE_FEATURES_ALLZERO = True
 SET_COMMON_FEATURES_TO_ZERO=False
-USE_ONLY_3PL=False
 NGRAMS=3
 SAMPLE_FIRST = None # 1000
+CELLS_PRESENT_ESTONIAN = ["ind.prs.1sg", "ind.prs.2sg", "ind.prs.3sg", "ind.prs.1pl", "ind.prs.2pl", "ind.prs.3pl"]
 ###
 
 
 
 #### Not to be changed by user
 VIGILANCE_RANGE = [x/100 for x in range(0,int(MAX_VIGILANCE*100), int(VIGILANCE_RANGE_STEP*100))]
-CONFIG_STRING=f"--use_only_3PL={USE_ONLY_3PL}---squeeze_into_verbs=={SQUEEZE_INTO_VERBS}---Concat_verb_features={CONCAT_VERB_FEATURES}---CommonFeat0={SET_COMMON_FEATURES_TO_ZERO}---Ngram={NGRAMS}"
+CONFIG_STRING=f"---squeeze_into_verbs=={SQUEEZE_INTO_VERBS}---Concat_verb_features={CONCAT_VERB_FEATURES}---CommonFeat0={SET_COMMON_FEATURES_TO_ZERO}---Ngram={NGRAMS}"
 LABEL_DENSITY = 5
 EVAL_INTERVAL=20
 # INFLECTION_CLASSES = ["I", "II", "III", "IV", "special"]
