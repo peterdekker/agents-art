@@ -7,7 +7,7 @@ import pandas as pd
 from lingpy import ipa2tokens
 # from bpe import Encoder
 
-from conf import paths, WRITE_CSV
+from conf import paths, WRITE_CSV, CELLS_PRESENT_ESTONIAN
 
 # np.random.seed(11)
 
@@ -144,8 +144,8 @@ def create_onehot_forms_from_Ngrams(forms_list, Ngrams, tokenize_form_spaces):
     return array, np.array(ngram_inventory)
 
 
-def create_language_dataset(df_language, language, data_format, use_only_present, Ngrams, sample_first,  use_only_3PL, squeeze_into_verbs, concat_verb_features, set_common_features_to_zero, remove_features_allzero):
-    if data_format == "paralex":
+def create_language_dataset(df_language, language, use_only_present, Ngrams, sample_first,  squeeze_into_verbs, concat_verb_features, set_common_features_to_zero, remove_features_allzero):
+    if language == "portuguese" or language == "estonian":
         form_column = "phon_form"
         inflection_column = "inflection_class"
         lexeme_column = "lexeme_id"
@@ -172,8 +172,10 @@ def create_language_dataset(df_language, language, data_format, use_only_present
         df_language = df_language.head(sample_first)
 
     if use_only_present:
-        df_used = df_language[df_language[cell_column].str.contains(
-            tag_present_3pl if use_only_3PL else tag_present)]
+        if language=="estonian":
+            df_used = df_language[df_language[cell_column].isin(CELLS_PRESENT_ESTONIAN)]
+        else:
+            df_used = df_language[df_language[cell_column].str.contains(tag_present)]
         if WRITE_CSV:
             df_used.to_csv(f'only_used_{language}_stuff.csv')
     else:
@@ -197,6 +199,7 @@ def create_language_dataset(df_language, language, data_format, use_only_present
 
     # Variables representing unique set (not length df_used)
     unique_cells_ordered = cells.unique()
+    n_cells_unique = len(unique_cells_ordered)
     lexemes_unique = lexemes.unique()
     lexemes_unique.sort()
     n_lexemes_unique = len(lexemes_unique)
@@ -220,7 +223,7 @@ def create_language_dataset(df_language, language, data_format, use_only_present
             ngram_inventory = pooled_ngram_inventory
 
             pooled_forms_encoded = np.empty(
-                (n_lexemes_unique, len(unique_cells_ordered)*forms_encoded.shape[1]))
+                (n_lexemes_unique, n_cells_unique*forms_encoded.shape[1]))
         else:  # Set representation
             pooled_forms_encoded = np.empty(
                 (n_lexemes_unique, forms_encoded.shape[1]))
@@ -263,12 +266,12 @@ def create_language_dataset(df_language, language, data_format, use_only_present
                 # NOTE: Not tested anymore after changing data processing code
                 if concat_verb_features:
                     temp = np.reshape(pooled_forms_encoded_for_verb,
-                                      (len(unique_cells_ordered), forms_encoded.shape[1]))
+                                      (n_cells_unique, forms_encoded.shape[1]))
                     S = sum(temp)
                     # If the same gram was activated in all person tenses, their sum here is 6
                     temp[:, S == 6] = 0
                     pooled_forms_encoded_for_verb = np.reshape(
-                        temp, (len(unique_cells_ordered)*forms_encoded.shape[1]))
+                        temp, (n_cells_unique*forms_encoded.shape[1]))
                 else:
                     pooled_forms_encoded_for_verb[pooled_forms_encoded_for_verb == 6] = 0
 
@@ -292,7 +295,7 @@ def create_language_dataset(df_language, language, data_format, use_only_present
 
     # print_diagnostic_encoding(form_column, lexeme_column,
     #                           df_used, lexemes_unique, forms_encoded, ngram_inventory)
-    print(f"{language}. unique lexemes: {n_lexemes_unique}. Inflection classes: {len(inflection_classes)}. Ngrams: {len(orig_ngram_inventory)}. Cells: {len(unique_cells_ordered)}. Features: {forms_encoded.shape[1]}.")
+    print(f"{language}. unique lexemes: {n_lexemes_unique}. Inflection classes: {len(inflection_classes)}. Ngrams: {len(orig_ngram_inventory)}. Cells: {n_cells_unique}:{unique_cells_ordered}. Features: {forms_encoded.shape[1]}.")
 
     return forms_encoded, forms_list, list(inflections), inflection_classes, list(lexemes), ngram_inventory
 
