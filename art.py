@@ -637,8 +637,8 @@ class ART1(BaseNetwork):
             self.weight_21 = cp.ones((n_features, n_clusters), dtype=bool)
 
         if not hasattr(self, 'weight_12'):
-            scaler = step / (step + n_features - 1) # In original code: n_clusteres instead of n_features
-            self.weight_12 = scaler * self.weight_21.T
+            scaler = (step / (step + n_features - 1)) # In original code: n_clusteres instead of n_features
+            self.weight_12 = scaler * self.weight_21.T.astype(cp.float32)
 
         weight_21 = self.weight_21
         weight_12 = self.weight_12

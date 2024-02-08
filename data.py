@@ -108,15 +108,15 @@ def merge_filter_romance_inflections(forms_df_1cognate, cognates_df):
 
 def get_existing_sound_Ngrams(forms_tokenized, Ngrams):
     # sound_inventory = list(set(list("".join(forms))))
-    Ngram_list = []
+    ngram_inventory = []
     for form in forms_tokenized:
         for token_ix in range(0, len(form)-(Ngrams-1)):
             # tuple can be deduplicated using set
             Ngram = tuple(form[token_ix:token_ix+Ngrams])
             #if Ngram not in Ngram_list:
-            Ngram_list.append(Ngram)
-    Ngram_list = list(set(Ngram_list))
-    return Ngram_list
+            ngram_inventory.append(Ngram)
+    ngram_inventory = list(set(ngram_inventory))
+    return ngram_inventory
 
 
 # empty_symbol=True, pool_verb_features=False
@@ -129,9 +129,9 @@ def create_onehot_forms_from_Ngrams(forms_list, Ngrams, tokenize_form_spaces):
     n_forms = len(forms_tokenized)
     assert n_forms == len(forms_list)
 
-    Ngram_list = get_existing_sound_Ngrams(forms_tokenized, Ngrams)
-    n_Ngrams = len(Ngram_list)
-    Ngram_list_indexes = {ngram: idx for idx, ngram in enumerate(Ngram_list)}
+    ngram_inventory = get_existing_sound_Ngrams(forms_tokenized, Ngrams)
+    n_Ngrams = len(ngram_inventory)
+    Ngram_list_indexes = {ngram: idx for idx, ngram in enumerate(ngram_inventory)}
     array = np.zeros(shape=(n_forms, n_Ngrams))
 
     for form_row, form in enumerate(forms_tokenized):
@@ -141,7 +141,7 @@ def create_onehot_forms_from_Ngrams(forms_list, Ngrams, tokenize_form_spaces):
             index = Ngram_list_indexes[current_Ngram]
             # index = Ngram_list.index(current_Ngram)
             array[form_row, index] = 1
-    return array, Ngram_list
+    return array, np.array(ngram_inventory)
 
 
 def create_language_dataset(df_language, language, data_format, use_only_present, Ngrams, sample_first,  use_only_3PL, squeeze_into_verbs, concat_verb_features, set_common_features_to_zero, remove_features_allzero):
@@ -215,8 +215,8 @@ def create_language_dataset(df_language, language, data_format, use_only_present
         if concat_verb_features:
 
             # Pooled ngram inventory only used for plotting, not in encoding processing
-            pooled_ngram_inventory = ["".join(
-                ngram) + '_'+unique_cell for unique_cell in unique_cells_ordered for ngram in ngram_inventory]
+            pooled_ngram_inventory = np.array(["".join(
+                ngram) + '_'+unique_cell for unique_cell in unique_cells_ordered for ngram in ngram_inventory])
             ngram_inventory = pooled_ngram_inventory
 
             pooled_forms_encoded = np.empty(
@@ -283,13 +283,16 @@ def create_language_dataset(df_language, language, data_format, use_only_present
     # Remove features for which whole column is 0:
     # mostly relevant in concat mode, where some ngrams do not occur for some cells
     # in set mode (or if not squeezing into verbs) there should not be all zeros features
-    if remove_features_allzero: 
+    if remove_features_allzero:
+        print(f"Features before remove 0: {forms_encoded.shape[1]}")
         features_all_zero = np.all(forms_encoded == 0, axis=0)
-        # print(features_all_zero.sum())
+        forms_encoded = forms_encoded[:,~features_all_zero]
+        ngram_inventory = ngram_inventory[~features_all_zero]
+
 
     # print_diagnostic_encoding(form_column, lexeme_column,
     #                           df_used, lexemes_unique, forms_encoded, ngram_inventory)
-    print(f"{language}. unique lexemes: {n_lexemes_unique}. Inflection classes: {len(inflection_classes)}. Ngrams: {len(orig_ngram_inventory)}. Cells: {len(unique_cells_ordered)}. Features: {forms_encoded.shape[1]}")
+    print(f"{language}. unique lexemes: {n_lexemes_unique}. Inflection classes: {len(inflection_classes)}. Ngrams: {len(orig_ngram_inventory)}. Cells: {len(unique_cells_ordered)}. Features: {forms_encoded.shape[1]}.")
 
     return forms_encoded, forms_list, list(inflections), inflection_classes, list(lexemes), ngram_inventory
 

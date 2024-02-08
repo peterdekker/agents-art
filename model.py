@@ -51,11 +51,15 @@ def kmeans_cluster_baseline(data_onehot, inflections_gold, n_inflection_classes)
 
 
 
-def art(data_onehot, forms, ngram_inventory, inflections_gold, inflection_classes, pca, language, n_runs=1, vigilances=[ART_VIGILANCE], repeat_dataset=False, batch_size=None, shuffle_data=False, data_plot=False, show=False, eval_intervals=False):
+def art(data_onehot, forms, ngram_inventory, inflections_gold, inflection_classes, language, n_runs=1, vigilances=[ART_VIGILANCE], repeat_dataset=False, batch_size=None, shuffle_data=False, data_plot=False, show=False, eval_intervals=False):
     eval_vigilances = False
     # np.random.shuffle(inflections_gold) # Make evaluation random, to test if model is doing something
     if len(vigilances) > 1:
         eval_vigilances = True
+    
+    pca = None
+    if data_plot:
+        _, pca = plot.fit_pca(data_onehot)
 
     if MULTIPROCESSING:
         if eval_intervals:
@@ -203,7 +207,6 @@ def art_run_parallel(data_onehot, forms, ngram_inventory, inflections_gold, infl
             cluster_population = histo[order]
             prototypes = prototypes[order, :]
             S = np.sum(prototypes, axis=0)
-            ngram_inventory = np.array(ngram_inventory)
             always_activated_features = np.argwhere(
                         S == N_found_clusters)
 
