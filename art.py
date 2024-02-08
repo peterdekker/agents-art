@@ -662,9 +662,9 @@ class ART1(BaseNetwork):
             reset = True
             input2 = cp.dot(weight_12, p.T)
             #Sorting the inputs here, since they are tested from highest to lowest, always disabling the highest if reset happens
-            sorted_indices_descending = np.argsort(input2)[::-1]
+            sorted_indices_descending = np.argsort(input2)
             start2 = time.process_time()
-            output2 = cp.zeros(weight_12.shape[0])
+            # output2 = cp.zeros(weight_12.shape[0])
 
             while reset:
 
@@ -690,7 +690,7 @@ class ART1(BaseNetwork):
                 if reset:
                     # input2[winner_index] = -cp.inf not needed
                     N_disabled_neurons+=1
-                    output2[winner_index] = 0 #Back to zero vector
+                    # output2[winner_index] = 0 #Back to zero vector
                 
                 if N_disabled_neurons >= n_clusters:
                     # Got this case only if we test all possible clusters
