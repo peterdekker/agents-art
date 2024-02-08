@@ -12,7 +12,8 @@ warnings.simplefilter(action='ignore', category=FutureWarning)
 
 def main():
     parser = argparse.ArgumentParser(description='Command line ART model.')
-    parser.add_argument('--single_run_plotdata', action='store_true')
+    parser.add_argument('--plot_data', action='store_true')
+    parser.add_argument('--single_run', action='store_true')
     parser.add_argument('--eval_batches', action='store_true')
     parser.add_argument('--eval_vigilances', action='store_true')
     parser.add_argument('--eval_intervals', action='store_true')
@@ -44,14 +45,15 @@ def main():
 
     forms_onehot, forms, inflections, inflection_classes, _, ngram_inventory = data.create_language_dataset(df_language, language, data_format=data_format, use_only_present=use_only_present_lang, Ngrams=NGRAMS,
                                                                                                                  sample_first=SAMPLE_FIRST,  use_only_3PL=USE_ONLY_3PL, squeeze_into_verbs=SQUEEZE_INTO_VERBS, concat_verb_features=CONCAT_VERB_FEATURES, set_common_features_to_zero=SET_COMMON_FEATURES_TO_ZERO, remove_features_allzero=REMOVE_FEATURES_ALLZERO)
-    if args.single_run_plotdata:
+    if args.plot_data:
         # Plot data before running model
         df, pca = plot.fit_pca(forms_onehot)
         plot.plot_data(df, labels=None, clusters=inflections,
                        micro_clusters=None, file_label=f"pca-art-data_ngram_hamming_original_MCA_-{language}_{CONFIG_STRING}", show=False)
+    
+    if args.single_run:
         # print(f"Full data shuffle, {N_RUNS} runs")
-        art(forms_onehot, forms, ngram_inventory, inflections, inflection_classes, pca,
-            language, n_runs=1, shuffle_data=True, repeat_dataset=True, data_plot=True)
+        art(forms_onehot, forms, ngram_inventory, inflections, inflection_classes, language, n_runs=1, shuffle_data=True, repeat_dataset=True, data_plot=False)
 
     if args.eval_batches:
         print(f"Full data shuffle, {N_RUNS} runs:")
@@ -73,7 +75,7 @@ def main():
             n_runs=N_RUNS, shuffle_data=True, repeat_dataset=True, eval_intervals=True)
 
     if args.eval_vigilances:
-        art(forms_onehot, forms, ngram_inventory, inflections, inflection_classes, None, language,
+        art(forms_onehot, forms, ngram_inventory, inflections, inflection_classes, language,
             n_runs=N_RUNS, shuffle_data=True, repeat_dataset=True, vigilances=VIGILANCE_RANGE)
 
     if args.baseline:

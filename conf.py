@@ -6,7 +6,7 @@ LANGUAGE = "latin"
 ###
 
 ### Parameters settable for users via this config file
-MULTIPROCESSING = True
+MULTIPROCESSING = False
 N_PROCESSES = 6 # None # None for using all
 USE_GPU = False # GPU often slower than CPU, and runs out of memory for concat representation. but saves CPU availability
 WRITE_CSV = True 

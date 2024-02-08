@@ -5,13 +5,18 @@
     "version": "0.2.0",
     "configurations": [
         {
-            "name": "Python: Current File",
+            "name": "Python: latin eval vig",
             "type": "python",
             "request": "launch",
             "program": "${file}",
             "console": "integratedTerminal",
-            "justMyCode": true
-        },
+            "justMyCode": true,
+            "args": [
+                "--eval_vigilances",
+                "--language",
+                "latin"
+            ]
+        }
         {
             "name": "Python: Portuguese",
             "type": "python",
@@ -25,15 +30,16 @@
             ]
         },
         {
-            "name": "Python: Estonian",
+            "name": "Python: Estonian eval vig",
             "type": "python",
             "request": "launch",
             "program": "${file}",
             "console": "integratedTerminal",
             "justMyCode": true,
             "args": [
+                "--eval_vigilances",
                 "--language",
-                "portuguese"
+                "estonian"
             ]
         }
     ]
