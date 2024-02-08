@@ -635,10 +635,10 @@ class ART1(BaseNetwork):
             raise ValueError("ART1 Network works only with binary matrices")
 
         if not hasattr(self, 'weight_21'):
-            self.weight_21 = cp.ones((n_features, n_clusters), dtype=bool)
+            self.weight_21 = cp.ones((n_features, n_clusters))
 
         if not hasattr(self, 'weight_12'):
-            scaler = step / (step + n_features - 1) # In original code: n_clusteres instead of n_features
+            scaler = step / (step + n_features - 1) # In original code: n_clusteres instead of n_features, n_features because this is the norm of the vector, and they're all ones
             self.weight_12 = scaler * self.weight_21.T
 
         weight_21 = self.weight_21
@@ -653,7 +653,7 @@ class ART1(BaseNetwork):
         
         # Train network
         start = time.process_time()
-        X=X.astype('bool')
+        # X=X.astype('bool')
         for i, p in enumerate(X):
             print('Dealing with sample ' + str(i))
             print("accumulated time: " + str(time.process_time() - start))
@@ -662,7 +662,7 @@ class ART1(BaseNetwork):
             reset = True
             input2 = cp.dot(weight_12, p.T)
             #Sorting the inputs here, since they are tested from highest to lowest, always disabling the highest if reset happens
-            sorted_indices_descending = np.argsort(input2)
+            sorted_indices_descending = np.argsort(input2)[::-1]
             start2 = time.process_time()
             # output2 = cp.zeros(weight_12.shape[0])
 
@@ -671,31 +671,37 @@ class ART1(BaseNetwork):
                 
                 # winner_index = input2.argmax()
                 # below should equal the above line
+                start3 = time.process_time()
                 winner_index = sorted_indices_descending[N_disabled_neurons]
                 expectation = weight_21[:, winner_index]
                 # equals:
                 # output2[winner_index] = 1
                 # expectation = cp.dot(weight_21, output2)
-                output1 = cp.logical_and(p, expectation)
+                output1 = cp.logical_and(p, expectation).astype(int)
+                print("First 3 rows: " + str(time.process_time() - start3))
                 if USE_GPU:
                     del input2
                     del output2
                     del expectation
                     cp._default_memory_pool.free_all_blocks()
 
+                start3 = time.process_time()
+
 
                 reset_value = cp.dot(output1.T, output1) / cp.dot(p.T, p)
                 reset = reset_value < rho # Below vigilance = reset = keep searching
 
+
+                print("Next 2 rows: " + str(time.process_time() - start3))
                 if reset:
                     # input2[winner_index] = -cp.inf not needed
                     N_disabled_neurons+=1
                     # output2[winner_index] = 0 #Back to zero vector
                 
-                if N_disabled_neurons >= n_clusters:
-                    # Got this case only if we test all possible clusters
-                    reset = False
-                    winner_index = None
+                # if N_disabled_neurons >= max_clusters:
+                #     # Got this case only if we test all possible clusters
+                #     reset = False
+                #     winner_index = None
 
                 
 
@@ -722,15 +728,15 @@ class ART1(BaseNetwork):
                     # else:
                     #     # Create new category - Heikki edit
 
-                        # winner_index = max(reseted_values)[1]
-                    #     # n_clusters=n_clusters+1
-                    #     # winner_index = n_clusters-1 #-1 because 0 is a cluster
-                    #     # output1=p[None,:].T #Make input a 2d column vector for appending
-                    #     # weight_21 = cp.append(weight_21,output1,axis=1) #Assuming the new weights would've been initialized to ones, after the logical and, the input features p would be the ones left activated
-                    #     # new_bottom_up_weights=(step * output1) / (
-                    #     #     step + cp.dot(output1.T, output1) - 1
-                    #     # )
-                    #     # weight_12 = cp.append(weight_12,new_bottom_up_weights.T,axis=0)         
+                    #     # winner_index = max(reseted_values)[1]
+                    #     n_clusters=n_clusters+1
+                    #     winner_index = n_clusters-1 #-1 because 0 is a cluster
+                    #     output1=p[None,:].T #Make input a 2d column vector for appending
+                    #     weight_21 = cp.append(weight_21,output1,axis=1) #Assuming the new weights would've been initialized to ones, after the logical and, the input features p would be the ones left activated
+                    #     new_bottom_up_weights=(step * output1) / (
+                    #         step + cp.dot(output1.T, output1) - 1
+                    #     )
+                    #     weight_12 = cp.append(weight_12,new_bottom_up_weights.T,axis=0)         
                         
                     if cp.isnan(winner_index):
                         print('MSMSMS')
