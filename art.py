@@ -80,7 +80,7 @@ def format_data(data, is_feature1d=True, copy=False, make_float=False):
         data_shape = (n_features, 1) if is_feature1d else (1, n_features)
         data = data.reshape(data_shape)
     
-    # data = data.astype(bool)
+    data = data.astype('byte')
 
     return data
 
@@ -655,6 +655,7 @@ class ART1(BaseNetwork):
         start = time.process_time()
         # X=X.astype('bool')
         for i, p in enumerate(X):
+            p=p.astype(int)
             print('Dealing with sample ' + str(i))
             print("accumulated time: " + str(time.process_time() - start))
             N_disabled_neurons = 0
