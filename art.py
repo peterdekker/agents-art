@@ -663,36 +663,35 @@ class ART1(BaseNetwork):
             input2 = cp.dot(weight_12, p.T)
             #Sorting the inputs here, since they are tested from highest to lowest, always disabling the highest if reset happens
             sorted_indices_descending = np.argsort(input2)[::-1]
-            start2 = time.process_time()
+            # start2 = time.process_time()
             # output2 = cp.zeros(weight_12.shape[0])
 
             while reset:
 
-                
                 # winner_index = input2.argmax()
                 # below should equal the above line
-                start3 = time.process_time()
+                # start3 = time.process_time()
                 winner_index = sorted_indices_descending[N_disabled_neurons]
                 expectation = weight_21[:, winner_index]
                 # equals:
                 # output2[winner_index] = 1
                 # expectation = cp.dot(weight_21, output2)
                 output1 = cp.logical_and(p, expectation).astype(int)
-                print("First 3 rows: " + str(time.process_time() - start3))
+                # print("First 3 rows: " + str(time.process_time() - start3))
                 if USE_GPU:
                     del input2
                     del output2
                     del expectation
                     cp._default_memory_pool.free_all_blocks()
 
-                start3 = time.process_time()
+                # start3 = time.process_time()
 
 
                 reset_value = cp.dot(output1.T, output1) / cp.dot(p.T, p)
                 reset = reset_value < rho # Below vigilance = reset = keep searching
 
 
-                print("Next 2 rows: " + str(time.process_time() - start3))
+                # print("Next 2 rows: " + str(time.process_time() - start3))
                 if reset:
                     # input2[winner_index] = -cp.inf not needed
                     N_disabled_neurons+=1
@@ -747,7 +746,7 @@ class ART1(BaseNetwork):
                     # Frees up memory of all the blocks that have now been deleted
                     cp._default_memory_pool.free_all_blocks()
             
-            print("While loop took: " + str(time.process_time() - start2))
+            # print("While loop took: " + str(time.process_time() - start2))
             
             # print(i)
             if ((i+1) % save_interval)==0 or i==len(X):
