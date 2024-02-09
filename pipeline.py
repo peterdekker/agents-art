@@ -29,7 +29,7 @@ def main():
     if language == "latin":
         if not os.path.exists(conjugation_df_path):
             # Load data
-            data.load_romance_dataset(conjugation_df_path, only_latin=True)
+            data.load_romance_dataset(conjugation_df_path)
     elif language == "estonian" or language == "portuguese":
         if not os.path.exists(conjugation_df_path):
             data.load_paralex_dataset(language, conjugation_df_path)

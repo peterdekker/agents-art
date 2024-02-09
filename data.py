@@ -4,10 +4,10 @@ import os
 import requests
 import shutil
 import pandas as pd
-from lingpy import ipa2tokens
+from lingpy import ipa2tokens, tokens2class
 # from bpe import Encoder
 
-from conf import paths, WRITE_CSV, CELLS_PRESENT_ESTONIAN
+from conf import paths, WRITE_CSV, CELLS_PRESENT_ESTONIAN, USE_SOUNDCLASSES
 
 # np.random.seed(11)
 
@@ -37,7 +37,7 @@ def download_if_needed(paths_lang, label):
                 paths_lang["archive_path"], extract_dir=paths_lang["file_path"])
 
 
-def load_romance_dataset(conjugation_df_path, only_latin):
+def load_romance_dataset(conjugation_df_path):
     download_if_needed(paths["latin"], "Romance Verbal Inflection Dataset")
     print("Loading data...")
     dataset = Dataset.from_metadata(os.path.join(
@@ -51,16 +51,26 @@ def load_romance_dataset(conjugation_df_path, only_latin):
     # Filter on Latin inflection classes + merge forms and cognates table
     conjugation_df = merge_filter_romance_inflections(
         forms_df_1cognate, cognates_df)
+    
+    # Only use Latin
+    conjugation_df = conjugation_df[conjugation_df["Language_ID"]
+                                    == "Italic_Latino-Faliscan_Latin"]
 
     conjugation_df["Cell"] = conjugation_df["Cell"].apply(
         lambda tense_person_list: ".".join(tense_person_list))
+
     
     # Tokenize forms using Lingpy
     conjugation_df["Form_tokenized"] = conjugation_df["Form"].apply(lambda f: " ".join(ipa2tokens(f, merge_vowels=False, merge_geminates=False)))
+    print(conjugation_df[conjugation_df["Form_tokenized"].str.contains("?", regex=False)])
 
-    if only_latin:
-        conjugation_df = conjugation_df[conjugation_df["Language_ID"]
-                                        == "Italic_Latino-Faliscan_Latin"]
+    # for form in conjugation_df["Form_tokenized"]:
+    #     form_split = form.split(" ")
+    #     print(form_split)
+    #     print(tokens2class(form_split, model="sca"))
+    conjugation_df["form_sca"] = conjugation_df["Form_tokenized"].apply(lambda f: " ".join(tokens2class(f.split(" "), model="sca")))
+    conjugation_df["form_dolgo"] = conjugation_df["Form_tokenized"].apply(lambda f: " ".join(tokens2class(f.split(" "), model="dolgo")))
+    conjugation_df["form_asjp"] = conjugation_df["Form_tokenized"].apply(lambda f: " ".join(tokens2class(f.split(" "), model="asjp")))
 
     # Write table to file, so it can be read by our script later
     conjugation_df.to_csv(conjugation_df_path)
@@ -79,10 +89,14 @@ def load_paralex_dataset(language, conjugation_df_path):
         right=lexemes_df, left_on="lexeme", right_on="lexeme_id")
 
     # Filter on only verbs (dataset also contains other POS)
-    df_verbs = paradigms_lexemes_merged[paradigms_lexemes_merged["POS"] == "verb"]
+    conjugation_df = paradigms_lexemes_merged[paradigms_lexemes_merged["POS"] == "verb"].copy()
+
+    conjugation_df["form_sca"] = conjugation_df["phon_form"].apply(lambda f: " ".join(tokens2class(f.split(" "), model="sca")))
+    conjugation_df["form_dolgo"] = conjugation_df["phon_form"].apply(lambda f: " ".join(tokens2class(f.split(" "), model="dolgo")))
+    conjugation_df["form_asjp"] = conjugation_df["phon_form"].apply(lambda f: " ".join(tokens2class(f.split(" "), model="asjp")))
 
     # Write table to file, so it can be read by our script later
-    df_verbs.to_csv(conjugation_df_path)
+    conjugation_df.to_csv(conjugation_df_path)
     print("Done loading data from archive, wrote to csv.")
 
 
@@ -120,8 +134,8 @@ def get_existing_sound_Ngrams(forms_tokenized, Ngrams):
 
 
 # empty_symbol=True, pool_verb_features=False
-def create_onehot_forms_from_Ngrams(forms_list, Ngrams, tokenize_form_spaces):
-    if tokenize_form_spaces:
+def create_onehot_forms_from_Ngrams(forms_list, Ngrams, tokenized_form_spaces):
+    if tokenized_form_spaces:
         forms_tokenized = [f.split(" ") for f in forms_list]
     else:
         # If not space-tokenized, tokenize by character: form string becomes list of characters, so format is interoperable
@@ -146,7 +160,7 @@ def create_onehot_forms_from_Ngrams(forms_list, Ngrams, tokenize_form_spaces):
 
 def create_language_dataset(df_language, language, use_only_present, Ngrams, sample_first,  squeeze_into_verbs, concat_verb_features, set_common_features_to_zero, remove_features_allzero):
     if language == "portuguese" or language == "estonian":
-        form_column = "phon_form"
+        form_column = f"form_{USE_SOUNDCLASSES}" if USE_SOUNDCLASSES else "phon_form"
         inflection_column = "inflection_class"
         lexeme_column = "lexeme_id"
         cell_column = "cell"
@@ -155,15 +169,15 @@ def create_language_dataset(df_language, language, use_only_present, Ngrams, sam
         else:
             tag_present = "ind.prs"
         tag_present_3pl = f"{tag_present}.3pl"
-        tokenize_form_spaces = True
+        tokenized_form_spaces = True
     else:  # data_format=="romance"
-        form_column = "Form_tokenized" # form_column = "Form"
+        form_column = f"form_{USE_SOUNDCLASSES}" if USE_SOUNDCLASSES else "Form_tokenized" # form_column = "Form"
         inflection_column = "Latin_Conjugation"
         lexeme_column = "Cognateset_ID_first"
         cell_column = "Cell"
         tag_present = "PRS-IND"
         tag_present_3pl = f"{tag_present}.3PL"  # "'PRS-IND', '3PL'"
-        tokenize_form_spaces = True
+        tokenized_form_spaces = True
     
     # Keep only first form for a cell (Estonian has doubles)
     df_language = df_language.groupby([lexeme_column,cell_column], as_index=False).first()
@@ -207,7 +221,7 @@ def create_language_dataset(df_language, language, use_only_present, Ngrams, sam
     inflection_classes = list(inflections.unique())
 
     forms_encoded, ngram_inventory = create_onehot_forms_from_Ngrams(
-        forms_list, Ngrams, tokenize_form_spaces)
+        forms_list, Ngrams, tokenized_form_spaces)
     assert forms_encoded.shape[0] == len(df_used)
     assert forms_encoded.shape[1] == len(ngram_inventory)
     orig_ngram_inventory = ngram_inventory

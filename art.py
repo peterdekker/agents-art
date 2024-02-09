@@ -13,7 +13,7 @@ import inspect
 from six import with_metaclass
 from abc import ABCMeta
 from collections import namedtuple
-import time
+# import time
 
 from scipy.sparse import issparse
 
@@ -652,12 +652,12 @@ class ART1(BaseNetwork):
         classes = cp.zeros(n_samples, dtype=int)
         
         # Train network
-        start = time.process_time()
+        # start = time.process_time()
         # X=X.astype('bool')
         for i, p in enumerate(X):
             p=p.astype(int)
-            print('Dealing with sample ' + str(i))
-            print("accumulated time: " + str(time.process_time() - start))
+            # print('Dealing with sample ' + str(i))
+            # print("accumulated time: " + str(time.process_time() - start))
             N_disabled_neurons = 0
             # reseted_values = []
             reset = True
@@ -680,8 +680,6 @@ class ART1(BaseNetwork):
                 output1 = cp.logical_and(p, expectation).astype(int)
                 # print("First 3 rows: " + str(time.process_time() - start3))
                 if USE_GPU:
-                    del input2
-                    del output2
                     del expectation
                     cp._default_memory_pool.free_all_blocks()
 
@@ -758,6 +756,11 @@ class ART1(BaseNetwork):
                 if USE_GPU:
                     del classes_obj
                     cp._default_memory_pool.free_all_blocks()
+            
+            # After processing example p, delete input2
+            if USE_GPU:
+                del input2
+                cp._default_memory_pool.free_all_blocks()
 
         # Save weights and #clusters in object field, so model can be trained in batches (not in NeuPy implementation)
         self.weight_12=weight_12
