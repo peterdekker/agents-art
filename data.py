@@ -7,7 +7,7 @@ import pandas as pd
 from lingpy import ipa2tokens, tokens2class
 # from bpe import Encoder
 
-from conf import paths, WRITE_CSV, CELLS_PRESENT_ESTONIAN, USE_SOUNDCLASSES
+from conf import paths, WRITE_CSV
 
 # np.random.seed(11)
 
@@ -158,9 +158,9 @@ def create_onehot_forms_from_Ngrams(forms_list, Ngrams, tokenized_form_spaces):
     return array, np.array(ngram_inventory)
 
 
-def create_language_dataset(df_language, language, use_only_present, Ngrams, sample_first,  squeeze_into_verbs, concat_verb_features, set_common_features_to_zero, remove_features_allzero):
+def create_language_dataset(df_language, language, Ngrams, sample_first,  squeeze_into_verbs, features_set, set_common_features_to_zero, remove_features_allzero, soundclasses, use_cells_present):
     if language == "portuguese" or language == "estonian":
-        form_column = f"form_{USE_SOUNDCLASSES}" if USE_SOUNDCLASSES else "phon_form"
+        form_column = f"form_{soundclasses}" if soundclasses != "none" else "phon_form"
         inflection_column = "inflection_class"
         lexeme_column = "lexeme_id"
         cell_column = "cell"
@@ -171,7 +171,7 @@ def create_language_dataset(df_language, language, use_only_present, Ngrams, sam
         tag_present_3pl = f"{tag_present}.3pl"
         tokenized_form_spaces = True
     else:  # data_format=="romance"
-        form_column = f"form_{USE_SOUNDCLASSES}" if USE_SOUNDCLASSES else "Form_tokenized" # form_column = "Form"
+        form_column = f"form_{soundclasses}" if soundclasses != "none" else "Form_tokenized" # form_column = "Form"
         inflection_column = "Latin_Conjugation"
         lexeme_column = "Cognateset_ID_first"
         cell_column = "Cell"
@@ -185,15 +185,16 @@ def create_language_dataset(df_language, language, use_only_present, Ngrams, sam
     if sample_first:
         df_language = df_language.head(sample_first)
 
-    if use_only_present:
+    if use_cells_present:
         if language=="estonian":
-            df_used = df_language[df_language[cell_column].isin(CELLS_PRESENT_ESTONIAN)]
+            df_used = df_language[df_language[cell_column].isin(paths["estonian"]["cells_present"])]
         else:
             df_used = df_language[df_language[cell_column].str.contains(tag_present)]
-        if WRITE_CSV:
-            df_used.to_csv(f'only_used_{language}_stuff.csv')
     else:
-        df_used = df_language
+        # Use cells from distillation
+        df_used = df_language[df_language[cell_column].isin(paths[language]["cells_distillation"])]
+    if WRITE_CSV:
+        df_used.to_csv(f'only_used_{language}_stuff.csv')
     
     # Reset index, so it starts from 0, and we can use these indices to distinguish items
     df_used = df_used.reset_index()
@@ -220,6 +221,7 @@ def create_language_dataset(df_language, language, use_only_present, Ngrams, sam
     # Inflection classes calculated based on only used dataset (possibly not full dataset)
     inflection_classes = list(inflections.unique())
 
+
     forms_encoded, ngram_inventory = create_onehot_forms_from_Ngrams(
         forms_list, Ngrams, tokenized_form_spaces)
     assert forms_encoded.shape[0] == len(df_used)
@@ -229,7 +231,7 @@ def create_language_dataset(df_language, language, use_only_present, Ngrams, sam
 
     if squeeze_into_verbs:
         # Make new pooled ngram inventory with person tags
-        if concat_verb_features:
+        if not features_set: # concat
 
             # Pooled ngram inventory only used for plotting, not in encoding processing
             pooled_ngram_inventory = np.array(["".join(
@@ -245,7 +247,7 @@ def create_language_dataset(df_language, language, use_only_present, Ngrams, sam
         #for lexeme_ix, lexeme_unique in enumerate(lexemes_unique):
         for lexeme_ix, lexeme_unique in enumerate(lexemes_unique):
             rows_lexeme_unique = df_used[df_used[lexeme_column]==lexeme_unique]
-            if concat_verb_features:
+            if not features_set: # concat
                 pooled_forms_encoded_for_verb = [[]]  # add dimension
             else:
                 pooled_forms_encoded_for_verb = np.zeros(
@@ -263,14 +265,14 @@ def create_language_dataset(df_language, language, use_only_present, Ngrams, sam
                     #     unique_cell == cells_for_verb)
                     index = cells_for_verb.index(unique_cell)
                     index_in_forms_encoded = indices_for_verb[index] # indices_for_verb[index[0][0]]
-                    if concat_verb_features:
+                    if not features_set: #concat
                         pooled_forms_encoded_for_verb = np.append(
                             pooled_forms_encoded_for_verb, forms_encoded[None, index_in_forms_encoded], axis=1)
                     else:
                         pooled_forms_encoded_for_verb = pooled_forms_encoded_for_verb + \
                             forms_encoded[index_in_forms_encoded]
                 else:
-                    if concat_verb_features:
+                    if not features_set: #concat
                         pooled_forms_encoded_for_verb = np.append(
                             pooled_forms_encoded_for_verb, np.zeros((forms_encoded.shape[1])), axis=0)
 
@@ -278,7 +280,7 @@ def create_language_dataset(df_language, language, use_only_present, Ngrams, sam
                 print("This should not be executed when set_common_features_to_zero is not on.")
                 # NOTE: This functionality assumes number of paradigm cells is 6: only works for Latin
                 # NOTE: Not tested anymore after changing data processing code
-                if concat_verb_features:
+                if not features_set: #concat
                     temp = np.reshape(pooled_forms_encoded_for_verb,
                                       (n_cells_unique, forms_encoded.shape[1]))
                     S = sum(temp)
@@ -290,7 +292,7 @@ def create_language_dataset(df_language, language, use_only_present, Ngrams, sam
                     pooled_forms_encoded_for_verb[pooled_forms_encoded_for_verb == 6] = 0
 
             # keeps only one activated n-gram, even though it may occur in several forms (for set representation, does nothing for concat)
-            if not concat_verb_features:
+            if features_set:
                 pooled_forms_encoded_for_verb = np.clip(
                     pooled_forms_encoded_for_verb, 0, 1)
             pooled_forms_encoded[lexeme_ix,:] = pooled_forms_encoded_for_verb
