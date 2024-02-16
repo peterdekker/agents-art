@@ -278,6 +278,8 @@ def art_run_parallel(data_onehot, forms, ngram_inventory, inflections_gold, infl
                                file_label=f"pca-art-vig{vig}-run{r}-{language}_protos_{config_string}", show=show)
         plot.plot_barchart(cluster_inflection_stats, inflection_classes,  # category_ngrams, always_activated_ngrams,
                                    file_label=f"pca-art-vig{vig}-run{r}-{language}_protos_{config_string}", show=show)
+    
+    print(f"Vigilance: {vig}. Run: {r}. Finished.")
                            
     return records_batches,plottedIndices_batches,ari_per_interval_batches
 

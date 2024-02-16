@@ -23,8 +23,8 @@ mode_params = ["plot_data", "single_run", "eval_batches", "eval_vigilances", "ev
 ###
 
 ### Parameters settable for users via this config file
-MULTIPROCESSING = False
-N_PROCESSES = 6  # None # None for using all
+MULTIPROCESSING = True
+N_PROCESSES = 2  # None # None for using all
 USE_GPU = False  # GPU often slower than CPU, and runs out of memory for concat representation. but saves CPU availability
 WRITE_CSV = True
 N_RUNS = 5  # 10
@@ -32,7 +32,7 @@ N_RUNS = 5  # 10
 ART_LEARNING_RATE = 2
 
 VIGILANCE_RANGE_STEP = 0.02  # 0.02
-MAX_VIGILANCE = 0.5
+MAX_VIGILANCE = 0.3
 
 OUTPUT_DIR = "output"
 
@@ -65,14 +65,15 @@ paths = {
      "archive_path": "Romance_Verbal_Inflection_Dataset-v2.0.4.zip",
      "file_path": os.path.join(DATA_PATH, "Romance_Verbal_Inflection_Dataset-v2.0.4"),
      "metadata_relative_path": "cldf/Wordlist-metadata.json",
-     "conjugation_df_path": 'latin_data_df.csv'},
+     "conjugation_df_path": 'latin_data_df.csv',
+     "cells_distillation": ["INF", "PRS-IND.1SG", "PRS-IND.2SG", "PRS-IND.3SG", "PRS-IND.3PL"]}, #"IMPERF-IND.3SG",  "PRS-SBJV.3SG"
     "estonian":
     {"archive_url": "https://zenodo.org/records/8392744/files/v1.0.1.zip",
      "archive_path": "estonian-v.1.0.1.zip",
      "file_path": os.path.join(DATA_PATH, "estonian-v.1.0.1"),
      "conjugation_df_path": "estonian_data_df.csv",
      "cells_present": ["ind.prs.1sg", "ind.prs.2sg", "ind.prs.3sg", "ind.prs.1pl", "ind.prs.2pl", "ind.prs.3pl"],
-     "cells_distillation": []},
+     "cells_distillation": ["sup", "inf", "ind.prs.1sg", "ind.pst.ipfv.1sg", "ind.pst.ipfv.3sg","imp.prs.pers", "ptcp.prs.pers", "ptcp.pst.pers", "ind.prs.impers", "ptcp.pst.impers"]},
     "portuguese":
     {"archive_url": "https://zenodo.org/records/8392722/files/v2.0.1.zip",
      "archive_path": "portuguese-v.2.0.1.zip",

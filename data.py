@@ -312,7 +312,6 @@ def create_language_dataset(df_language, language, Ngrams, sample_first,  squeez
     # print_diagnostic_encoding(form_column, lexeme_column,
     #                           df_used, lexemes_unique, forms_encoded, ngram_inventory)
     print(f"{language}. unique lexemes: {n_lexemes_unique}. Inflection classes: {len(inflection_classes)}. Ngrams: {len(orig_ngram_inventory)}. Cells: {n_cells_unique}:{unique_cells_ordered}. Features: {forms_encoded.shape[1]}.")
-
     return forms_encoded, forms_list, list(inflections), inflection_classes, list(lexemes), ngram_inventory
 
 
