@@ -17,37 +17,41 @@ from multiprocessing import Pool
 def random_baseline(inflections_gold, n_inflection_classes):
     base = np.random.choice(
         range(0, n_inflection_classes), len(inflections_gold))
-    rand, adj_rand, norm_mutual_info, adj_mutual_info, min_cluster_size, max_cluster_size = eval_results(
+    ri, ari, nmi, ami, min_cluster_size, max_cluster_size = eval_results(
         base, inflections_gold)
-    print(
-        f" - Random baseline. RI: {rand}. ARI: {adj_rand} NMI: {norm_mutual_info}. AMI: {adj_mutual_info}")
+    n_clusters = len(list(set(base)))
+    return {"method": "random", "ri": ri, "ari": ari, "nmi": nmi, "ami": ami,
+                         "min_cluster_size": min_cluster_size, "max_cluster_size": max_cluster_size, "n_clusters": n_clusters}
 
 
 def majority_baseline(inflections_gold):
     base = np.zeros(len(inflections_gold))
-    rand, adj_rand, norm_mutual_info, adj_mutual_info, min_cluster_size, max_cluster_size = eval_results(
+    ri, ari, nmi, ami, min_cluster_size, max_cluster_size = eval_results(
         base, inflections_gold)
-    print(
-        f" - Random baseline. RI: {rand}. ARI: {adj_rand} NMI: {norm_mutual_info}. AMI: {adj_mutual_info}")
+    n_clusters = len(list(set(base)))
+    return {"method": "majority", "ri": ri, "ari": ari, "nmi": nmi, "ami": ami,
+                         "min_cluster_size": min_cluster_size, "max_cluster_size": max_cluster_size, "n_clusters": n_clusters}
 
 
 def agg_cluster_baseline(data_onehot, inflections_gold, n_inflection_classes):
     agg_labels = cluster.AgglomerativeClustering(
         n_clusters=n_inflection_classes, affinity="manhattan", linkage="average").fit_predict(data_onehot)
-    rand, adj_rand, norm_mutual_info, adj_mutual_info, min_cluster_size, max_cluster_size = eval_results(
+    ri, ari, nmi, ami, min_cluster_size, max_cluster_size = eval_results(
         agg_labels, inflections_gold)
-    print(
-        f" - Agg clustering baseline. RI: {rand}. ARI: {adj_rand} NMI: {norm_mutual_info}. AMI: {adj_mutual_info}")
+    n_clusters = len(list(set(agg_labels)))
+    return {"method": "agg", "ri": ri, "ari": ari, "nmi": nmi, "ami": ami,
+                         "min_cluster_size": min_cluster_size, "max_cluster_size": max_cluster_size, "n_clusters": n_clusters}
 
 
 def kmeans_cluster_baseline(data_onehot, inflections_gold, n_inflection_classes):
     kmeans_labels = cluster.KMeans(
         n_clusters=n_inflection_classes).fit_predict(data_onehot)
     # print(cluster.KMeans.cluster_centers_)
-    rand, adj_rand, norm_mutual_info, adj_mutual_info, min_cluster_size, max_cluster_size = eval_results(
+    ri, ari, nmi, ami, min_cluster_size, max_cluster_size = eval_results(
         kmeans_labels, inflections_gold)
-    print(
-        f" - Kmeans clustering baseline. RI: {rand}. ARI: {adj_rand} NMI: {norm_mutual_info}. AMI: {adj_mutual_info}")
+    n_clusters = len(list(set(kmeans_labels)))
+    return {"method": "kmeans", "ri": ri, "ari": ari, "nmi": nmi, "ami": ami,
+                         "min_cluster_size": min_cluster_size, "max_cluster_size": max_cluster_size, "n_clusters": n_clusters}
 
 
 

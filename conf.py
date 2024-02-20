@@ -18,7 +18,7 @@ params = {
     "vigilance_single_run": {"default": VIGILANCE_SINGLE_RUN, "type": float},
 }
 
-mode_params = ["plot_data", "single_run", "eval_batches", "eval_vigilances", "eval_intervals", "baseline"]
+mode_params = ["plot_data", "single_run", "eval_batches", "eval_vigilances", "eval_intervals", "baseline", "train_test"]
 
 ###
 

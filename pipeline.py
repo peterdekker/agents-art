@@ -85,29 +85,20 @@ def main():
             n_runs=N_RUNS, shuffle_data=True, repeat_dataset=True, vigilances=VIGILANCE_RANGE)
 
     if args.baseline:
+        print("Baselines:")
         # print("Full data shuffle, n runs")
         # art_one(forms_onehot, inflections, cogids, language, n_runs=N_RUNS, shuffle_data=True)
-        print("Majority baseline:")
-        # TODO: Infer #classes from data
-        majority_baseline(inflections, n_inflection_classes=5)
-
-        print("Random baseline:")
-        # TODO: Infer #classes from data
-        random_baseline(inflections, n_inflection_classes=5)
+        records_baseline = []
+        records_baseline.append(majority_baseline(inflections))
+        records_baseline.append(random_baseline(inflections, n_inflection_classes=len(inflection_classes)))
 
         # print("Agg clustering baseline:")
         # agg_cluster_baseline(forms_onehot, inflections, n_inflection_classes=5) # TODO: Infer #classes from data
 
-        print("Kmeans clustering baseline:")
-        # TODO: Infer #classes from data
-        kmeans_cluster_baseline(
-            forms_onehot, inflections, n_inflection_classes=5)
-
-        print("Comparison to inflection classes:")
-        print("Token count:")
-        print(df_language["Latin_Conjugation"].value_counts(normalize=True))
-        # print("Type count")
-        # print(df_language.drop_duplicates(subset="Cognateset_ID_first")["Latin_Conjugation"].value_counts(normalize=True))
+        records_baseline.append(kmeans_cluster_baseline(
+            forms_onehot, inflections, n_inflection_classes=len(inflection_classes)))
+        
+        print(pd.DataFrame(records_baseline).set_index("method"))
 
 
 if __name__ == "__main__":
