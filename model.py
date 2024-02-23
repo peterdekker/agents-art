@@ -55,7 +55,7 @@ def kmeans_cluster_baseline(data_onehot, inflections_gold, n_inflection_classes)
 
 
 
-def art(data_onehot, forms, ngram_inventory, inflections_gold, inflection_classes, language, config_string, n_runs=1, vigilances=[], repeat_dataset=False, batch_size=None, shuffle_data=False, data_plot=False, show=False, eval_intervals=False):
+def art(data_onehot, forms, ngram_inventory, inflections_gold, inflection_classes, language, config_string, n_runs=1, vigilances=[], repeat_dataset=False, batch_size=None, shuffle_data=False, data_plot=False, show=False, eval_intervals=False, train_test=False):
     eval_vigilances = False
     # np.random.shuffle(inflections_gold) # Make evaluation random, to test if model is doing something
     if len(vigilances) > 1:
@@ -69,7 +69,7 @@ def art(data_onehot, forms, ngram_inventory, inflections_gold, inflection_classe
         if eval_intervals:
             raise ValueError("eval_intervals is not possible in multiprocessing mode.")
         # Param settings: only vig and r are variable
-        param_settings = [(data_onehot, forms, ngram_inventory, inflections_gold, inflection_classes, pca, language, repeat_dataset, batch_size, shuffle_data, data_plot, show, eval_intervals, config_string, vig, r) for vig in vigilances for r in range(n_runs)]
+        param_settings = [(data_onehot, forms, ngram_inventory, inflections_gold, inflection_classes, pca, language, repeat_dataset, batch_size, shuffle_data, data_plot, show, eval_intervals, train_test, config_string, vig, r) for vig in vigilances for r in range(n_runs)]
         with Pool(processes=N_PROCESSES) as pool:
             records_listlist = pool.starmap(art_run_parallel_wrapper, param_settings) # take only first return value
     else: # If multiprocessing is off, this allows to do eval_intervals, which is done once per vigilance
@@ -77,7 +77,7 @@ def art(data_onehot, forms, ngram_inventory, inflections_gold, inflection_classe
         for vig in vigilances:
             ari_per_interval_per_run = []
             for r in range(n_runs):
-                records_batches, plottedIndices_batches, ari_per_interval_batches = art_run_parallel(data_onehot, forms, ngram_inventory, inflections_gold, inflection_classes, pca, language, repeat_dataset, batch_size, shuffle_data, data_plot, show, eval_intervals, config_string, vig, r)
+                records_batches, plottedIndices_batches, ari_per_interval_batches = art_run_parallel(data_onehot, forms, ngram_inventory, inflections_gold, inflection_classes, pca, language, repeat_dataset, batch_size, shuffle_data, data_plot, show, eval_intervals, train_test, config_string, vig, r)
                 records_listlist.append(records_batches)
                 ari_per_interval_per_run.append(ari_per_interval_batches)
 
@@ -90,6 +90,7 @@ def art(data_onehot, forms, ngram_inventory, inflections_gold, inflection_classe
     if WRITE_CSV:
         df_results.to_csv(os.path.join(
             OUTPUT_DIR, f"histogram_per_vigilance-{language}_{config_string}_out.csv"))
+    df_results.to_csv("test.csv")
     print(df_results.groupby("vigilance")[["ri", "ari", "nmi", "ami", "min_cluster_size", "max_cluster_size", "n_clusters"]].mean()) # 
     df_results_small = df_results[["vigilance", "run", "cluster_population",
                                    "category_ngrams", "cluster_inflection_stats", "ari", "batch"]]
@@ -151,7 +152,7 @@ def art(data_onehot, forms, ngram_inventory, inflections_gold, inflection_classe
 def art_run_parallel_wrapper(*args):
     return art_run_parallel(*args)[0]
 
-def art_run_parallel(data_onehot, forms, ngram_inventory, inflections_gold, inflection_classes, pca, language, repeat_dataset, batch_size, shuffle_data, data_plot, show, eval_intervals, config_string, vig, r):
+def art_run_parallel(data_onehot, forms, ngram_inventory, inflections_gold, inflection_classes, pca, language, repeat_dataset, batch_size, shuffle_data, data_plot, show, eval_intervals, train_test, config_string, vig, r):
     print(f"Vigilance: {vig}. Run: {r}.")
     artnet = ART1(
                 step=ART_LEARNING_RATE,
@@ -170,7 +171,8 @@ def art_run_parallel(data_onehot, forms, ngram_inventory, inflections_gold, infl
     plottedIndices_batches = []
     ari_per_interval_batches = []
     records_batches = []
-    for rep in range(2 if repeat_dataset else 1):
+    n_reps = 2 if repeat_dataset else 1
+    for rep in range(n_reps):
         if shuffle_data:
             # Makes taking batches sampling without replacement
             shf = np.random.permutation(len(input_data))
@@ -185,82 +187,83 @@ def art_run_parallel(data_onehot, forms, ngram_inventory, inflections_gold, infl
             batch = np.arange(b*batch_size, (b+1)*batch_size)
             clusters_art_batch, prototypes, incrementalClasses, incrementalIndices = artnet.train(
                         input_data[batch], EVAL_INTERVAL)
-
+            
             N_found_clusters = len(prototypes)
             clusters_gold_batch = clusters_gold[batch]
-                    # print(clusters_art_batch)
             ri_batch, ari_batch, nmi_batch, ami_batch, min_cluster_size_batch, max_cluster_size_batch = eval_results(
                         clusters_art_batch, clusters_gold_batch)
 
             if eval_intervals:
                 if rep == 0:
                     N_evals = len(incrementalClasses)
-
                     for i in range(0, N_evals):
                         Nsamples = len(incrementalClasses[i])
-                        ri_batch, ari_batch, nmi_batch, ami_batch, min_cluster_size_batch, max_cluster_size_batch = eval_results(
+                        _, ari_interval, _, _, _, _ = eval_results(
                                     incrementalClasses[i], clusters_gold_batch[0:Nsamples])
-                        ari_per_interval_batches.append(ari_batch)
+                        ari_per_interval_batches.append(ari_interval)
                         plottedIndices_batches.append(incrementalIndices[i])
                 else:
                     ari_per_interval_batches.append(ari_batch)
                     plottedIndices_batches.append(
                                 incrementalIndices[-1]+plottedIndices_batches[-1])
-            histo = np.histogram(clusters_art_batch, bins=np.arange(0, N_found_clusters+1))[0]
-            order = np.flip(np.argsort(histo))
-            cluster_population = histo[order]
-            prototypes = prototypes[order, :]
-            S = np.sum(prototypes, axis=0)
-            always_activated_features = np.argwhere(
-                        S == N_found_clusters)
+            
+            # Only do results analysis and save record for last repetition
+            if rep==n_reps-1:
+                histo = np.histogram(clusters_art_batch, bins=np.arange(0, N_found_clusters+1))[0]
+                order = np.flip(np.argsort(histo))
+                cluster_population = histo[order]
+                prototypes = prototypes[order, :]
+                S = np.sum(prototypes, axis=0)
+                always_activated_features = np.argwhere(
+                            S == N_found_clusters)
 
-            category_ngrams = []
-            for p in range(0, N_found_clusters):
-                ones = np.nonzero(prototypes[p, :])[0]
-                cluster_ngrams = []
-                for i in ones:
-                    if i in always_activated_features:
-                        # If always activated feature, add in position 0 -> clearer for barplot
-                        cluster_ngrams.insert(0, ngram_inventory[i])
-                    else:
-                        cluster_ngrams.append(ngram_inventory[i])
-                category_ngrams.append(cluster_ngrams)
+                category_ngrams = []
+                for p in range(0, N_found_clusters):
+                    ones = np.nonzero(prototypes[p, :])[0]
+                    cluster_ngrams = []
+                    for i in ones:
+                        if i in always_activated_features:
+                            # If always activated feature, add in position 0 -> clearer for barplot
+                            cluster_ngrams.insert(0, ngram_inventory[i])
+                        else:
+                            cluster_ngrams.append(ngram_inventory[i])
+                    category_ngrams.append(cluster_ngrams)
 
-            clusters_gold_int = []
-            ORDER = np.array(inflection_classes)
-            for i in range(0, len(clusters_gold_batch)):
-                clusters_gold_int.append(
-                            np.where(ORDER == clusters_gold_batch[i])[0][0])
-            # Number of clusters (rows) that are not unused (unused=all 1s)
-            n_used_clusters = np.sum(1-np.all(prototypes, axis=1))
+                clusters_gold_int = []
+                ORDER = np.array(inflection_classes)
+                for i in range(0, len(clusters_gold_batch)):
+                    clusters_gold_int.append(
+                                np.where(ORDER == clusters_gold_batch[i])[0][0])
+                # Number of clusters (rows) that are not unused (unused=all 1s)
+                n_used_clusters = np.sum(1-np.all(prototypes, axis=1))
 
-            # This counts how many of each gold-standard words per each inflection class is clustered in each of the clusters coming from ART
-            # Eg. 0th row being [2,3,0,4,6] would mean that cluster 0 (coming out from ART) includes 2 words from inflection class 'I', 3 words from 'II', and so on
-            cluster_inflection_stats = np.zeros(
-                        (n_used_clusters, len(inflection_classes)))
-            for i in range(0, len(clusters_gold_int)):
-                cluster_inflection_stats[int(
-                            clusters_art_batch[i]), clusters_gold_int[i]] += 1
-            row_sums = cluster_inflection_stats.sum(axis=1)
+                # This counts how many of each gold-standard words per each inflection class is clustered in each of the clusters coming from ART
+                # Eg. 0th row being [2,3,0,4,6] would mean that cluster 0 (coming out from ART) includes 2 words from inflection class 'I', 3 words from 'II', and so on
+                cluster_inflection_stats = np.zeros(
+                            (n_used_clusters, len(inflection_classes)))
+                for i in range(0, len(clusters_gold_int)):
+                    cluster_inflection_stats[int(
+                                clusters_art_batch[i]), clusters_gold_int[i]] += 1
+                row_sums = cluster_inflection_stats.sum(axis=1)
 
-            # With multiple batches/repeats, it's possible that on the next batch, no input samples are set into a category created on a previous batch. In this case the new category will be empty.
-            # This is done to avoid division by zero.
-            row_sums[np.where(row_sums == 0)] = 1
+                # With multiple batches/repeats, it's possible that on the next batch, no input samples are set into a category created on a previous batch. In this case the new category will be empty.
+                # This is done to avoid division by zero.
+                row_sums[np.where(row_sums == 0)] = 1
 
-            # Here the counts are changed in percentages
-            cluster_inflection_stats_percent = cluster_inflection_stats / \
-                        row_sums[:, np.newaxis]
-            records_batches.append(
-                        {"vigilance": vig, "run": r, "batch": rep*n_batches+b,
-                         "ri": ri_batch, "ari": ari_batch, "nmi": nmi_batch, "ami": ami_batch,
-                         "ari_per_interval": ari_per_interval_batches,
-                         "ari_per_interval_indices":  plottedIndices_batches,
-                         "cluster_population": cluster_population,
-                         "category_ngrams": category_ngrams,
-                         "prototypes": prototypes,
-                         "cluster_inflection_stats": cluster_inflection_stats,
-                         "cluster_inflection_stats_percent": cluster_inflection_stats_percent,
-                         "min_cluster_size": min_cluster_size_batch, "max_cluster_size": max_cluster_size_batch, "n_clusters": N_found_clusters})
+                # Here the counts are changed in percentages
+                cluster_inflection_stats_percent = cluster_inflection_stats / \
+                            row_sums[:, np.newaxis]
+                records_batches.append(
+                            {"vigilance": vig, "run": r, "batch": b,
+                            "ri": ri_batch, "ari": ari_batch, "nmi": nmi_batch, "ami": ami_batch,
+                            "ari_per_interval": ari_per_interval_batches,
+                            "ari_per_interval_indices":  plottedIndices_batches,
+                            "cluster_population": cluster_population,
+                            "category_ngrams": category_ngrams,
+                            "prototypes": prototypes,
+                            "cluster_inflection_stats": cluster_inflection_stats,
+                            "cluster_inflection_stats_percent": cluster_inflection_stats_percent,
+                            "min_cluster_size": min_cluster_size_batch, "max_cluster_size": max_cluster_size_batch, "n_clusters": N_found_clusters})
 
     if data_plot:
         # Use result from last batch to plot TODO: think about this
@@ -283,7 +286,7 @@ def art_run_parallel(data_onehot, forms, ngram_inventory, inflections_gold, infl
         plot.plot_barchart(cluster_inflection_stats, inflection_classes,  # category_ngrams, always_activated_ngrams,
                                    file_label=f"pca-art-vig{vig}-run{r}-{language}_protos_{config_string}", show=show)
     
-    print(f"Vigilance: {vig}. Run: {r}. Finished.")
+    # print(f"Vigilance: {vig}. Run: {r}. Finished.")
                            
     return records_batches,plottedIndices_batches,ari_per_interval_batches
 

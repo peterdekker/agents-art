@@ -585,32 +585,6 @@ class BaseNetwork(BaseSkeleton):
         # self.events = Events(network=self, signals=signals)
 
 class ART1(BaseNetwork):
-    """
-    Adaptive Resonance Theory (ART1) Network for binary
-    data clustering.
-
-    Notes
-    -----
-    - Weights are not random, so the result will be
-      always reproduceble.
-
-    Parameters
-    ----------
-    rho : float
-        Control reset action in training process.
-
-    n_clusters : int
-        Number of clusters, defaults to ``2``. Min value is also ``2``.
-
-
-    Methods
-    -------
-    train(X)
-        ART trains until all clusters are found.
-
-    predict(X)
-        alias to the ``train`` method.
-    """
     rho = ProperFractionProperty(default=0.5)
     n_clusters = IntProperty(default=1, minval=1)
 
@@ -638,7 +612,7 @@ class ART1(BaseNetwork):
             self.weight_21 = cp.ones((n_features, n_clusters))
 
         if not hasattr(self, 'weight_12'):
-            scaler = step / (step + n_features - 1) # In original code: n_clusteres instead of n_features, n_features because this is the norm of the vector, and they're all ones
+            scaler = step / (step + n_features - 1) # In original code: n_clusters instead of n_features, n_features because this is the norm of the vector, and they're all ones
             self.weight_12 = scaler * self.weight_21.T
 
         weight_21 = self.weight_21
@@ -736,8 +710,6 @@ class ART1(BaseNetwork):
                     #     )
                     #     weight_12 = cp.append(weight_12,new_bottom_up_weights.T,axis=0)         
                         
-                    if cp.isnan(winner_index):
-                        print('MSMSMS')
                     classes[i] = winner_index
                 
                 if USE_GPU:
@@ -771,6 +743,119 @@ class ART1(BaseNetwork):
 
         # Convert to numpy
         classes_np = classes.get() if USE_GPU else classes
+        # Prototypes, for interpretation: drop last placeholder cluster
+        prototypes = weight_21[:,:-1].T
+        prototypes_np = prototypes.get() if USE_GPU else prototypes
+        if USE_GPU:
+            del weight_12
+            del weight_21
+            del classes
+            cp._default_memory_pool.free_all_blocks()
+        return classes_np, prototypes_np, incrementalClasses, incrementalIndices
+
+    # ART is clustering algorithm, so normally with train(), training and evaluation happens at same time
+    # test() defines a non-standard way to only evaluate (without training), after having trained the model on a portion of the data
+    def test(self, X, save_interval, only_bottom_up):
+        X = format_data(X)
+        if USE_GPU: # convert to Cupy array
+            X = cp.array(X, dtype=bool)
+
+        if X.ndim != 2:
+            raise ValueError("Input value must be 2 dimensional, got "
+                             "{}".format(X.ndim))
+
+        incrementalClasses=[]
+        incrementalIndices=[]
+
+        n_samples, n_features = X.shape
+        step = self.step
+        rho = self.rho
+
+        if cp.any((X != 0) & (X != 1)):
+            raise ValueError("ART1 Network works only with binary matrices")
+
+        if not hasattr(self, 'weight_21') or not hasattr(self, 'weight_12'):
+            raise ValueError("ART model does not have weight matrices, this means models has not been trained yet. Train model before evaluating on test data.")
+
+        # Last cluster is placeholder with only zeroes, not real cluster, remove this
+        assert np.all(weight_21[:,-1])
+        assert np.all(weight_12[-1,:])
+        weight_21 = self.weight_21[:,:-1]
+        weight_12 = self.weight_12[:-1,:]
+        n_clusters = self.n_clusters - 1
+
+        if n_features != weight_21.shape[0]:
+            raise ValueError("Input data has invalid number of features. "
+                             "Got {} instead of {}"
+                             "".format(n_features, weight_21.shape[0]))
+
+        classes = cp.zeros(n_samples, dtype=int)
+        
+        for i, p in enumerate(X):
+            p=p.astype(int)
+            N_disabled_neurons = 0
+            highest_reset_value = 0.0
+            best_class_top_down = -1
+            reset = True
+            input2 = cp.dot(weight_12, p.T)
+            # Sorting the inputs here, since they are tested from highest to lowest, always disabling the highest if reset happens
+            sorted_indices_descending = np.argsort(input2)[::-1]
+            if only_bottom_up:
+                # Assign datapoint to class based on winning class using only bottom-up weights
+                winner_index = sorted_indices_descending[0]
+                classes[i] = winner_index
+            else:
+                while reset:
+                    winner_index = sorted_indices_descending[N_disabled_neurons]
+                    expectation = weight_21[:, winner_index]
+                    output1 = cp.logical_and(p, expectation).astype(int)
+                    if USE_GPU:
+                        del expectation
+                        cp._default_memory_pool.free_all_blocks()
+
+                    reset_value = cp.dot(output1.T, output1) / cp.dot(p.T, p)
+                    if reset_value > highest_reset_value:
+                        highest_reset_value = reset_value
+                        best_class_top_down = winner_index
+                    reset = reset_value < rho # Below vigilance = reset = keep searching
+
+                    if reset:
+                        N_disabled_neurons+=1
+                        if N_disabled_neurons == n_clusters:
+                            # We have checked all clusters, none overcame reset, so use best class so far
+                            classes[i] = best_class_top_down
+                    
+                    if not reset:                     
+                        classes[i] = winner_index
+                    
+                    if USE_GPU:
+                        del output1
+                        # Frees up memory of all the blocks that have now been deleted
+                        cp._default_memory_pool.free_all_blocks()
+                
+                if ((i+1) % save_interval)==0 or i==len(X):
+                    classes_obj = cp.copy(classes[0:i])
+                    classes_obj = classes_obj.get() if USE_GPU else classes_obj
+                    incrementalClasses.append(classes_obj)
+                    incrementalIndices.append(i+1)
+                    if USE_GPU:
+                        del classes_obj
+                        cp._default_memory_pool.free_all_blocks()
+                
+                # After processing example p, delete input2
+                if USE_GPU:
+                    del input2
+                    cp._default_memory_pool.free_all_blocks()
+
+        # Save weights and #clusters in object field, so model can be trained in batches (not in NeuPy implementation)
+        # self.weight_12=weight_12
+        # self.weight_21=weight_21
+        # self.n_clusters=n_clusters
+        
+
+
+        # Convert to numpy
+        classes_np = classes.get() if USE_GPU else classes
         prototypes_np = weight_21.T.get() if USE_GPU else weight_21.T
         if USE_GPU:
             del weight_12
@@ -778,6 +863,7 @@ class ART1(BaseNetwork):
             del classes
             cp._default_memory_pool.free_all_blocks()
         return classes_np, prototypes_np, incrementalClasses, incrementalIndices
+
 
     def predict(self, X):
         return self.train(X)
