@@ -158,7 +158,7 @@ def create_onehot_forms_from_Ngrams(forms_list, Ngrams, tokenized_form_spaces):
     return array, np.array(ngram_inventory)
 
 
-def create_language_dataset(df_language, language, Ngrams, sample_first,  squeeze_into_verbs, features_set, set_common_features_to_zero, remove_features_allzero, soundclasses, use_cells_present):
+def create_language_dataset(df_language, language, Ngrams, sample_first,  squeeze_into_verbs, features_set, set_common_features_to_zero, remove_features_allzero, soundclasses, use_present):
     if language == "portuguese" or language == "estonian":
         form_column = f"form_{soundclasses}" if soundclasses != "none" else "phon_form"
         inflection_column = "inflection_class"
@@ -185,7 +185,7 @@ def create_language_dataset(df_language, language, Ngrams, sample_first,  squeez
     if sample_first:
         df_language = df_language.head(sample_first)
 
-    if use_cells_present:
+    if use_present:
         if language=="estonian":
             df_used = df_language[df_language[cell_column].isin(paths["estonian"]["cells_present"])]
         else:

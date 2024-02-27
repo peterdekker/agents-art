@@ -777,9 +777,9 @@ class ART1(BaseNetwork):
         if not hasattr(self, 'weight_21') or not hasattr(self, 'weight_12'):
             raise ValueError("ART model does not have weight matrices, this means models has not been trained yet. Train model before evaluating on test data.")
 
-        # Last cluster is placeholder with only zeroes, not real cluster, remove this
-        assert np.all(weight_21[:,-1])
-        assert np.all(weight_12[-1,:])
+        # Last cluster is placeholder with only ones, not real cluster, remove this
+        assert np.all(self.weight_21[:,-1])
+        assert np.all(self.weight_12[-1,:])
         weight_21 = self.weight_21[:,:-1]
         weight_12 = self.weight_12[:-1,:]
         n_clusters = self.n_clusters - 1
@@ -819,14 +819,15 @@ class ART1(BaseNetwork):
                         best_class_top_down = winner_index
                     reset = reset_value < rho # Below vigilance = reset = keep searching
 
+                    if not reset:                     
+                        classes[i] = winner_index
+
                     if reset:
                         N_disabled_neurons+=1
                         if N_disabled_neurons == n_clusters:
                             # We have checked all clusters, none overcame reset, so use best class so far
                             classes[i] = best_class_top_down
-                    
-                    if not reset:                     
-                        classes[i] = winner_index
+                            reset = False
                     
                     if USE_GPU:
                         del output1

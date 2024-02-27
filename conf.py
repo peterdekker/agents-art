@@ -5,15 +5,15 @@ import numpy as np
 LANGUAGE = "latin"
 FEATURES_SET = False
 SOUNDCLASSES = "none"  #  One of: "none", "asjp" or "sca"
-USE_CELLS_PRESENT = False
+USE_PRESENT = False
 NGRAMS = 3
-VIGILANCE_SINGLE_RUN = 0.5
+VIGILANCE_SINGLE_RUN = 0.1
 
 params = {
     "language": {"default": LANGUAGE, "type": str},
     "features_set": {"default": FEATURES_SET, "type": bool},
     "soundclasses": {"default": SOUNDCLASSES, "type": str},
-    "use_cells_present": {"default": USE_CELLS_PRESENT, "type": bool},
+    "use_present": {"default": USE_PRESENT, "type": bool},
     "ngrams": {"default": NGRAMS, "type": int},
     "vigilance_single_run": {"default": VIGILANCE_SINGLE_RUN, "type": float},
 }
@@ -23,7 +23,7 @@ mode_params = ["plot_data", "single_run", "eval_batches", "eval_vigilances", "ev
 ###
 
 ### Parameters settable for users via this config file
-MULTIPROCESSING = True
+MULTIPROCESSING = False
 N_PROCESSES = 2  # None # None for using all
 USE_GPU = False  # GPU often slower than CPU, and runs out of memory for concat representation. but saves CPU availability
 WRITE_CSV = True
@@ -46,7 +46,7 @@ SAMPLE_FIRST = None  # 1000
 ### Not to be changed by user
 VIGILANCE_RANGE = [
     x/100 for x in range(0, int(MAX_VIGILANCE*100), int(VIGILANCE_RANGE_STEP*100))]
-# CONFIG_STRING = f"---squeeze_into_verbs={SQUEEZE_INTO_VERBS}---FEATURES_SET={FEATURES_SET}---CommonFeat0={SET_COMMON_FEATURES_TO_ZERO}---Ngram={NGRAMS}---present={USE_CELLS_PRESENT}"
+# CONFIG_STRING = f"---squeeze_into_verbs={SQUEEZE_INTO_VERBS}---FEATURES_SET={FEATURES_SET}---CommonFeat0={SET_COMMON_FEATURES_TO_ZERO}---Ngram={NGRAMS}---present={USE_PRESENT}"
 LABEL_DENSITY = 5
 EVAL_INTERVAL = 20
 # INFLECTION_CLASSES = ["I", "II", "III", "IV", "special"]

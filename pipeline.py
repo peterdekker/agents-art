@@ -50,7 +50,7 @@ def main():
     df_language = pd.read_csv(
         conjugation_df_path, index_col=0, low_memory=False)
     forms_onehot, forms, inflections, inflection_classes, _, ngram_inventory = data.create_language_dataset(df_language, language, Ngrams=args.ngrams,
-                                                                                                                 sample_first=SAMPLE_FIRST,  squeeze_into_verbs=SQUEEZE_INTO_VERBS, features_set=args.features_set, set_common_features_to_zero=SET_COMMON_FEATURES_TO_ZERO, remove_features_allzero=REMOVE_FEATURES_ALLZERO, soundclasses=args.soundclasses, use_cells_present=args.use_cells_present)
+                                                                                                                 sample_first=SAMPLE_FIRST,  squeeze_into_verbs=SQUEEZE_INTO_VERBS, features_set=args.features_set, set_common_features_to_zero=SET_COMMON_FEATURES_TO_ZERO, remove_features_allzero=REMOVE_FEATURES_ALLZERO, soundclasses=args.soundclasses, use_present=args.use_present)
     if args.plot_data:
         # Plot data before running model
         df, pca = plot.fit_pca(forms_onehot)
