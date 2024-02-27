@@ -764,8 +764,8 @@ class ART1(BaseNetwork):
             raise ValueError("Input value must be 2 dimensional, got "
                              "{}".format(X.ndim))
 
-        incrementalClasses=[]
-        incrementalIndices=[]
+        # incrementalClasses=[]
+        # incrementalIndices=[]
 
         n_samples, n_features = X.shape
         step = self.step
@@ -834,14 +834,14 @@ class ART1(BaseNetwork):
                         # Frees up memory of all the blocks that have now been deleted
                         cp._default_memory_pool.free_all_blocks()
                 
-                if ((i+1) % save_interval)==0 or i==len(X):
-                    classes_obj = cp.copy(classes[0:i])
-                    classes_obj = classes_obj.get() if USE_GPU else classes_obj
-                    incrementalClasses.append(classes_obj)
-                    incrementalIndices.append(i+1)
-                    if USE_GPU:
-                        del classes_obj
-                        cp._default_memory_pool.free_all_blocks()
+                # if ((i+1) % save_interval)==0 or i==len(X):
+                #     classes_obj = cp.copy(classes[0:i])
+                #     classes_obj = classes_obj.get() if USE_GPU else classes_obj
+                #     incrementalClasses.append(classes_obj)
+                #     incrementalIndices.append(i+1)
+                #     if USE_GPU:
+                #         del classes_obj
+                #         cp._default_memory_pool.free_all_blocks()
                 
                 # After processing example p, delete input2
                 if USE_GPU:
@@ -863,7 +863,7 @@ class ART1(BaseNetwork):
             del weight_21
             del classes
             cp._default_memory_pool.free_all_blocks()
-        return classes_np, prototypes_np, incrementalClasses, incrementalIndices
+        return classes_np, prototypes_np, #incrementalClasses, incrementalIndices
 
 
     def predict(self, X):

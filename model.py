@@ -69,7 +69,7 @@ def art(data_onehot, forms, ngram_inventory, inflections_gold, inflection_classe
         kf = KFold(n_splits=10, shuffle=True)
         train_test_splits = list(kf.split(data_onehot))
     else:
-        train_test_splits = [None,None]
+        train_test_splits = [(None,None)]
 
 
     if MULTIPROCESSING:
@@ -80,7 +80,6 @@ def art(data_onehot, forms, ngram_inventory, inflections_gold, inflection_classe
             records_listlist = pool.starmap(art_run_parallel_wrapper, param_settings) # take only first return value
     else: # If multiprocessing is off, this allows to do eval_intervals, which is done once per vigilance
         records_listlist = []
-        print(vigilances)
         for vig in vigilances:
             ari_per_interval_per_run = []
             for r in range(n_runs):
@@ -90,8 +89,10 @@ def art(data_onehot, forms, ngram_inventory, inflections_gold, inflection_classe
                     ari_per_interval_per_run.append(ari_per_interval_batches)
 
             if eval_intervals:
-                plot.plot_intervals(ari_per_interval_per_run, plottedIndices_batches,
-                                    file_label=f"pca-art-vig{vig}-run{r}-{language}_protos_{config_string}", show=show)
+                if train_test:
+                    print("Line shows #datapoints in whole dataset, not #datapoints in train fold.")
+                plot.plot_intervals(ari_per_interval_per_run, plottedIndices_batches, len(data_onehot),
+                                    file_label=f"intervals-vig{vig}-{language}_{config_string}", show=show)
     
     records = list(itertools.chain.from_iterable(records_listlist))
     df_results = pd.DataFrame(records)
@@ -100,8 +101,7 @@ def art(data_onehot, forms, ngram_inventory, inflections_gold, inflection_classe
             OUTPUT_DIR, f"histogram_per_vigilance-{language}_{config_string}_out.csv"))
     df_results.to_csv("test.csv")
     print(df_results.groupby(["vigilance", "mode"], sort=False)[["ri", "ari", "nmi", "ami", "min_cluster_size", "max_cluster_size", "n_clusters"]].mean()) # 
-    df_results_small = df_results[["vigilance", "run", "fold_id", "cluster_population",
-                                   "category_ngrams", "cluster_inflection_stats", "ari", "batch", "mode"]]
+    df_results_small = df_results[["vigilance", "run", "fold_id", "batch", "mode", "ari", ]] #"cluster_population", .py"category_ngrams", "cluster_inflection_stats", 
     if WRITE_CSV:
         df_results_small.to_csv(os.path.join(
             OUTPUT_DIR, f"cluster_stats_{config_string}.csv"))
@@ -234,7 +234,7 @@ def art_run_parallel(data_onehot, forms, ngram_inventory, inflections_gold, infl
                 elif mode=="test":
                     # clusters_art_batch, prototypes, incrementalClasses, incrementalIndices = artnet.train(
                     #             input_data[batch], EVAL_INTERVAL)
-                    clusters_art_batch, prototypes, incrementalClasses, incrementalIndices = artnet.test(
+                    clusters_art_batch, prototypes = artnet.test(
                                 input_data[batch], EVAL_INTERVAL, only_bottom_up=True)
                 
                 N_found_clusters = len(prototypes)
@@ -242,7 +242,7 @@ def art_run_parallel(data_onehot, forms, ngram_inventory, inflections_gold, infl
                 ri_batch, ari_batch, nmi_batch, ami_batch, min_cluster_size_batch, max_cluster_size_batch = eval_results(
                             clusters_art_batch, clusters_gold_batch)
 
-                if eval_intervals:
+                if eval_intervals and mode=="train": # for test, eval_intervals is not useful because nothing is learned
                     if rep == 0:
                         N_evals = len(incrementalClasses)
                         for i in range(0, N_evals):
@@ -299,18 +299,18 @@ def art_run_parallel(data_onehot, forms, ngram_inventory, inflections_gold, infl
                     row_sums[np.where(row_sums == 0)] = 1
 
                     # Here the counts are changed in percentages
-                    cluster_inflection_stats_percent = cluster_inflection_stats / \
-                                row_sums[:, np.newaxis]
+                    # cluster_inflection_stats_percent = cluster_inflection_stats / \
+                    #             row_sums[:, np.newaxis]
                     records_batches.append(
                                 {"vigilance": vig, "run": r, "fold_id": fold_id, "batch": b, "mode": mode,
                                 "ri": ri_batch, "ari": ari_batch, "nmi": nmi_batch, "ami": ami_batch,
-                                "ari_per_interval": ari_per_interval_batches,
-                                "ari_per_interval_indices":  plottedIndices_batches,
-                                "cluster_population": cluster_population,
-                                "category_ngrams": category_ngrams,
-                                "prototypes": prototypes,
-                                "cluster_inflection_stats": cluster_inflection_stats,
-                                "cluster_inflection_stats_percent": cluster_inflection_stats_percent,
+                                #"ari_per_interval": ari_per_interval_batches,
+                                #"ari_per_interval_indices":  plottedIndices_batches,
+                                #"cluster_population": cluster_population,
+                                #"category_ngrams": category_ngrams,
+                                #"prototypes": prototypes,
+                                #"cluster_inflection_stats": cluster_inflection_stats,
+                                #"cluster_inflection_stats_percent": cluster_inflection_stats_percent,
                                 "min_cluster_size": min_cluster_size_batch, "max_cluster_size": max_cluster_size_batch, "n_clusters": N_found_clusters})
 
     if data_plot and not train_test:

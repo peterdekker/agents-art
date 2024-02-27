@@ -59,11 +59,11 @@ def main():
     
     if args.single_run:
         # print(f"Full data shuffle, {N_RUNS} runs")
-        art(forms_onehot, forms, ngram_inventory, inflections, inflection_classes, language, config_string, n_runs=1, vigilances=[args.vigilance_single_run], shuffle_data=True, repeat_dataset=True, data_plot=True, train_test=args.train_test)
+        art(forms_onehot, forms, ngram_inventory, inflections, inflection_classes, language, config_string, n_runs=1, vigilances=[args.vigilance_single_run], shuffle_data=True, repeat_dataset=True, data_plot=True, train_test=args.train_test, eval_intervals=args.eval_intervals)
     
     if args.eval_vigilances:
         art(forms_onehot, forms, ngram_inventory, inflections, inflection_classes, language,config_string, 
-            n_runs=N_RUNS, shuffle_data=True, repeat_dataset=True, vigilances=VIGILANCE_RANGE, train_test=args.train_test)
+            n_runs=N_RUNS, shuffle_data=True, repeat_dataset=True, vigilances=VIGILANCE_RANGE, train_test=args.train_test, eval_intervals=args.eval_intervals)
     
     if args.eval_batches:
         print(f"Full data shuffle, {N_RUNS} runs:")
@@ -79,10 +79,10 @@ def main():
         art(forms_onehot, forms, ngram_inventory, inflections, inflection_classes,
             None, language,config_string,  batch_size=50, n_runs=N_RUNS, shuffle_data=True)
 
-    if args.eval_intervals:
-        print(f"Full data shuffle, {N_RUNS} runs:")
-        art(forms_onehot, forms, ngram_inventory, inflections, inflection_classes, None, language,config_string, 
-            n_runs=N_RUNS, shuffle_data=True, repeat_dataset=True, eval_intervals=True)
+    # if args.eval_intervals:
+    #     print(f"Full data shuffle, {N_RUNS} runs:")
+    #     art(forms_onehot, forms, ngram_inventory, inflections, inflection_classes, language,config_string, 
+    #         n_runs=N_RUNS, shuffle_data=True, repeat_dataset=True, eval_intervals=True)
 
 
     if args.baseline:

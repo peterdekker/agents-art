@@ -45,7 +45,7 @@ def plot_data(df, clusters, labels=None, micro_clusters=None, sample_points = No
     #score = silhouette_score(X=data_bin, labels=clusters, metric="hamming")
     # return score
 
-def plot_intervals(ari_intervals, incrementalIndices, file_label=None, show=True):
+def plot_intervals(ari_intervals, incrementalIndices, n_datapoints, file_label=None, show=True):
     matplotlib.rcParams.update({'font.size': 22})
     fig, ax = plt.subplots()
     stackedResults=np.array(ari_intervals)
@@ -54,9 +54,10 @@ def plot_intervals(ari_intervals, incrementalIndices, file_label=None, show=True
     df = df.melt(var_name="Number of input paradigms", value_name="ARI")
 
     sns.lineplot(data=df,x="Number of input paradigms", y="ARI")
-    ax.axvline(x=229, linewidth=2, color='orange', ls=':')
+    plt.ylim(0)
+    ax.axvline(x=n_datapoints, linewidth=2, color='orange', ls=':')
     if file_label:
-        plt.savefig(os.path.join(OUTPUT_DIR,f"data-{file_label}.pdf"))
+        plt.savefig(os.path.join(OUTPUT_DIR,f"{file_label}.pdf"))
     if show:
         plt.show()
 
