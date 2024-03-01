@@ -13,7 +13,7 @@ import matplotlib
 
 import os
 
-
+sns.set(font="Charis SIL Compact")
 plt.rcParams['figure.figsize'] = [10, 6]
 plt.rcParams['figure.dpi'] = 200
 plt.rcParams['savefig.format'] = "pdf"
@@ -96,7 +96,7 @@ def plot_barchart(cluster_inflection_stats, inflection_classes, #category_ngrams
         plt.show()
         
     if file_label:
-        plt.savefig(os.path.join(OUTPUT_DIR,f"barchart-{file_label}.pdf"),bbox_inches='tight')
+        plt.savefig(os.path.join(OUTPUT_DIR,f"bar-{file_label}.pdf"),bbox_inches='tight')
 
 def plot_heikki(df, clusters, labels=None, micro_clusters = None, file_label=None, sample_points=None, prototypes=None, show=False):
     # assert len(clusters) == data_bin.shape[0]

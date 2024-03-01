@@ -27,7 +27,7 @@ MULTIPROCESSING = False
 N_PROCESSES = 2  # None # None for using all
 USE_GPU = False  # GPU often slower than CPU, and runs out of memory for concat representation. but saves CPU availability
 WRITE_CSV = True
-N_RUNS = 5  # 10
+N_RUNS = 3  # 10
 
 ART_LEARNING_RATE = 2
 
@@ -66,7 +66,7 @@ paths = {
      "file_path": os.path.join(DATA_PATH, "Romance_Verbal_Inflection_Dataset-v2.0.4"),
      "metadata_relative_path": "cldf/Wordlist-metadata.json",
      "conjugation_df_path": 'latin_data_df.csv',
-     "cells_distillation": ["INF", "PRS-IND.1SG", "PRS-IND.2SG", "PRS-IND.3SG", "PRS-IND.3PL"]}, #"IMPERF-IND.3SG",  "PRS-SBJV.3SG"
+     "cells_distillation": ["IMPERF-IND.3SG", "INF", "PRS-IND.1SG", "PRS-IND.2SG", "PRS-IND.3SG", "PRS-IND.3PL", "PRS-SBJV.3SG"]}, #Removing these two cells gives better score: "IMPERF-IND.3SG",  "PRS-SBJV.3SG"
     "estonian":
     {"archive_url": "https://zenodo.org/records/8392744/files/v1.0.1.zip",
      "archive_path": "estonian-v.1.0.1.zip",

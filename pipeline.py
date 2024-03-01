@@ -32,7 +32,8 @@ def main():
     args = parser.parse_args()
     print(args)
 
-    config_string = "".join([f"--{param_name}={param_value}" for param_name,param_value in vars(args).items() if param_name not in mode_params and param != "language" and (args.single_run or param_name!="vigilance_single_run")])
+    config_string = "train_test" if args.train_test else ""
+    config_string += "".join([f"-{param_name}={param_value}" for param_name,param_value in vars(args).items() if param_name not in mode_params and param_name != "language" and (args.single_run or param_name!="vigilance_single_run")])
     language = args.language
 
     os.makedirs(OUTPUT_DIR, exist_ok=True)

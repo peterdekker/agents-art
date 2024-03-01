@@ -13,6 +13,7 @@ import os
 import itertools
 from multiprocessing import Pool
 
+sns.set(font="Charis SIL Compact")
 
 
 def random_baseline(inflections_gold, n_inflection_classes):
@@ -115,6 +116,8 @@ def art(data_onehot, forms, ngram_inventory, inflections_gold, inflection_classe
         # df_melt_scores = pd.melt(df_results, id_vars=["vigilance", "run", "batch"], value_vars=["ri","ari", "nmi", "ami"], var_name="metric", value_name="score")
         df_melt_clusters = pd.melt(df_results, id_vars=["vigilance", "run", "batch", "fold_id", "mode"], value_vars=[
                                    "min_cluster_size", "max_cluster_size"], var_name="metric", value_name="size")
+        df_melt_n_clusters = pd.melt(df_results, id_vars=["vigilance", "run", "batch", "fold_id", "mode"], value_vars=[
+                                   "n_clusters"], var_name="metric", value_name="n")
         
         # df_melt_ci = pd.melt(df_results, id_vars=["vigilance"], value_vars=[
         #                      "cluster_population"], var_name="metric", value_name="N_in_cluster")
@@ -130,6 +133,8 @@ def art(data_onehot, forms, ngram_inventory, inflections_gold, inflection_classe
         # X, Y = np.meshgrid(x, y)
         # ax.plot_surface(X, Y, np.transpose(z),cmap=cm.coolwarm)
         # plt.savefig(os.path.join(OUTPUT_DIR, f"histogram_per_vigilance-{language}.pdf"))
+
+        ## Scores plot
         if train_test:
             sns.lineplot(data=df_melt_scores, x="vigilance",
                      y="score", hue="metric", style="mode")
@@ -149,6 +154,7 @@ def art(data_onehot, forms, ngram_inventory, inflections_gold, inflection_classe
             plt.show()
         plt.clf()
 
+        ## Cluster sizes plot
         if train_test:
             sns.lineplot(data=df_melt_clusters, x="vigilance",
                         y="size", hue="metric", style="mode")
@@ -163,6 +169,23 @@ def art(data_onehot, forms, ngram_inventory, inflections_gold, inflection_classe
         if WRITE_CSV:
             df_results.to_csv(
                 f"clusters-scores-{language}-{config_string}.tex", sep="&", lineterminator="\\\\\n")
+        
+        ## N_clusters plot
+        if train_test:
+            sns.lineplot(data=df_melt_n_clusters, x="vigilance",
+                        y="n", hue="metric", style="mode")
+        else:
+            sns.lineplot(data=df_melt_n_clusters, x="vigilance",
+                        y="n", hue="metric")
+        plt.axhline(y=len(inflection_classes)) # plot number of real inflection classes
+        plt.savefig(os.path.join(
+            OUTPUT_DIR, f"nclusters-{language}-{config_string}.pdf"))
+        if show:
+            plt.show()
+        plt.clf()
+        if WRITE_CSV:
+            df_results.to_csv(
+                f"nclusters-scores-{language}-{config_string}.tex", sep="&", lineterminator="\\\\\n")
 
 def art_run_parallel_wrapper(*args):
     return art_run_parallel(*args)[0]
@@ -331,9 +354,9 @@ def art_run_parallel(data_onehot, forms, ngram_inventory, inflections_gold, infl
         df2 = pd.DataFrame(prototype_based_new_coords)
         df2.columns = ['dim1', 'dim2']
         plot.plot_data(df2, labels=None, clusters=clusters_gold, prototypes=df,
-                               file_label=f"pca-art-vig{vig}-run{r}-{language}_protos_{config_string}", show=show)
+                               file_label=f"{language}-vig{vig}-run{r}_{config_string}", show=show)
         plot.plot_barchart(cluster_inflection_stats, inflection_classes,  # category_ngrams, always_activated_ngrams,
-                                   file_label=f"pca-art-vig{vig}-run{r}-{language}_protos_{config_string}", show=show)
+                                   file_label=f"{language}-vig{vig}-run{r}_{config_string}", show=show)
     
     # print(f"Vigilance: {vig}. Run: {r}. Finished.")
     return records_batches,plottedIndices_batches,ari_per_interval_batches
