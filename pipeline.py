@@ -1,5 +1,5 @@
 
-from conf import OUTPUT_DIR, SAMPLE_FIRST, N_RUNS, SQUEEZE_INTO_VERBS, SET_COMMON_FEATURES_TO_ZERO, REMOVE_FEATURES_ALLZERO, VIGILANCE_RANGE, paths, params, mode_params
+from conf import OUTPUT_DIR, SAMPLE_FIRST, N_RUNS, SET_COMMON_FEATURES_TO_ZERO, REMOVE_FEATURES_ALLZERO, VIGILANCE_RANGE, paths, params, mode_params
 from model import art, majority_baseline, random_baseline, kmeans_cluster_baseline
 import pandas as pd
 import os
@@ -50,8 +50,8 @@ def main():
     # First time script is run for a language, we write and then immediately read from CSV file.
     df_language = pd.read_csv(
         conjugation_df_path, index_col=0, low_memory=False)
-    forms_onehot, forms, inflections, inflection_classes, _, ngram_inventory = data.create_language_dataset(df_language, language, Ngrams=args.ngrams,
-                                                                                                                 sample_first=SAMPLE_FIRST,  squeeze_into_verbs=SQUEEZE_INTO_VERBS, features_set=args.features_set, set_common_features_to_zero=SET_COMMON_FEATURES_TO_ZERO, remove_features_allzero=REMOVE_FEATURES_ALLZERO, soundclasses=args.soundclasses, use_present=args.use_present)
+    forms_onehot, inflections, inflection_classes, _, ngram_inventory = data.create_language_dataset(df_language, language, Ngrams=args.ngrams,
+                                                                                                                 sample_first=SAMPLE_FIRST, features_set=args.features_set, set_common_features_to_zero=SET_COMMON_FEATURES_TO_ZERO, remove_features_allzero=REMOVE_FEATURES_ALLZERO, soundclasses=args.soundclasses, use_present=args.use_present)
     if args.plot_data:
         # Plot data before running model
         df, pca = plot.fit_pca(forms_onehot)
@@ -60,24 +60,24 @@ def main():
     
     if args.single_run:
         # print(f"Full data shuffle, {N_RUNS} runs")
-        art(forms_onehot, forms, ngram_inventory, inflections, inflection_classes, language, config_string, n_runs=1, vigilances=[args.vigilance_single_run], shuffle_data=True, repeat_dataset=True, data_plot=True, train_test=args.train_test, eval_intervals=args.eval_intervals)
+        art(forms_onehot, ngram_inventory, inflections, inflection_classes, language, config_string, n_runs=1, vigilances=[args.vigilance_single_run], shuffle_data=True, repeat_dataset=True, data_plot=True, train_test=args.train_test, eval_intervals=args.eval_intervals)
     
     if args.eval_vigilances:
-        art(forms_onehot, forms, ngram_inventory, inflections, inflection_classes, language,config_string, 
+        art(forms_onehot, ngram_inventory, inflections, inflection_classes, language,config_string, 
             n_runs=N_RUNS, shuffle_data=True, repeat_dataset=True, vigilances=VIGILANCE_RANGE, train_test=args.train_test, eval_intervals=args.eval_intervals)
     
     if args.eval_batches:
         print(f"Full data shuffle, {N_RUNS} runs:")
-        art(forms_onehot, forms, ngram_inventory, inflections, inflection_classes,
+        art(forms_onehot, ngram_inventory, inflections, inflection_classes,
             None, language, config_string, n_runs=N_RUNS, shuffle_data=True)
         print(f"Repeat dataset shuffle, {N_RUNS} runs:")
-        art(forms_onehot, forms, ngram_inventory, inflections, inflection_classes, None,
+        art(forms_onehot, ngram_inventory, inflections, inflection_classes, None,
             language, config_string, n_runs=N_RUNS, repeat_dataset=True, shuffle_data=True)
         print(f"batch 10 shuffle, {N_RUNS} runs:")
-        art(forms_onehot, forms, ngram_inventory, inflections, inflection_classes,
+        art(forms_onehot, ngram_inventory, inflections, inflection_classes,
             None, language,config_string,  batch_size=10, n_runs=N_RUNS, shuffle_data=True)
         print(f"batch 50 shuffle, {N_RUNS} runs:")
-        art(forms_onehot, forms, ngram_inventory, inflections, inflection_classes,
+        art(forms_onehot, ngram_inventory, inflections, inflection_classes,
             None, language,config_string,  batch_size=50, n_runs=N_RUNS, shuffle_data=True)
 
     # if args.eval_intervals:

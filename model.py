@@ -56,7 +56,7 @@ def kmeans_cluster_baseline(data_onehot, inflections_gold, n_inflection_classes)
                          "min_cluster_size": min_cluster_size, "max_cluster_size": max_cluster_size, "n_clusters": n_clusters}
 
 
-def art(data_onehot, forms, ngram_inventory, inflections_gold, inflection_classes, language, config_string, n_runs=1, vigilances=[], repeat_dataset=False, batch_size=None, shuffle_data=False, data_plot=False, show=False, eval_intervals=False, train_test=False):
+def art(data_onehot, ngram_inventory, inflections_gold, inflection_classes, language, config_string, n_runs=1, vigilances=[], repeat_dataset=False, batch_size=None, shuffle_data=False, data_plot=False, show=False, eval_intervals=False, train_test=False):
     eval_vigilances = False
     # np.random.shuffle(inflections_gold) # Make evaluation random, to test if model is doing something
     if len(vigilances) > 1:
@@ -76,7 +76,7 @@ def art(data_onehot, forms, ngram_inventory, inflections_gold, inflection_classe
     if MULTIPROCESSING:
         if eval_intervals:
             raise ValueError("eval_intervals is not possible in multiprocessing mode.")
-        param_settings = [(data_onehot, forms, ngram_inventory, inflections_gold, inflection_classes, pca, language, repeat_dataset, batch_size, shuffle_data, data_plot, show, eval_intervals, train_test, config_string, vig, r, fold_id, train_ix, test_ix) for vig in vigilances for r in range(n_runs) for fold_id, (train_ix, test_ix) in enumerate(train_test_splits)]
+        param_settings = [(data_onehot, ngram_inventory, inflections_gold, inflection_classes, pca, language, repeat_dataset, batch_size, shuffle_data, data_plot, show, eval_intervals, train_test, config_string, vig, r, fold_id, train_ix, test_ix) for vig in vigilances for r in range(n_runs) for fold_id, (train_ix, test_ix) in enumerate(train_test_splits)]
         with Pool(processes=N_PROCESSES) as pool:
             records_listlist = pool.starmap(art_run_parallel_wrapper, param_settings) # take only first return value
     else: # If multiprocessing is off, this allows to do eval_intervals, which is done once per vigilance
@@ -85,7 +85,7 @@ def art(data_onehot, forms, ngram_inventory, inflections_gold, inflection_classe
             ari_per_interval_per_run = []
             for r in range(n_runs):
                 for fold_id, (train_ix, test_ix) in enumerate(train_test_splits):
-                    records_batches, plottedIndices_batches, ari_per_interval_batches = art_run_parallel(data_onehot, forms, ngram_inventory, inflections_gold, inflection_classes, pca, language, repeat_dataset, batch_size, shuffle_data, data_plot, show, eval_intervals, train_test, config_string, vig, r, fold_id, train_ix, test_ix)
+                    records_batches, plottedIndices_batches, ari_per_interval_batches = art_run_parallel(data_onehot, ngram_inventory, inflections_gold, inflection_classes, pca, language, repeat_dataset, batch_size, shuffle_data, data_plot, show, eval_intervals, train_test, config_string, vig, r, fold_id, train_ix, test_ix)
                     records_listlist.append(records_batches)
                     ari_per_interval_per_run.append(ari_per_interval_batches)
 
@@ -190,7 +190,7 @@ def art(data_onehot, forms, ngram_inventory, inflections_gold, inflection_classe
 def art_run_parallel_wrapper(*args):
     return art_run_parallel(*args)[0]
 
-def art_run_parallel(data_onehot, forms, ngram_inventory, inflections_gold, inflection_classes, pca, language, repeat_dataset, batch_size_given, shuffle_data, data_plot, show, eval_intervals, train_test, config_string, vig, r, fold_id, train_ix, test_ix):
+def art_run_parallel(data_onehot, ngram_inventory, inflections_gold, inflection_classes, pca, language, repeat_dataset, batch_size_given, shuffle_data, data_plot, show, eval_intervals, train_test, config_string, vig, r, fold_id, train_ix, test_ix):
     print(f"Vigilance: {vig}. Run: {r}.{' Split id '+ str(fold_id) if fold_id is not None else ''}")
     artnet = ART1(
                 step=ART_LEARNING_RATE,
@@ -258,7 +258,7 @@ def art_run_parallel(data_onehot, forms, ngram_inventory, inflections_gold, infl
                     # clusters_art_batch, prototypes, incrementalClasses, incrementalIndices = artnet.train(
                     #             input_data[batch], EVAL_INTERVAL)
                     clusters_art_batch, prototypes = artnet.test(
-                                input_data[batch], EVAL_INTERVAL, only_bottom_up=True)
+                                input_data[batch], only_bottom_up=True)
                 
                 N_found_clusters = len(prototypes)
                 clusters_gold_batch = clusters_gold[batch]

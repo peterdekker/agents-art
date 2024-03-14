@@ -101,6 +101,7 @@ def load_paralex_dataset(language, conjugation_df_path):
 
 
 def filter_romance_empty_multicog(forms_df):
+    # NOTE: For Latin, Ø exists, but ? not and multi-cognates also not
     # Filter out empty entries and entry with more than one cognate class
     forms_df_nonempty = forms_df[~forms_df["Form"].isin(["Ø", "?"])]
     forms_df_1cognate = forms_df_nonempty[forms_df_nonempty["Cognateset_ID"].apply(
@@ -158,7 +159,7 @@ def create_onehot_forms_from_Ngrams(forms_list, Ngrams, tokenized_form_spaces):
     return array, np.array(ngram_inventory)
 
 
-def create_language_dataset(df_language, language, Ngrams, sample_first,  squeeze_into_verbs, features_set, set_common_features_to_zero, remove_features_allzero, soundclasses, use_present):
+def create_language_dataset(df_language, language, Ngrams, sample_first, features_set, set_common_features_to_zero, remove_features_allzero, soundclasses, use_present):
     if language == "portuguese" or language == "estonian":
         form_column = f"form_{soundclasses}" if soundclasses != "none" else "phon_form"
         inflection_column = "inflection_class"
@@ -168,7 +169,7 @@ def create_language_dataset(df_language, language, Ngrams, sample_first,  squeez
             tag_present = "prs.ind"
         else:
             tag_present = "ind.prs"
-        tag_present_3pl = f"{tag_present}.3pl"
+        # tag_present_3pl = f"{tag_present}.3pl"
         tokenized_form_spaces = True
     else:  # data_format=="romance"
         form_column = f"form_{soundclasses}" if soundclasses != "none" else "Form_tokenized" # form_column = "Form"
@@ -176,7 +177,7 @@ def create_language_dataset(df_language, language, Ngrams, sample_first,  squeez
         lexeme_column = "Cognateset_ID_first"
         cell_column = "Cell"
         tag_present = "PRS-IND"
-        tag_present_3pl = f"{tag_present}.3PL"  # "'PRS-IND', '3PL'"
+        # tag_present_3pl = f"{tag_present}.3PL"  # "'PRS-IND', '3PL'"
         tokenized_form_spaces = True
     
     # Keep only first form for a cell (Estonian has doubles)
@@ -228,77 +229,91 @@ def create_language_dataset(df_language, language, Ngrams, sample_first,  squeez
     assert forms_encoded.shape[1] == len(ngram_inventory)
     orig_ngram_inventory = ngram_inventory
 
+    ### Begin squeeze into verbs
+    # Make new pooled ngram inventory with person tags
+    if not features_set: # concat
 
-    if squeeze_into_verbs:
-        # Make new pooled ngram inventory with person tags
+        # Pooled ngram inventory only used for plotting, not in encoding processing
+        pooled_ngram_inventory = np.array(["".join(
+            ngram) + '_'+unique_cell for unique_cell in unique_cells_ordered for ngram in ngram_inventory])
+        ngram_inventory = pooled_ngram_inventory
+
+        pooled_forms_encoded = np.zeros(
+            (n_lexemes_unique, n_cells_unique*forms_encoded.shape[1]))
+    else:  # Set representation
+        pooled_forms_encoded = np.zeros(
+            (n_lexemes_unique, forms_encoded.shape[1]))
+    pooled_inflections = []
+    #for lexeme_ix, lexeme_unique in enumerate(lexemes_unique):
+    used_lexeme_indices = []
+    for lexeme_ix, lexeme_unique in enumerate(lexemes_unique):
+        rows_lexeme_unique = df_used[df_used[lexeme_column]==lexeme_unique]
+        # Not necessarily in the same order as wanted
+        cells_for_verb = list(rows_lexeme_unique[cell_column]) # cells_np[indices_for_verb]
+        if len(cells_for_verb) < len(unique_cells_ordered):
+            # Skip whole lexeme if one of the cells is not there
+            print(f"Skipping lexeme {lexeme_unique} because it does not include the following desired cells: {set(unique_cells_ordered).difference(set(cells_for_verb))}")
+            continue
+        # Keep track of which lexemes we use, because of lexeme dropping when not all cells are there
+        used_lexeme_indices.append(lexeme_ix)
+
         if not features_set: # concat
+            pooled_forms_encoded_for_verb = [[]]  # add dimension
+        else:
+            pooled_forms_encoded_for_verb = np.zeros(
+                (1, len(ngram_inventory)))
+        indices_for_verb = list(rows_lexeme_unique.index) #np.where(lexemes == lexeme_unique)[0]
 
-            # Pooled ngram inventory only used for plotting, not in encoding processing
-            pooled_ngram_inventory = np.array(["".join(
-                ngram) + '_'+unique_cell for unique_cell in unique_cells_ordered for ngram in ngram_inventory])
-            ngram_inventory = pooled_ngram_inventory
-
-            pooled_forms_encoded = np.empty(
-                (n_lexemes_unique, n_cells_unique*forms_encoded.shape[1]))
-        else:  # Set representation
-            pooled_forms_encoded = np.empty(
-                (n_lexemes_unique, forms_encoded.shape[1]))
-        pooled_inflections = []
-        #for lexeme_ix, lexeme_unique in enumerate(lexemes_unique):
-        for lexeme_ix, lexeme_unique in enumerate(lexemes_unique):
-            rows_lexeme_unique = df_used[df_used[lexeme_column]==lexeme_unique]
-            if not features_set: # concat
-                pooled_forms_encoded_for_verb = [[]]  # add dimension
+        # Save inflection for this pooled verb, from the first position
+        pooled_inflections.append(
+            rows_lexeme_unique[inflection_column].values[0]) # inflections.values[indices_for_verb[0]]
+        for unique_cell in unique_cells_ordered:
+            #if unique_cell in cells_for_verb:
+            # index = np.where(
+            #     unique_cell == cells_for_verb)
+            index = cells_for_verb.index(unique_cell)
+            index_in_forms_encoded = indices_for_verb[index] # indices_for_verb[index[0][0]]
+            if not features_set: #concat
+                pooled_forms_encoded_for_verb = np.append(
+                    pooled_forms_encoded_for_verb, forms_encoded[None, index_in_forms_encoded], axis=1)
             else:
-                pooled_forms_encoded_for_verb = np.zeros(
-                    (1, len(ngram_inventory)))
-            indices_for_verb = list(rows_lexeme_unique.index) #np.where(lexemes == lexeme_unique)[0]
+                pooled_forms_encoded_for_verb = pooled_forms_encoded_for_verb + \
+                    forms_encoded[index_in_forms_encoded]
+            # else:
+            #     if not features_set: #concat
+            #         pooled_forms_encoded_for_verb = np.append(
+            #             pooled_forms_encoded_for_verb, np.zeros((forms_encoded.shape[1])), axis=0)
 
-            # Save inflection for this pooled verb, from the first position
-            pooled_inflections.append(
-                rows_lexeme_unique[inflection_column].values[0]) # inflections.values[indices_for_verb[0]]
-            # Not necessarily in the same order as wanted
-            cells_for_verb = list(rows_lexeme_unique[cell_column]) # cells_np[indices_for_verb]
-            for unique_cell in unique_cells_ordered:
-                if unique_cell in cells_for_verb:
-                    # index = np.where(
-                    #     unique_cell == cells_for_verb)
-                    index = cells_for_verb.index(unique_cell)
-                    index_in_forms_encoded = indices_for_verb[index] # indices_for_verb[index[0][0]]
-                    if not features_set: #concat
-                        pooled_forms_encoded_for_verb = np.append(
-                            pooled_forms_encoded_for_verb, forms_encoded[None, index_in_forms_encoded], axis=1)
-                    else:
-                        pooled_forms_encoded_for_verb = pooled_forms_encoded_for_verb + \
-                            forms_encoded[index_in_forms_encoded]
-                else:
-                    if not features_set: #concat
-                        pooled_forms_encoded_for_verb = np.append(
-                            pooled_forms_encoded_for_verb, np.zeros((forms_encoded.shape[1])), axis=0)
+        if set_common_features_to_zero:
+            print("This should not be executed when set_common_features_to_zero is not on.")
+            # NOTE: This functionality assumes number of paradigm cells is 6: only works for Latin
+            # NOTE: Not tested anymore after changing data processing code
+            if not features_set: #concat
+                temp = np.reshape(pooled_forms_encoded_for_verb,
+                                    (n_cells_unique, forms_encoded.shape[1]))
+                S = sum(temp)
+                # If the same gram was activated in all person tenses, their sum here is 6
+                temp[:, S == 6] = 0
+                pooled_forms_encoded_for_verb = np.reshape(
+                    temp, (n_cells_unique*forms_encoded.shape[1]))
+            else:
+                pooled_forms_encoded_for_verb[pooled_forms_encoded_for_verb == 6] = 0
 
-            if set_common_features_to_zero:
-                print("This should not be executed when set_common_features_to_zero is not on.")
-                # NOTE: This functionality assumes number of paradigm cells is 6: only works for Latin
-                # NOTE: Not tested anymore after changing data processing code
-                if not features_set: #concat
-                    temp = np.reshape(pooled_forms_encoded_for_verb,
-                                      (n_cells_unique, forms_encoded.shape[1]))
-                    S = sum(temp)
-                    # If the same gram was activated in all person tenses, their sum here is 6
-                    temp[:, S == 6] = 0
-                    pooled_forms_encoded_for_verb = np.reshape(
-                        temp, (n_cells_unique*forms_encoded.shape[1]))
-                else:
-                    pooled_forms_encoded_for_verb[pooled_forms_encoded_for_verb == 6] = 0
-
-            # keeps only one activated n-gram, even though it may occur in several forms (for set representation, does nothing for concat)
-            if features_set:
-                pooled_forms_encoded_for_verb = np.clip(
-                    pooled_forms_encoded_for_verb, 0, 1)
-            pooled_forms_encoded[lexeme_ix,:] = pooled_forms_encoded_for_verb
-        inflections = pooled_inflections
-        forms_encoded = pooled_forms_encoded
+        # keeps only one activated n-gram, even though it may occur in several forms (for set representation, does nothing for concat)
+        if features_set:
+            pooled_forms_encoded_for_verb = np.clip(
+                pooled_forms_encoded_for_verb, 0, 1)
+        pooled_forms_encoded[lexeme_ix,:] = pooled_forms_encoded_for_verb
+    inflections = pooled_inflections
+    forms_encoded = pooled_forms_encoded
+    ### End Squeeze into verbs
     
+    # For lexemes, make sure to return only data of used lexemes, because we drop lexemes
+    # To return forms: list(forms[used_lexeme_indices])
+    lexemes_used = list(lexemes[used_lexeme_indices])
+    lexemes_unique_used = lexemes_unique[used_lexeme_indices]
+    forms_encoded = forms_encoded[used_lexeme_indices]
+
     # Remove features for which whole column is 0:
     # mostly relevant in concat mode, where some ngrams do not occur for some cells
     # in set mode (or if not squeezing into verbs) there should not be all zeros features
@@ -309,15 +324,13 @@ def create_language_dataset(df_language, language, Ngrams, sample_first,  squeez
         ngram_inventory = ngram_inventory[~features_all_zero]
 
 
-    # print_diagnostic_encoding(form_column, lexeme_column,
-    #                           df_used, lexemes_unique, forms_encoded, ngram_inventory)
-    print(f"{language}. unique lexemes: {n_lexemes_unique}. Inflection classes: {len(inflection_classes)}. Ngrams: {len(orig_ngram_inventory)}. Cells: {n_cells_unique}:{unique_cells_ordered}. Features: {forms_encoded.shape[1]}.")
+    print(f"{language}. unique lexemes: {len(lexemes_unique_used)}. Inflection classes: {len(inflection_classes)}. Ngrams: {len(orig_ngram_inventory)}. Cells: {n_cells_unique}:{unique_cells_ordered}. Features: {forms_encoded.shape[1]}.")
+    # NOTE: Normalized counts of inflection classes are based on lexemes before dropping entries that do not contain certain cells
     print(df_used.drop_duplicates(subset=lexeme_column)[inflection_column].value_counts(normalize=True))
-    # print("Token count:")
-        # print(df_language["Latin_Conjugation"].value_counts(normalize=True))
-        # print("Type count")
-        # print(df_language.drop_duplicates(subset="Cognateset_ID_first")["Latin_Conjugation"].value_counts(normalize=True))
-    return forms_encoded, forms_list, list(inflections), inflection_classes, list(lexemes), ngram_inventory
+    # print_diagnostic_encoding(form_column, lexeme_column,
+    #                           df_used, lexemes_unique_used, forms_encoded, ngram_inventory)
+    assert len(forms_encoded) == len(lexemes_used) == len(inflections)
+    return forms_encoded, list(inflections), inflection_classes, lexemes_used, ngram_inventory
 
 
 def print_diagnostic_encoding(form_column, lexeme_column, df_used, lexemes_unique, forms_encoded, ngram_inventory):

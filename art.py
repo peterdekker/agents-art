@@ -755,7 +755,7 @@ class ART1(BaseNetwork):
 
     # ART is clustering algorithm, so normally with train(), training and evaluation happens at same time
     # test() defines a non-standard way to only evaluate (without training), after having trained the model on a portion of the data
-    def test(self, X, save_interval, only_bottom_up):
+    def test(self, X, only_bottom_up):
         X = format_data(X)
         if USE_GPU: # convert to Cupy array
             X = cp.array(X, dtype=bool)
@@ -768,7 +768,7 @@ class ART1(BaseNetwork):
         # incrementalIndices=[]
 
         n_samples, n_features = X.shape
-        step = self.step
+        # step = self.step
         rho = self.rho
 
         if cp.any((X != 0) & (X != 1)):
