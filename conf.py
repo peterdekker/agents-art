@@ -27,12 +27,13 @@ MULTIPROCESSING = False
 N_PROCESSES = 2  # None # None for using all
 USE_GPU = False  # GPU often slower than CPU, and runs out of memory for concat representation. but saves CPU availability
 WRITE_CSV = True
-N_RUNS = 3  # 10
+WRITE_TEX = True
+N_RUNS = 10  # 3
 
 ART_LEARNING_RATE = 2
 
 VIGILANCE_RANGE_STEP = 0.02  # 0.02
-MAX_VIGILANCE = 0.3
+MAX_VIGILANCE = 0.52
 
 OUTPUT_DIR = "output"
 
@@ -44,7 +45,7 @@ SAMPLE_FIRST = None  # 1000
 
 ### Not to be changed by user
 VIGILANCE_RANGE = [
-    x/100 for x in range(0, int(MAX_VIGILANCE*100), int(VIGILANCE_RANGE_STEP*100))]
+    x/1000 for x in range(0, int(MAX_VIGILANCE*1000), int(VIGILANCE_RANGE_STEP*1000))]
 # CONFIG_STRING = f"---squeeze_into_verbs={SQUEEZE_INTO_VERBS}---FEATURES_SET={FEATURES_SET}---CommonFeat0={SET_COMMON_FEATURES_TO_ZERO}---Ngram={NGRAMS}---present={USE_PRESENT}"
 LABEL_DENSITY = 5
 EVAL_INTERVAL = 20
@@ -76,9 +77,9 @@ paths = {
     #    'IMPERF-SBJV.2SG', 'IMPERF-SBJV.3SG', 'IMPERF-SBJV.1PL',
     #    'IMPERF-SBJV.2PL', 'IMPERF-SBJV.3PL', 'INF']
     "estonian":
-    {"archive_url": "https://zenodo.org/records/8392744/files/v1.0.1.zip",
-     "archive_path": "estonian-v.1.0.1.zip",
-     "file_path": os.path.join(DATA_PATH, "estonian-v.1.0.1"),
+    {"archive_url": "https://zenodo.org/records/10692800/files/eesthetic-v1.0.3.zip",
+     "archive_path": "estonian-v.1.0.3.zip",
+     "file_path": os.path.join(DATA_PATH, "estonian-v.1.0.3"),
      "conjugation_df_path": "estonian_data_df.csv",
      "cells_present": ["ind.prs.1sg", "ind.prs.2sg", "ind.prs.3sg", "ind.prs.1pl", "ind.prs.2pl", "ind.prs.3pl"],
      "cells_distillation": ["inf", "imp.prs.2pl", "imp.prs.pers", "ger", "ptcp.pst.pers",

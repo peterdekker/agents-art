@@ -1,4 +1,4 @@
-from conf import ART_LEARNING_RATE, OUTPUT_DIR, INITIAL_CLUSTERS, EVAL_INTERVAL, MULTIPROCESSING, WRITE_CSV, N_PROCESSES
+from conf import ART_LEARNING_RATE, OUTPUT_DIR, INITIAL_CLUSTERS, EVAL_INTERVAL, MULTIPROCESSING, WRITE_CSV, WRITE_TEX, N_PROCESSES
 import plot
 from art import ART1
 from sklearn import cluster
@@ -166,9 +166,6 @@ def art(data_onehot, ngram_inventory, inflections_gold, inflection_classes, lang
         if show:
             plt.show()
         plt.clf()
-        if WRITE_CSV:
-            df_results.to_csv(
-                f"clusters-scores-{language}-{config_string}.tex", sep="&", lineterminator="\\\\\n")
         
         ## N_clusters plot
         if train_test:
@@ -183,9 +180,15 @@ def art(data_onehot, ngram_inventory, inflections_gold, inflection_classes, lang
         if show:
             plt.show()
         plt.clf()
+
         if WRITE_CSV:
-            df_results.to_csv(
-                f"nclusters-scores-{language}-{config_string}.tex", sep="&", lineterminator="\\\\\n")
+            df_results.to_csv(os.path.join(
+            OUTPUT_DIR, 
+                f"results-{language}-{config_string}.csv"))
+        if WRITE_TEX:
+            df_results.to_csv(os.path.join(
+            OUTPUT_DIR, 
+                f"results-{language}-{config_string}.tex"), sep="&", lineterminator="\\\\\n")
 
 def art_run_parallel_wrapper(*args):
     return art_run_parallel(*args)[0]
