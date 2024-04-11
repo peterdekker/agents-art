@@ -1,5 +1,5 @@
 
-from conf import OUTPUT_DIR, SAMPLE_FIRST, N_RUNS, SET_COMMON_FEATURES_TO_ZERO, REMOVE_FEATURES_ALLZERO, VIGILANCE_RANGE, paths, params, mode_params
+from conf import OUTPUT_DIR, SAMPLE_FIRST, SET_COMMON_FEATURES_TO_ZERO, REMOVE_FEATURES_ALLZERO, VIGILANCE_RANGE, paths, params, mode_params
 from model import art, majority_baseline, random_baseline, kmeans_cluster_baseline
 import pandas as pd
 import os
@@ -59,37 +59,35 @@ def main():
                        micro_clusters=None, file_label=f"pca-art-data_ngram_hamming_original_MCA_-{language}_{config_string}", show=False)
     
     if args.single_run:
-        # print(f"Full data shuffle, {N_RUNS} runs")
         art(forms_onehot, ngram_inventory, inflections, inflection_classes, language, config_string, n_runs=1, vigilances=[args.vigilance_single_run], shuffle_data=True, repeat_dataset=True, data_plot=True, train_test=args.train_test, eval_intervals=args.eval_intervals)
     
     if args.eval_vigilances:
         art(forms_onehot, ngram_inventory, inflections, inflection_classes, language,config_string, 
-            n_runs=N_RUNS, shuffle_data=True, repeat_dataset=True, vigilances=VIGILANCE_RANGE, train_test=args.train_test, eval_intervals=args.eval_intervals)
+            n_runs=args.n_runs, shuffle_data=True, repeat_dataset=True, vigilances=VIGILANCE_RANGE, train_test=args.train_test, eval_intervals=args.eval_intervals)
     
     if args.eval_batches:
-        print(f"Full data shuffle, {N_RUNS} runs:")
+        print(f"Full data shuffle, {args.n_runs} runs:")
         art(forms_onehot, ngram_inventory, inflections, inflection_classes,
-            None, language, config_string, n_runs=N_RUNS, shuffle_data=True)
-        print(f"Repeat dataset shuffle, {N_RUNS} runs:")
+            None, language, config_string, n_runs=args.n_runs, shuffle_data=True)
+        print(f"Repeat dataset shuffle, {args.n_runs} runs:")
         art(forms_onehot, ngram_inventory, inflections, inflection_classes, None,
-            language, config_string, n_runs=N_RUNS, repeat_dataset=True, shuffle_data=True)
-        print(f"batch 10 shuffle, {N_RUNS} runs:")
+            language, config_string, n_runs=args.n_runs, repeat_dataset=True, shuffle_data=True)
+        print(f"batch 10 shuffle, {args.n_runs} runs:")
         art(forms_onehot, ngram_inventory, inflections, inflection_classes,
-            None, language,config_string,  batch_size=10, n_runs=N_RUNS, shuffle_data=True)
-        print(f"batch 50 shuffle, {N_RUNS} runs:")
+            None, language,config_string,  batch_size=10, n_runs=args.n_runs, shuffle_data=True)
+        print(f"batch 50 shuffle, {args.n_runs} runs:")
         art(forms_onehot, ngram_inventory, inflections, inflection_classes,
-            None, language,config_string,  batch_size=50, n_runs=N_RUNS, shuffle_data=True)
+            None, language,config_string,  batch_size=50, n_runs=args.n_runs, shuffle_data=True)
 
     # if args.eval_intervals:
-    #     print(f"Full data shuffle, {N_RUNS} runs:")
     #     art(forms_onehot, forms, ngram_inventory, inflections, inflection_classes, language,config_string, 
-    #         n_runs=N_RUNS, shuffle_data=True, repeat_dataset=True, eval_intervals=True)
+    #         n_runs=args.n_runs, shuffle_data=True, repeat_dataset=True, eval_intervals=True)
 
 
     if args.baseline:
         print("Baselines:")
         # print("Full data shuffle, n runs")
-        # art_one(forms_onehot, inflections, cogids, language, n_runs=N_RUNS, shuffle_data=True)
+        # art_one(forms_onehot, inflections, cogids, language, n_runs=args.n_runs, shuffle_data=True)
         records_baseline = []
         records_baseline.append(majority_baseline(inflections))
         records_baseline.append(random_baseline(inflections, n_inflection_classes=len(inflection_classes)))
