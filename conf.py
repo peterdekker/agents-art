@@ -8,6 +8,7 @@ SOUNDCLASSES = "none"  #  One of: "none", "asjp" or "sca"
 USE_PRESENT = False
 NGRAMS = 3
 VIGILANCE_SINGLE_RUN = 0.1
+N_RUNS = 10 # User has to set to 1 via command line for train_test mode
 
 params = {
     "language": {"default": LANGUAGE, "type": str},
@@ -16,6 +17,7 @@ params = {
     "use_present": {"default": USE_PRESENT, "type": bool},
     "ngrams": {"default": NGRAMS, "type": int},
     "vigilance_single_run": {"default": VIGILANCE_SINGLE_RUN, "type": float},
+    "n_runs": {"default": N_RUNS, "type": int},
 }
 
 mode_params = ["plot_data", "single_run", "eval_batches", "eval_vigilances", "eval_intervals", "baseline", "train_test"]
@@ -28,7 +30,7 @@ N_PROCESSES = 2  # None # None for using all
 USE_GPU = False  # GPU often slower than CPU, and runs out of memory for concat representation. but saves CPU availability
 WRITE_CSV = True
 WRITE_TEX = True
-N_RUNS = 10  # 3
+
 
 ART_LEARNING_RATE = 2
 
