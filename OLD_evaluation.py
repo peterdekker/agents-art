@@ -56,7 +56,7 @@ from conf import ART_VIGILANCE, ART_LEARNING_RATE
 #     assert isinstance(vigilances,list)
 #     assert isinstance(learning_rates,list)
 #     assert isinstance(n_clusters_settings,list)
-#     results_dict = {"vigilance":[], "learning_rate": [], "silhouette_score":[], "n_clusters":[], "min_cluster_size":[]}
+#     results_dict = {"vigilance":[], "learning_rate": [], "silhouette_score":[], "clusters ART":[], "min_cluster_size":[]}
 #     for vig in vigilances:
 #         for lr in learning_rates:
 #             for nc in n_clusters_settings:
@@ -72,7 +72,7 @@ from conf import ART_VIGILANCE, ART_LEARNING_RATE
 #                 # Write new row to dict for dataframe
 #                 results_dict["vigilance"].append(vig)
 #                 results_dict["learning_rate"].append(lr)
-#                 results_dict["n_clusters"].append(nc)
+#                 results_dict["clusters ART"].append(nc)
 #                 results_dict["min_cluster_size"].append(min_cluster_size)
 #                 results_dict["silhouette_score"].append(score)
 #     results_df = pd.DataFrame(results_dict)

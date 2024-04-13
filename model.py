@@ -22,8 +22,8 @@ def random_baseline(inflections_gold, n_inflection_classes):
     ri, ari, nmi, ami, min_cluster_size, max_cluster_size = eval_results(
         base, inflections_gold)
     n_clusters = len(list(set(base)))
-    return {"method": "random", "ri": ri, "ari": ari, "nmi": nmi, "ami": ami,
-                         "min_cluster_size": min_cluster_size, "max_cluster_size": max_cluster_size, "n_clusters": n_clusters}
+    return {"method": "random", "RI": ri, "ARI": ari, "NMI": nmi, "AMI": ami,
+                         "min_cluster_size": min_cluster_size, "max_cluster_size": max_cluster_size, "clusters ART": n_clusters}
 
 
 def majority_baseline(inflections_gold):
@@ -31,8 +31,8 @@ def majority_baseline(inflections_gold):
     ri, ari, nmi, ami, min_cluster_size, max_cluster_size = eval_results(
         base, inflections_gold)
     n_clusters = len(list(set(base)))
-    return {"method": "majority", "ri": ri, "ari": ari, "nmi": nmi, "ami": ami,
-                         "min_cluster_size": min_cluster_size, "max_cluster_size": max_cluster_size, "n_clusters": n_clusters}
+    return {"method": "majority", "RI": ri, "ARI": ari, "NMI": nmi, "AMI": ami,
+                         "min_cluster_size": min_cluster_size, "max_cluster_size": max_cluster_size, "clusters ART": n_clusters}
 
 
 def agg_cluster_baseline(data_onehot, inflections_gold, n_inflection_classes):
@@ -41,8 +41,8 @@ def agg_cluster_baseline(data_onehot, inflections_gold, n_inflection_classes):
     ri, ari, nmi, ami, min_cluster_size, max_cluster_size = eval_results(
         agg_labels, inflections_gold)
     n_clusters = len(list(set(agg_labels)))
-    return {"method": "agg", "ri": ri, "ari": ari, "nmi": nmi, "ami": ami,
-                         "min_cluster_size": min_cluster_size, "max_cluster_size": max_cluster_size, "n_clusters": n_clusters}
+    return {"method": "agg", "RI": ri, "ARI": ari, "NMI": nmi, "AMI": ami,
+                         "min_cluster_size": min_cluster_size, "max_cluster_size": max_cluster_size, "clusters ART": n_clusters}
 
 
 def kmeans_cluster_baseline(data_onehot, inflections_gold, n_inflection_classes):
@@ -52,8 +52,8 @@ def kmeans_cluster_baseline(data_onehot, inflections_gold, n_inflection_classes)
     ri, ari, nmi, ami, min_cluster_size, max_cluster_size = eval_results(
         kmeans_labels, inflections_gold)
     n_clusters = len(list(set(kmeans_labels)))
-    return {"method": "kmeans", "ri": ri, "ari": ari, "nmi": nmi, "ami": ami,
-                         "min_cluster_size": min_cluster_size, "max_cluster_size": max_cluster_size, "n_clusters": n_clusters}
+    return {"method": "kmeans", "RI": ri, "ARI": ari, "NMI": nmi, "AMI": ami,
+                         "min_cluster_size": min_cluster_size, "max_cluster_size": max_cluster_size, "clusters ART": n_clusters}
 
 
 def art(data_onehot, ngram_inventory, inflections_gold, inflection_classes, language, config_string, n_runs=1, vigilances=[], repeat_dataset=False, batch_size=None, shuffle_data=False, data_plot=False, show=False, eval_intervals=False, train_test=False):
@@ -97,27 +97,20 @@ def art(data_onehot, ngram_inventory, inflections_gold, inflection_classes, lang
     
     records = list(itertools.chain.from_iterable(records_listlist))
     df_results = pd.DataFrame(records)
-    if WRITE_CSV:
-        df_results.to_csv(os.path.join(
-            OUTPUT_DIR, f"histogram_per_vigilance-{language}_{config_string}_out.csv"))
-    df_results.to_csv("test.csv")
-    print(df_results.groupby(["vigilance", "mode"], sort=False)[["ri", "ari", "nmi", "ami", "min_cluster_size", "max_cluster_size", "n_clusters"]].mean()) # 
-    df_results_small = df_results[["vigilance", "run", "fold_id", "batch", "mode", "ari", ]] #"cluster_population", .py"category_ngrams", "cluster_inflection_stats", 
-    if WRITE_CSV:
-        df_results_small.to_csv(os.path.join(
-            OUTPUT_DIR, f"cluster_stats_{config_string}.csv"))
+    # Add ground truth number of inflection classes as extra column, as baseline
+    df_results["inflection classes"] = len(inflection_classes)
+    print(df_results.groupby(["vigilance", "mode"], sort=False)[["RI", "ARI", "NMI", "AMI", "min_cluster_size", "max_cluster_size", "clusters ART", "inflection classes"]].mean()) # 
 
     # Only create vigilance plot when comparing multiple vigilances
     if eval_vigilances:
         # Plot results
 
         df_melt_scores = pd.melt(df_results, id_vars=["vigilance", "run", "batch", "fold_id", "mode"], value_vars=[
-                                 "ari"], var_name="metric", value_name="score")
-        # df_melt_scores = pd.melt(df_results, id_vars=["vigilance", "run", "batch"], value_vars=["ri","ari", "nmi", "ami"], var_name="metric", value_name="score")
-        df_melt_clusters = pd.melt(df_results, id_vars=["vigilance", "run", "batch", "fold_id", "mode"], value_vars=[
-                                   "min_cluster_size", "max_cluster_size"], var_name="metric", value_name="size")
+                                 "ARI", "AMI"], var_name="metric", value_name="score")
+        # df_melt_clusters = pd.melt(df_results, id_vars=["vigilance", "run", "batch", "fold_id", "mode"], value_vars=[
+        #                            "min_cluster_size", "max_cluster_size"], var_name="metric", value_name="size")
         df_melt_n_clusters = pd.melt(df_results, id_vars=["vigilance", "run", "batch", "fold_id", "mode"], value_vars=[
-                                   "n_clusters"], var_name="metric", value_name="n")
+                                   "clusters ART", "inflection classes"], var_name="metric", value_name="# clusters")
         
         # df_melt_ci = pd.melt(df_results, id_vars=["vigilance"], value_vars=[
         #                      "cluster_population"], var_name="metric", value_name="N_in_cluster")
@@ -136,11 +129,12 @@ def art(data_onehot, ngram_inventory, inflections_gold, inflection_classes, lang
 
         ## Scores plot
         if train_test:
-            sns.lineplot(data=df_melt_scores, x="vigilance",
+            ax_scores = sns.lineplot(data=df_melt_scores, x="vigilance",
                      y="score", hue="metric", style="mode")
         else:
-            sns.lineplot(data=df_melt_scores, x="vigilance",
+            ax_scores = sns.lineplot(data=df_melt_scores, x="vigilance",
                         y="score", hue="metric")
+        ax_scores.set_ylim(0, 1)
         # This is obtained from one baseline run
         # rep_kmeans_ARI = np.ones((1, len(VIGILANCE_RANGE)))*0.782
         # rep_kmeans_AMI=np.ones((1,len(VIGILANCE_RANGE)))*0.835 #This is obtained from one baseline run
@@ -155,26 +149,26 @@ def art(data_onehot, ngram_inventory, inflections_gold, inflection_classes, lang
         plt.clf()
 
         ## Cluster sizes plot
-        if train_test:
-            sns.lineplot(data=df_melt_clusters, x="vigilance",
-                        y="size", hue="metric", style="mode")
-        else:
-            sns.lineplot(data=df_melt_clusters, x="vigilance",
-                        y="size", hue="metric")
-        plt.savefig(os.path.join(
-            OUTPUT_DIR, f"clusters-{language}-{config_string}.pdf"))
-        if show:
-            plt.show()
-        plt.clf()
+        # if train_test:
+        #     sns.lineplot(data=df_melt_clusters, x="vigilance",
+        #                 y="size", hue="metric", style="mode")
+        # else:
+        #     sns.lineplot(data=df_melt_clusters, x="vigilance",
+        #                 y="size", hue="metric")
+        # plt.savefig(os.path.join(
+        #     OUTPUT_DIR, f"clusters-{language}-{config_string}.pdf"))
+        # if show:
+        #     plt.show()
+        # plt.clf()
         
         ## N_clusters plot
         if train_test:
             sns.lineplot(data=df_melt_n_clusters, x="vigilance",
-                        y="n", hue="metric", style="mode")
+                        y="# clusters", hue="metric", style="mode")
         else:
             sns.lineplot(data=df_melt_n_clusters, x="vigilance",
-                        y="n", hue="metric")
-        plt.axhline(y=len(inflection_classes)) # plot number of real inflection classes
+                        y="# clusters", hue="metric")
+        # plt.axhline(y=len(inflection_classes)) # plot number of real inflection classes
         plt.savefig(os.path.join(
             OUTPUT_DIR, f"nclusters-{language}-{config_string}.pdf"))
         if show:
@@ -329,7 +323,7 @@ def art_run_parallel(data_onehot, ngram_inventory, inflections_gold, inflection_
                     #             row_sums[:, np.newaxis]
                     records_batches.append(
                                 {"vigilance": vig, "run": r, "fold_id": fold_id, "batch": b, "mode": mode,
-                                "ri": ri_batch, "ari": ari_batch, "nmi": nmi_batch, "ami": ami_batch,
+                                "RI": ri_batch, "ARI": ari_batch, "NMI": nmi_batch, "AMI": ami_batch,
                                 #"ari_per_interval": ari_per_interval_batches,
                                 #"ari_per_interval_indices":  plottedIndices_batches,
                                 #"cluster_population": cluster_population,
@@ -337,7 +331,7 @@ def art_run_parallel(data_onehot, ngram_inventory, inflections_gold, inflection_
                                 #"prototypes": prototypes,
                                 #"cluster_inflection_stats": cluster_inflection_stats,
                                 #"cluster_inflection_stats_percent": cluster_inflection_stats_percent,
-                                "min_cluster_size": min_cluster_size_batch, "max_cluster_size": max_cluster_size_batch, "n_clusters": N_found_clusters})
+                                "min_cluster_size": min_cluster_size_batch, "max_cluster_size": max_cluster_size_batch, "clusters ART": N_found_clusters})
 
     if data_plot and not train_test:
         # NOTE: Result from last batch is used for plot
