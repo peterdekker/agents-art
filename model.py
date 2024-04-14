@@ -134,7 +134,7 @@ def art(data_onehot, ngram_inventory, inflections_gold, inflection_classes, lang
         else:
             ax_scores = sns.lineplot(data=df_melt_scores, x="vigilance",
                         y="score", hue="metric")
-        ax_scores.set_ylim(0, 1)
+        ax_scores.set_ylim(top=1)
         # This is obtained from one baseline run
         # rep_kmeans_ARI = np.ones((1, len(VIGILANCE_RANGE)))*0.782
         # rep_kmeans_AMI=np.ones((1,len(VIGILANCE_RANGE)))*0.835 #This is obtained from one baseline run
