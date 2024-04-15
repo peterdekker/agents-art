@@ -1,5 +1,15 @@
 import os
 import numpy as np
+import pandas as pd
+import seaborn as sns
+import colorcet as cc
+
+pd.set_option('display.max_rows', None)
+sns.set(font="Charis SIL Compact")
+# sns.set_palette("Set2") # Set2, husl, hsl
+
+# This colormap is not activated by default, but variable can be loaded
+cmap_categorical = sns.color_palette(cc.glasbey, n_colors=25, as_cmap=True) # sns.color_palette("Set2", as_cmap=True) # plt.get_cmap("Paired")
 
 ### Argparse options: settable by user via command line options. Default can be set here.
 LANGUAGE = "latin"
@@ -20,7 +30,7 @@ params = {
     "n_runs": {"default": N_RUNS, "type": int},
 }
 
-mode_params = ["plot_data", "single_run", "eval_batches", "eval_vigilances", "eval_intervals", "baseline", "train_test"]
+mode_params = ["plot_data_before", "single_run", "eval_batches", "eval_vigilances", "eval_intervals", "baseline", "train_test"]
 
 ###
 

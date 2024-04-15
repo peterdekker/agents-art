@@ -3,7 +3,7 @@ from sklearn.decomposition import PCA
 import seaborn as sns
 import matplotlib.pyplot as plt
 import pandas as pd
-from conf import LABEL_DENSITY, FILLED_MARKERS, OUTPUT_DIR
+from conf import LABEL_DENSITY, FILLED_MARKERS, OUTPUT_DIR, cmap_categorical
 import numpy as np
 import matplotlib
 # from matplotlib.lines import Line2D
@@ -61,11 +61,15 @@ def plot_intervals(ari_intervals, incrementalIndices, n_datapoints, file_label=N
     if show:
         plt.show()
 
-def plot_barchart(cluster_inflection_stats, inflection_classes, #category_ngrams, always_activated_ngrams,
+def plot_barchart(cluster_inflection_stats, inflection_classes, max_clusters=None, min_datapoints_class=None, #category_ngrams, always_activated_ngrams,
                         file_label=None, show=False):
     sums=np.sum(cluster_inflection_stats,axis=1)
     order=np.argsort(-sums) #Get indeces from largest cluster to smallest (minus reverses default ascending sorting order)
     orderedStats=cluster_inflection_stats[order]
+
+    if max_clusters is not None and len(orderedStats) > max_clusters:
+        orderedStats = orderedStats[:max_clusters,:]
+
     matplotlib.rcParams.update({'font.size': 22})
     fig, ax = plt.subplots()
     
@@ -73,13 +77,16 @@ def plot_barchart(cluster_inflection_stats, inflection_classes, #category_ngrams
     
     bottom = np.zeros(orderedStats.shape[0])
     xCoords=list(range(0,orderedStats.shape[0]))
-
     for i in range(len(inflection_classes)):
         members=orderedStats[:,i]
-        p = ax.bar(xCoords, members, 0.4, bottom=bottom, label=inflection_classes[i],alpha=0.5)
+        if min_datapoints_class is not None and members.sum() < min_datapoints_class:
+            # Skip this inflection class in bargraph if it has less than 5 datapoints
+            print(f"Skipping inflection class {inflection_classes[i]} in bar graph, number of datapoints: {members.sum()}")
+            continue
+        p = ax.bar(xCoords, members, 0.4, bottom=bottom, label=inflection_classes[i],alpha=0.5, color=cmap_categorical[i])
         bottom += members
     ax.legend()
-    ax.set_xticks([])
+    # ax.set_xticks([])
     
     # for bar in range(orderedStats.shape[0]):
     #     for ngram in range(len(category_ngrams[bar])):

@@ -13,8 +13,6 @@ import os
 import itertools
 from multiprocessing import Pool
 
-sns.set(font="Charis SIL Compact")
-
 
 def random_baseline(inflections_gold, n_inflection_classes):
     base = np.random.choice(
@@ -284,6 +282,7 @@ def art_run_parallel(data_onehot, ngram_inventory, inflections_gold, inflection_
                     S = np.sum(prototypes, axis=0)
                     always_activated_features = np.argwhere(
                                 S == N_found_clusters)
+                    always_activated_ngrams = [[ngram_inventory[i] for i in features_bar] for features_bar in always_activated_features]
 
                     category_ngrams = []
                     for p in range(0, N_found_clusters):
@@ -352,8 +351,19 @@ def art_run_parallel(data_onehot, ngram_inventory, inflections_gold, inflection_
         df2.columns = ['dim1', 'dim2']
         plot.plot_data(df2, labels=None, clusters=clusters_gold, prototypes=df,
                                file_label=f"{language}-vig{vig}-run{r}_{config_string}", show=show)
-        plot.plot_barchart(cluster_inflection_stats, inflection_classes,  # category_ngrams, always_activated_ngrams,
+        plot.plot_barchart(cluster_inflection_stats, inflection_classes, max_clusters=10 if language=="portuguese" else None, min_datapoints_class=10 if language=="portuguese" else None, # category_ngrams, always_activated_ngrams,
                                    file_label=f"{language}-vig{vig}-run{r}_{config_string}", show=show)
+        
+        if WRITE_TEX:
+            # Write ngrams for clusters to TeX file
+            print(category_ngrams)
+            print("always_activated")
+            print(always_activated_features)
+            print(always_activated_ngrams)
+
+            for ngrams_per_cluster in category_ngrams:
+                pass
+
     
     # print(f"Vigilance: {vig}. Run: {r}. Finished.")
     return records_batches,plottedIndices_batches,ari_per_interval_batches

@@ -52,7 +52,7 @@ def main():
         conjugation_df_path, index_col=0, low_memory=False)
     forms_onehot, inflections, inflection_classes, _, ngram_inventory = data.create_language_dataset(df_language, language, Ngrams=args.ngrams,
                                                                                                                  sample_first=SAMPLE_FIRST, features_set=args.features_set, set_common_features_to_zero=SET_COMMON_FEATURES_TO_ZERO, remove_features_allzero=REMOVE_FEATURES_ALLZERO, soundclasses=args.soundclasses, use_present=args.use_present)
-    if args.plot_data:
+    if args.plot_data_before:
         # Plot data before running model
         df, pca = plot.fit_pca(forms_onehot)
         plot.plot_data(df, labels=None, clusters=inflections,
