@@ -1,4 +1,4 @@
-from conf import ART_LEARNING_RATE, OUTPUT_DIR, INITIAL_CLUSTERS, EVAL_INTERVAL, MULTIPROCESSING, WRITE_CSV, WRITE_TEX, N_PROCESSES
+from conf import ART_LEARNING_RATE, OUTPUT_DIR, INITIAL_CLUSTERS, EVAL_INTERVAL, MULTIPROCESSING, WRITE_CSV, WRITE_TEX, N_PROCESSES, MIN_DATAPOINTS_CLASS_PORTUGUESE, MAX_CLUSTERS_PORTUGUESE
 import plot
 from art import ART1
 from sklearn import cluster
@@ -12,6 +12,7 @@ import pandas as pd
 import os
 import itertools
 from multiprocessing import Pool
+from collections import defaultdict
 
 
 def random_baseline(inflections_gold, n_inflection_classes):
@@ -54,14 +55,14 @@ def kmeans_cluster_baseline(data_onehot, inflections_gold, n_inflection_classes)
                          "min_cluster_size": min_cluster_size, "max_cluster_size": max_cluster_size, "clusters ART": n_clusters}
 
 
-def art(data_onehot, ngram_inventory, inflections_gold, inflection_classes, language, config_string, n_runs=1, vigilances=[], repeat_dataset=False, batch_size=None, shuffle_data=False, data_plot=False, show=False, eval_intervals=False, train_test=False):
+def art(data_onehot, ngram_inventory, inflections_gold, inflection_classes, language, config_string, n_runs=1, vigilances=[], repeat_dataset=False, batch_size=None, shuffle_data=False, visualise_clusters=False, show=False, eval_intervals=False, train_test=False):
     eval_vigilances = False
     # np.random.shuffle(inflections_gold) # Make evaluation random, to test if model is doing something
     if len(vigilances) > 1:
         eval_vigilances = True
     
     pca = None
-    if data_plot:
+    if visualise_clusters:
         _, pca = plot.fit_pca(data_onehot)
 
     if train_test:
@@ -74,7 +75,7 @@ def art(data_onehot, ngram_inventory, inflections_gold, inflection_classes, lang
     if MULTIPROCESSING:
         if eval_intervals:
             raise ValueError("eval_intervals is not possible in multiprocessing mode.")
-        param_settings = [(data_onehot, ngram_inventory, inflections_gold, inflection_classes, pca, language, repeat_dataset, batch_size, shuffle_data, data_plot, show, eval_intervals, train_test, config_string, vig, r, fold_id, train_ix, test_ix) for vig in vigilances for r in range(n_runs) for fold_id, (train_ix, test_ix) in enumerate(train_test_splits)]
+        param_settings = [(data_onehot, ngram_inventory, inflections_gold, inflection_classes, pca, language, repeat_dataset, batch_size, shuffle_data, visualise_clusters, show, eval_intervals, train_test, config_string, vig, r, fold_id, train_ix, test_ix) for vig in vigilances for r in range(n_runs) for fold_id, (train_ix, test_ix) in enumerate(train_test_splits)]
         with Pool(processes=N_PROCESSES) as pool:
             records_listlist = pool.starmap(art_run_parallel_wrapper, param_settings) # take only first return value
     else: # If multiprocessing is off, this allows to do eval_intervals, which is done once per vigilance
@@ -83,7 +84,7 @@ def art(data_onehot, ngram_inventory, inflections_gold, inflection_classes, lang
             ari_per_interval_per_run = []
             for r in range(n_runs):
                 for fold_id, (train_ix, test_ix) in enumerate(train_test_splits):
-                    records_batches, plottedIndices_batches, ari_per_interval_batches = art_run_parallel(data_onehot, ngram_inventory, inflections_gold, inflection_classes, pca, language, repeat_dataset, batch_size, shuffle_data, data_plot, show, eval_intervals, train_test, config_string, vig, r, fold_id, train_ix, test_ix)
+                    records_batches, plottedIndices_batches, ari_per_interval_batches = art_run_parallel(data_onehot, ngram_inventory, inflections_gold, inflection_classes, pca, language, repeat_dataset, batch_size, shuffle_data, visualise_clusters, show, eval_intervals, train_test, config_string, vig, r, fold_id, train_ix, test_ix)
                     records_listlist.append(records_batches)
                     ari_per_interval_per_run.append(ari_per_interval_batches)
 
@@ -181,11 +182,14 @@ def art(data_onehot, ngram_inventory, inflections_gold, inflection_classes, lang
             df_results.to_csv(os.path.join(
             OUTPUT_DIR, 
                 f"results-{language}-{config_string}.tex"), sep="&", lineterminator="\\\\\n")
+            df_results.to_latex(os.path.join(
+            OUTPUT_DIR, 
+                f"results-{language}-{config_string}.tex"), index=False)
 
 def art_run_parallel_wrapper(*args):
     return art_run_parallel(*args)[0]
 
-def art_run_parallel(data_onehot, ngram_inventory, inflections_gold, inflection_classes, pca, language, repeat_dataset, batch_size_given, shuffle_data, data_plot, show, eval_intervals, train_test, config_string, vig, r, fold_id, train_ix, test_ix):
+def art_run_parallel(data_onehot, ngram_inventory, inflections_gold, inflection_classes, pca, language, repeat_dataset, batch_size_given, shuffle_data, visualise_clusters, show, eval_intervals, train_test, config_string, vig, r, fold_id, train_ix, test_ix):
     print(f"Vigilance: {vig}. Run: {r}.{' Split id '+ str(fold_id) if fold_id is not None else ''}")
     artnet = ART1(
                 step=ART_LEARNING_RATE,
@@ -277,13 +281,14 @@ def art_run_parallel(data_onehot, ngram_inventory, inflections_gold, inflection_
                 if rep==n_reps-1:
                     histo = np.histogram(clusters_art_batch, bins=np.arange(0, N_found_clusters+1))[0]
                     order = np.flip(np.argsort(histo))
-                    cluster_population = histo[order]
+                    # cluster_population = histo[order]
                     prototypes = prototypes[order, :]
                     S = np.sum(prototypes, axis=0)
                     always_activated_features = np.argwhere(
                                 S == N_found_clusters)
-                    always_activated_ngrams = [[ngram_inventory[i] for i in features_bar] for features_bar in always_activated_features]
-
+                    always_activated_ngrams = [ngram_inventory[i] for features_bar in always_activated_features for i in features_bar] # [[ngram_inventory[i] for i in features_bar] for features_bar in always_activated_features]
+                    
+                    # category_ngrams is ordered from biggest cluster to smallest, because prototypes has been ordered
                     category_ngrams = []
                     for p in range(0, N_found_clusters):
                         ones = np.nonzero(prototypes[p, :])[0]
@@ -305,7 +310,7 @@ def art_run_parallel(data_onehot, ngram_inventory, inflections_gold, inflection_
                     n_used_clusters = np.sum(1-np.all(prototypes, axis=1))
 
                     # This counts how many of each gold-standard words per each inflection class is clustered in each of the clusters coming from ART
-                    # Eg. 0th row being [2,3,0,4,6] would mean that cluster 0 (coming out from ART) includes 2 words from inflection class 'I', 3 words from 'II', and so on
+                    # Eg. 0th row being [2,3,0,4,6] would mean that cluster 0 (coming out from ART) includes 2 words from inflection class 0, 3 words from IC 1, and so on
                     cluster_inflection_stats = np.zeros(
                                 (n_used_clusters, len(inflection_classes)))
                     for i in range(0, len(clusters_gold_int)):
@@ -332,7 +337,7 @@ def art_run_parallel(data_onehot, ngram_inventory, inflections_gold, inflection_
                                 #"cluster_inflection_stats_percent": cluster_inflection_stats_percent,
                                 "min_cluster_size": min_cluster_size_batch, "max_cluster_size": max_cluster_size_batch, "clusters ART": N_found_clusters})
 
-    if data_plot and not train_test:
+    if visualise_clusters and not train_test:
         # NOTE: Result from last batch is used for plot
         # NOTE: At the moment not working with train-test, question is then whether train or test phase should be plotted.
         df = plot.transform_using_fitted_pca(prototypes, pca)
@@ -347,26 +352,76 @@ def art_run_parallel(data_onehot, ngram_inventory, inflections_gold, inflection_
                         np.random.randn(2)*0.02
             prototype_based_new_coords.append(with_noise)
 
-        df2 = pd.DataFrame(prototype_based_new_coords)
-        df2.columns = ['dim1', 'dim2']
-        plot.plot_data(df2, labels=None, clusters=clusters_gold, prototypes=df,
-                               file_label=f"{language}-vig{vig}-run{r}_{config_string}", show=show)
-        plot.plot_barchart(cluster_inflection_stats, inflection_classes, max_clusters=10 if language=="portuguese" else None, min_datapoints_class=10 if language=="portuguese" else None, # category_ngrams, always_activated_ngrams,
+        # df2 = pd.DataFrame(prototype_based_new_coords)
+        # df2.columns = ['dim1', 'dim2']
+        # plot.plot_data(df2, labels=None, clusters=clusters_gold, prototypes=df,
+        #                        file_label=f"{language}-vig{vig}-run{r}_{config_string}", show=show)
+        sums_ci_stats=np.sum(cluster_inflection_stats,axis=1)
+        order_ci_stats=np.argsort(-sums_ci_stats) #Get indeces from largest cluster to smallest (minus reverses default ascending sorting order)
+        orderedStats=cluster_inflection_stats[order_ci_stats]
+        plot.plot_barchart(orderedStats, inflection_classes, max_clusters=MAX_CLUSTERS_PORTUGUESE if language=="portuguese" else None, min_datapoints_class=MIN_DATAPOINTS_CLASS_PORTUGUESE if language=="portuguese" else None, # category_ngrams, always_activated_ngrams,
                                    file_label=f"{language}-vig{vig}-run{r}_{config_string}", show=show)
         
         if WRITE_TEX:
             # Write ngrams for clusters to TeX file
-            print(category_ngrams)
-            print("always_activated")
-            print(always_activated_features)
-            print(always_activated_ngrams)
+            write_table_ngrams(inflection_classes, category_ngrams, orderedStats, language, config_string)
 
-            for ngrams_per_cluster in category_ngrams:
-                pass
+
 
     
     # print(f"Vigilance: {vig}. Run: {r}. Finished.")
     return records_batches,plottedIndices_batches,ari_per_interval_batches
+
+def write_table_ngrams(inflection_classes, category_ngrams, orderedStats, language, config_string):
+    ngrams_records = []
+    print(category_ngrams)
+
+    # Find ngrams that are in multiple clusters
+    ngrams_in_multiple_clusters = set()
+    for i, ngrams_per_cluster1 in enumerate(category_ngrams):
+        for j, ngrams_per_cluster2 in enumerate(category_ngrams):
+            if i==j:
+                continue
+            intersection = set(ngrams_per_cluster1) & set(ngrams_per_cluster2)
+            ngrams_in_multiple_clusters.update(intersection)
+    if language == "portuguese":
+        category_ngrams = category_ngrams[:MAX_CLUSTERS_PORTUGUESE]
+    for cluster_id, ngrams_per_cluster in enumerate(category_ngrams):
+        ngrams_per_cell = defaultdict(list)
+        for ngram_person in ngrams_per_cluster:
+            if ngram_person in ngrams_in_multiple_clusters:
+                continue
+            ngram_person_split = ngram_person.split("_")
+            assert len(ngram_person_split)==2
+            ngram = ngram_person_split[0]
+            person = ngram_person_split[1]
+            ngrams_per_cell[person].append(f"\\textit{{{ngram}}}")
+            #ngrams_per_cell[person].append(f"\\textbf{{{ngram}}}")
+        ngrams_per_cell_tex_list = [f'\\textsc{{{p.lower()}}}: {", ".join(n)}' for p,n in ngrams_per_cell.items()]
+        ngrams_per_cell_tex = "\\newline".join(ngrams_per_cell_tex_list)
+        if len(ngrams_per_cell_tex)==0:
+            ngrams_per_cell_tex = "--"
+        ix_majority_class = np.argmax(orderedStats[cluster_id])
+        majority_class_name = inflection_classes[ix_majority_class]
+        record = {"cluster": cluster_id, "distinctive n-grams": ngrams_per_cell_tex, "majority class": majority_class_name}
+        ngrams_records.append(record)
+    ## Also add always activated ngrams as one table line:
+    # ngrams_per_cell_aa = defaultdict(list)
+    # for ngram_person in ngrams_per_cluster:
+    #     ngram_person_split = ngram_person.split("_")
+    #     assert len(ngram_person_split)==2
+    #     ngram = ngram_person_split[0]
+    #     person = ngram_person_split[1]
+    #     ngrams_per_cell_aa[person].append(ngram)
+    # ngrams_per_cell_aa_tex_list = [f'\\textsc{{{p.lower()}}}: {", ".join(n)}' for p,n in ngrams_per_cell_aa.items()]
+    # ngrams_per_cell_aa_tex = "\\newline".join(ngrams_per_cell_aa_tex_list)
+    # record_aa = {"cluster": "All", "n-grams per cell": ngrams_per_cell_aa_tex, "inflection class majority assigned lexemes": ""}
+    # ngrams_records.append(record_aa)
+    ##
+    ngrams_df = pd.DataFrame(ngrams_records)
+    ngrams_df.to_latex(os.path.join(
+            OUTPUT_DIR, 
+                f"ngrams-{language}-{config_string}.tex"), index=False, escape=False, column_format="lp{0.7\linewidth}p{0.2\linewidth}")
 
 
 def eval_results(results, inflections_gold):

@@ -59,7 +59,7 @@ def main():
                        micro_clusters=None, file_label=f"pca-art-data_ngram_hamming_original_MCA_-{language}_{config_string}", show=False)
     
     if args.single_run:
-        art(forms_onehot, ngram_inventory, inflections, inflection_classes, language, config_string, n_runs=1, vigilances=[args.vigilance_single_run], shuffle_data=True, repeat_dataset=True, data_plot=True, train_test=args.train_test, eval_intervals=args.eval_intervals)
+        art(forms_onehot, ngram_inventory, inflections, inflection_classes, language, config_string, n_runs=1, vigilances=[args.vigilance_single_run], shuffle_data=True, repeat_dataset=True, visualise_clusters=True, train_test=args.train_test, eval_intervals=args.eval_intervals)
     
     if args.eval_vigilances:
         art(forms_onehot, ngram_inventory, inflections, inflection_classes, language,config_string, 
