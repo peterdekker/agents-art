@@ -367,8 +367,6 @@ def art_run_parallel(data_onehot, ngram_inventory, inflections_gold, inflection_
             write_table_ngrams(inflection_classes, category_ngrams, orderedStats, language, config_string)
 
 
-
-    
     # print(f"Vigilance: {vig}. Run: {r}. Finished.")
     return records_batches,plottedIndices_batches,ari_per_interval_batches
 
@@ -376,34 +374,48 @@ def write_table_ngrams(inflection_classes, category_ngrams, orderedStats, langua
     ngrams_records = []
     print(category_ngrams)
 
-    # Find ngrams that are in multiple clusters
-    ngrams_in_multiple_clusters = set()
+    # barHeights counts how big are the clusters, i.e. how many times each n-gram occurs in a cluster
+    barHeights=np.sum(orderedStats,axis=1)
+    #All features used in all clusters as a list
+    all_used_ngrams = list(set(x for l in category_ngrams for x in l))
+    #counts per cluster, for all possible features
+    sums_per_cluster=np.zeros([len(category_ngrams), len(all_used_ngrams)])
+
+    #Do the counts
     for i, ngrams_per_cluster1 in enumerate(category_ngrams):
-        for j, ngrams_per_cluster2 in enumerate(category_ngrams):
-            if i==j:
-                continue
-            intersection = set(ngrams_per_cluster1) & set(ngrams_per_cluster2)
-            ngrams_in_multiple_clusters.update(intersection)
+        for j, ngram in enumerate(ngrams_per_cluster1):
+            sums_per_cluster[i,all_used_ngrams.index(ngram)]=barHeights[i]
+    
+    proportions = sums_per_cluster/sum(sums_per_cluster)
+    #What proportion of each ngram is in the given cluster. 1 means that the feature is unique to the given cluster
+
     if language == "portuguese":
         category_ngrams = category_ngrams[:MAX_CLUSTERS_PORTUGUESE]
-    for cluster_id, ngrams_per_cluster in enumerate(category_ngrams):
+    for cluster_id in range(len(category_ngrams)):
         ngrams_per_cell = defaultdict(list)
-        for ngram_person in ngrams_per_cluster:
-            if ngram_person in ngrams_in_multiple_clusters:
-                continue
-            ngram_person_split = ngram_person.split("_")
-            assert len(ngram_person_split)==2
-            ngram = ngram_person_split[0]
-            person = ngram_person_split[1]
-            ngrams_per_cell[person].append(f"\\textit{{{ngram}}}")
+        #sort proportions from highest to lowest
+        ind_sorted_proportions=np.argsort(-proportions[cluster_id])
+        sorted_proportions=-np.sort(-proportions[cluster_id])
+
+        ngrams_shown=0 #How many features are shown for this cluster by now
+        for ind, proportion in enumerate(sorted_proportions):
+            ngram_person=all_used_ngrams[ind_sorted_proportions[ind]] #Which ngram is being dealt with now
+            if (proportion==1) or (proportion<1 and proportion>0 and ngrams_shown<3): #if unique feature to cluster, always shown. Otherwise show only 3 max
+                ngram_person_split = ngram_person.split("_")
+                assert len(ngram_person_split)==2
+                ngram = ngram_person_split[0]
+                person = ngram_person_split[1]
+                ngrams_per_cell[person].append(f"\\textit{{{ngram}}}")
+                ngrams_shown+=1
             #ngrams_per_cell[person].append(f"\\textbf{{{ngram}}}")
         ngrams_per_cell_tex_list = [f'\\textsc{{{p.lower()}}}: {", ".join(n)}' for p,n in ngrams_per_cell.items()]
         ngrams_per_cell_tex = "\\newline".join(ngrams_per_cell_tex_list)
+        ngram_per_cell_proportion = proportion
         if len(ngrams_per_cell_tex)==0:
             ngrams_per_cell_tex = "--"
         ix_majority_class = np.argmax(orderedStats[cluster_id])
         majority_class_name = inflection_classes[ix_majority_class]
-        record = {"cluster": cluster_id, "distinctive n-grams": ngrams_per_cell_tex, "majority class": majority_class_name}
+        record = {"cluster": cluster_id, "distinctive n-grams": ngrams_per_cell_tex, "n-gram proportions": ngram_per_cell_proportion, "majority class": majority_class_name}
         ngrams_records.append(record)
     ## Also add always activated ngrams as one table line:
     # ngrams_per_cell_aa = defaultdict(list)
