@@ -386,14 +386,16 @@ def write_table_ngrams(inflection_classes, category_ngrams, orderedStats, langua
         for j, ngram in enumerate(ngrams_per_cluster1):
             sums_per_cluster[i,all_used_ngrams.index(ngram)]=barHeights[i]
     
-    proportions = sums_per_cluster/sum(sums_per_cluster)
+    total_per_feature = sum(sums_per_cluster)
+    proportions = sums_per_cluster/total_per_feature
+
     #What proportion of each ngram is in the given cluster. 1 means that the feature is unique to the given cluster
 
-    if language == "portuguese":
-        category_ngrams = category_ngrams[:MAX_CLUSTERS_PORTUGUESE]
+    # if language == "portuguese":
+    #     category_ngrams = category_ngrams[:MAX_CLUSTERS_PORTUGUESE]
     for cluster_id in range(len(category_ngrams)):
         ngrams_per_cell = defaultdict(list)
-        proportions_per_cell = defaultdict(list)
+        #proportions_per_cell = defaultdict(list)
         #sort proportions from highest to lowest
         ind_sorted_proportions=np.argsort(-proportions[cluster_id])
         sorted_proportions=-np.sort(-proportions[cluster_id])
@@ -401,23 +403,24 @@ def write_table_ngrams(inflection_classes, category_ngrams, orderedStats, langua
         ngrams_shown=0 #How many features are shown for this cluster by now
         for ind, proportion in enumerate(sorted_proportions):
             ngram_person=all_used_ngrams[ind_sorted_proportions[ind]] #Which ngram is being dealt with now
-            if (proportion==1) or (proportion<1 and proportion>0 and ngrams_shown<3): #if unique feature to cluster, always shown. Otherwise show only 3 max
+            #if (proportion==1) or (proportion<1 and proportion>0 and ngrams_shown<1000): #if unique feature to cluster, always shown. Otherwise show only 3 max
+            if proportion > 0:
                 ngram_person_split = ngram_person.split("_")
                 assert len(ngram_person_split)==2
                 ngram = ngram_person_split[0]
                 person = ngram_person_split[1]
-                ngrams_per_cell[person].append(f"\\textit{{{ngram}}}")
-                proportions_per_cell[person].append(f"\\textsc{{{proportion}}}")
+                total=int(total_per_feature[ind_sorted_proportions[ind]])
+                ngrams_per_cell[person].append(f"\\textit{{{ngram}}} ({proportion:.3f} | {total})")
+                #proportions_per_cell[person].append(f"\\textsc{{{proportion}}}")
                 ngrams_shown+=1
-            #ngrams_per_cell[person].append(f"\\textbf{{{ngram}}}")
+                #ngrams_per_cell[person].append(f"\\textbf{{{ngram}}}")
         ngrams_per_cell_tex_list = [f'\\textsc{{{p.lower()}}}: {", ".join(n)}' for p,n in ngrams_per_cell.items()]
         ngrams_per_cell_tex = "\\newline".join(ngrams_per_cell_tex_list)
-        ngram_per_cell_proportion = proportions_per_cell
         if len(ngrams_per_cell_tex)==0:
             ngrams_per_cell_tex = "--"
         ix_majority_class = np.argmax(orderedStats[cluster_id])
         majority_class_name = inflection_classes[ix_majority_class]
-        record = {"cluster": cluster_id, "distinctive n-grams": ngrams_per_cell_tex, "n-gram proportions": ngram_per_cell_proportion, "majority class": majority_class_name}
+        record = {"cluster": cluster_id, "distinctive n-grams": ngrams_per_cell_tex, "majority class": majority_class_name}
         ngrams_records.append(record)
     ## Also add always activated ngrams as one table line:
     # ngrams_per_cell_aa = defaultdict(list)
@@ -435,7 +438,7 @@ def write_table_ngrams(inflection_classes, category_ngrams, orderedStats, langua
     ngrams_df = pd.DataFrame(ngrams_records)
     ngrams_df.to_latex(os.path.join(
             OUTPUT_DIR, 
-                f"ngrams-{language}-{config_string}.tex"), index=False, escape=False, column_format="lp{0.7\linewidth}p{0.2\linewidth}l")
+                f"ngrams-{language}-{config_string}.tex"), index=False, escape=False, column_format="lp{0.7\linewidth}p{0.2\linewidth}")
 
 
 def eval_results(results, inflections_gold):
