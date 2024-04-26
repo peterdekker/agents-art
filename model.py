@@ -393,6 +393,7 @@ def write_table_ngrams(inflection_classes, category_ngrams, orderedStats, langua
         category_ngrams = category_ngrams[:MAX_CLUSTERS_PORTUGUESE]
     for cluster_id in range(len(category_ngrams)):
         ngrams_per_cell = defaultdict(list)
+        proportions_per_cell = defaultdict(list)
         #sort proportions from highest to lowest
         ind_sorted_proportions=np.argsort(-proportions[cluster_id])
         sorted_proportions=-np.sort(-proportions[cluster_id])
@@ -406,11 +407,12 @@ def write_table_ngrams(inflection_classes, category_ngrams, orderedStats, langua
                 ngram = ngram_person_split[0]
                 person = ngram_person_split[1]
                 ngrams_per_cell[person].append(f"\\textit{{{ngram}}}")
+                proportions_per_cell[person].append(f"\\textsc{{{proportion}}}")
                 ngrams_shown+=1
             #ngrams_per_cell[person].append(f"\\textbf{{{ngram}}}")
         ngrams_per_cell_tex_list = [f'\\textsc{{{p.lower()}}}: {", ".join(n)}' for p,n in ngrams_per_cell.items()]
         ngrams_per_cell_tex = "\\newline".join(ngrams_per_cell_tex_list)
-        ngram_per_cell_proportion = f"\\textsc{{{proportion}}}"
+        ngram_per_cell_proportion = proportions_per_cell
         if len(ngrams_per_cell_tex)==0:
             ngrams_per_cell_tex = "--"
         ix_majority_class = np.argmax(orderedStats[cluster_id])
