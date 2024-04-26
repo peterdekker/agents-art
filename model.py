@@ -433,7 +433,7 @@ def write_table_ngrams(inflection_classes, category_ngrams, orderedStats, langua
     ngrams_df = pd.DataFrame(ngrams_records)
     ngrams_df.to_latex(os.path.join(
             OUTPUT_DIR, 
-                f"ngrams-{language}-{config_string}.tex"), index=False, escape=False, column_format="lp{0.7\linewidth}p{0.2\linewidth}")
+                f"ngrams-{language}-{config_string}.tex"), index=False, escape=False, column_format="lp{0.7\linewidth}p{0.2\linewidth}l")
 
 
 def eval_results(results, inflections_gold):
