@@ -410,7 +410,7 @@ def write_table_ngrams(inflection_classes, category_ngrams, orderedStats, langua
             #ngrams_per_cell[person].append(f"\\textbf{{{ngram}}}")
         ngrams_per_cell_tex_list = [f'\\textsc{{{p.lower()}}}: {", ".join(n)}' for p,n in ngrams_per_cell.items()]
         ngrams_per_cell_tex = "\\newline".join(ngrams_per_cell_tex_list)
-        ngram_per_cell_proportion = proportion
+        ngram_per_cell_proportion = f"\\textsc{{{proportion}}}"
         if len(ngrams_per_cell_tex)==0:
             ngrams_per_cell_tex = "--"
         ix_majority_class = np.argmax(orderedStats[cluster_id])
