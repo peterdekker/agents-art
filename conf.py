@@ -1,13 +1,19 @@
 import os
 import numpy as np
 import pandas as pd
+import matplotlib
 import seaborn as sns
 import colorcet as cc
 
 pd.set_option('display.max_rows', None)
-sns.set(font="Charis SIL Compact")
-# sns.set_palette("Set2") # Set2, husl, hsl
 
+# font = {'family' : 'Charis SIL Compact',
+#         'size'   : 24
+#         }
+# matplotlib.rc('font', **font)
+sns.set_theme(font="Charis SIL Compact", font_scale=1.4)
+
+# sns.set_palette("Set2") # Set2, husl, hsl
 # This colormap is not activated by default, but variable can be loaded
 cmap_categorical = sns.color_palette(cc.glasbey, n_colors=25, as_cmap=True) # sns.color_palette("Set2", as_cmap=True) # plt.get_cmap("Paired")
 
@@ -18,7 +24,7 @@ SOUNDCLASSES = "none"  #  One of: "none", "asjp" or "sca"
 USE_PRESENT = False
 NGRAMS = 3
 VIGILANCE_SINGLE_RUN = 0.1
-N_RUNS = 10 # User has to set to 1 via command line for train_test mode
+N_RUNS = 2 # User has to set to 1 via command line for train_test mode
 
 params = {
     "language": {"default": LANGUAGE, "type": str},

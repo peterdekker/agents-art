@@ -6,7 +6,7 @@ from sklearn.model_selection import KFold
 from sklearn.metrics import rand_score, adjusted_rand_score, normalized_mutual_info_score, adjusted_mutual_info_score
 import numpy as np
 import numpy as np
-import seaborn as sns
+import seaborn as sns #from conf import sns
 import matplotlib.pyplot as plt
 import pandas as pd
 import os
@@ -109,7 +109,7 @@ def art(data_onehot, ngram_inventory, inflections_gold, inflection_classes, lang
         # df_melt_clusters = pd.melt(df_results, id_vars=["vigilance", "run", "batch", "fold_id", "mode"], value_vars=[
         #                            "min_cluster_size", "max_cluster_size"], var_name="metric", value_name="size")
         df_melt_n_clusters = pd.melt(df_results, id_vars=["vigilance", "run", "batch", "fold_id", "mode"], value_vars=[
-                                   "clusters ART", "inflection classes"], var_name="metric", value_name="# clusters")
+                                   "clusters ART", "inflection classes"], var_name="clustering", value_name="# clusters")
         
         # df_melt_ci = pd.melt(df_results, id_vars=["vigilance"], value_vars=[
         #                      "cluster_population"], var_name="metric", value_name="N_in_cluster")
@@ -129,10 +129,10 @@ def art(data_onehot, ngram_inventory, inflections_gold, inflection_classes, lang
         ## Scores plot
         if train_test:
             ax_scores = sns.lineplot(data=df_melt_scores, x="vigilance",
-                     y="score", hue="metric", style="mode")
+                     y="score", hue="mode", style="metric")
         else:
             ax_scores = sns.lineplot(data=df_melt_scores, x="vigilance",
-                        y="score", hue="metric")
+                        y="score", hue="model", style="metric")
         ax_scores.set_ylim(top=1)
         # This is obtained from one baseline run
         # rep_kmeans_ARI = np.ones((1, len(VIGILANCE_RANGE)))*0.782
@@ -163,10 +163,10 @@ def art(data_onehot, ngram_inventory, inflections_gold, inflection_classes, lang
         ## N_clusters plot
         if train_test:
             sns.lineplot(data=df_melt_n_clusters, x="vigilance",
-                        y="# clusters", hue="metric", style="mode")
+                        y="# clusters", hue="mode", style="metric")
         else:
             sns.lineplot(data=df_melt_n_clusters, x="vigilance",
-                        y="# clusters", hue="metric")
+                        y="# clusters", hue="clustering")
         # plt.axhline(y=len(inflection_classes)) # plot number of real inflection classes
         plt.savefig(os.path.join(
             OUTPUT_DIR, f"nclusters-{language}-{config_string}.pdf"))
@@ -340,18 +340,17 @@ def art_run_parallel(data_onehot, ngram_inventory, inflections_gold, inflection_
     if visualise_clusters and not train_test:
         # NOTE: Result from last batch is used for plot
         # NOTE: At the moment not working with train-test, question is then whether train or test phase should be plotted.
-        df = plot.transform_using_fitted_pca(prototypes, pca)
-        # plot.plot_data(df, labels=None, clusters=range(0,20),
-        #  micro_clusters=cogids[batch], file_label=f"pca-art-vig{vig}-run{r}-{language}", show=show)
-        df.columns = ['dim1', 'dim2']
-        prototype_based_new_coords = []
-        for i in range(0, len(clusters_gold)):
-            prototype_N = int(clusters_art_batch[i])
-            matching_prototype_coord = df.values[prototype_N]
-            with_noise = matching_prototype_coord + \
-                        np.random.randn(2)*0.02
-            prototype_based_new_coords.append(with_noise)
-
+        # df = plot.transform_using_fitted_pca(prototypes, pca)
+        ## plot.plot_data(df, labels=None, clusters=range(0,20),
+        ##  micro_clusters=cogids[batch], file_label=f"pca-art-vig{vig}-run{r}-{language}", show=show)
+        # df.columns = ['dim1', 'dim2']
+        # prototype_based_new_coords = []
+        # for i in range(0, len(clusters_gold)):
+        #     prototype_N = int(clusters_art_batch[i])
+        #     matching_prototype_coord = df.values[prototype_N]
+        #     with_noise = matching_prototype_coord + \
+        #                 np.random.randn(2)*0.02
+        #     prototype_based_new_coords.append(with_noise)
         # df2 = pd.DataFrame(prototype_based_new_coords)
         # df2.columns = ['dim1', 'dim2']
         # plot.plot_data(df2, labels=None, clusters=clusters_gold, prototypes=df,

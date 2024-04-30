@@ -1,6 +1,6 @@
 # from sklearn.manifold import TSNE
 from sklearn.decomposition import PCA
-import seaborn as sns
+import seaborn as sns #from conf import sns
 import matplotlib.pyplot as plt
 import pandas as pd
 from conf import LABEL_DENSITY, FILLED_MARKERS, OUTPUT_DIR, cmap_categorical
@@ -13,7 +13,7 @@ import matplotlib
 
 import os
 
-sns.set(font="Charis SIL Compact")
+# sns.set(font="Charis SIL Compact")
 plt.rcParams['figure.figsize'] = [10, 6]
 plt.rcParams['figure.dpi'] = 200
 plt.rcParams['savefig.format'] = "pdf"
@@ -46,7 +46,7 @@ def plot_data(df, clusters, labels=None, micro_clusters=None, sample_points = No
     # return score
 
 def plot_intervals(ari_intervals, incrementalIndices, n_datapoints, file_label=None, show=True):
-    matplotlib.rcParams.update({'font.size': 22})
+    # matplotlib.rcParams.update({'font.size': 22})
     fig, ax = plt.subplots()
     stackedResults=np.array(ari_intervals)
     # cols=list(map(str, incrementalIndices))
@@ -68,7 +68,9 @@ def plot_barchart(orderedStats, inflection_classes, max_clusters=None, min_datap
     if max_clusters is not None and len(orderedStats) > max_clusters:
         orderedStatsUsed = orderedStats[:max_clusters,:]
 
-    matplotlib.rcParams.update({'font.size': 22})
+    #matplotlib.rcParams.update({'font.size': 22})
+    # Font scale for the barplot smaller than the default 1.4, so labels fit better
+    sns.set_theme(font="Charis SIL Compact", font_scale=1)
     fig, ax = plt.subplots()
     
     bottom = np.zeros(orderedStatsUsed.shape[0])
