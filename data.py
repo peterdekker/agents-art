@@ -46,15 +46,16 @@ def load_romance_dataset(conjugation_df_path):
     cognates_df = pd.DataFrame(dataset["CognatesetTable"])
     # lects_df = pd.DataFrame(dataset["LanguageTable"])
 
+    # Only use Latin
+    forms_df = forms_df[forms_df["Language_ID"]
+                                    == "Italic_Latino-Faliscan_Latin"]
+
     # Filter data
     forms_df_1cognate = filter_romance_empty_multicog(forms_df)
     # Filter on Latin inflection classes + merge forms and cognates table
     conjugation_df = merge_filter_romance_inflections(
         forms_df_1cognate, cognates_df)
     
-    # Only use Latin
-    conjugation_df = conjugation_df[conjugation_df["Language_ID"]
-                                    == "Italic_Latino-Faliscan_Latin"]
 
     conjugation_df["Cell"] = conjugation_df["Cell"].apply(
         lambda tense_person_list: ".".join(tense_person_list))
@@ -62,7 +63,6 @@ def load_romance_dataset(conjugation_df_path):
     
     # Tokenize forms using Lingpy
     conjugation_df["Form_tokenized"] = conjugation_df["Form"].apply(lambda f: " ".join(ipa2tokens(f, merge_vowels=False, merge_geminates=False)))
-    print(conjugation_df[conjugation_df["Form_tokenized"].str.contains("?", regex=False)])
 
     # for form in conjugation_df["Form_tokenized"]:
     #     form_split = form.split(" ")
@@ -101,7 +101,7 @@ def load_paralex_dataset(language, conjugation_df_path):
 
 
 def filter_romance_empty_multicog(forms_df):
-    # NOTE: For Latin, Ø exists, but ? not and multi-cognates also not
+    # NOTE: For Latin, Ø exists, but ? not and multiple cognate classes per lexeme also not
     # Filter out empty entries and entry with more than one cognate class
     forms_df_nonempty = forms_df[~forms_df["Form"].isin(["Ø", "?"])]
     forms_df_1cognate = forms_df_nonempty[forms_df_nonempty["Cognateset_ID"].apply(
