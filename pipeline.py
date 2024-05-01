@@ -98,7 +98,7 @@ def main():
         records_baseline.append(kmeans_cluster_baseline(
             forms_onehot, inflections, n_inflection_classes=len(inflection_classes)))
         
-        print(pd.DataFrame(records_baseline).set_index("method"))
+        print(pd.DataFrame(records_baseline).set_index("model"))
 
 
 if __name__ == "__main__":
