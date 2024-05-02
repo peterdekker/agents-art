@@ -84,7 +84,7 @@ def plot_barchart(orderedStats, inflection_classes, max_clusters=None, min_datap
         p = ax.bar(xCoords, members, 0.4, bottom=bottom, label=inflection_classes[i],alpha=0.5, color=cmap_categorical[i])
         bottom += members
     ax.legend()
-    # ax.set_xticks([])
+    ax.set_xticks(xCoords)
     
     # for bar in range(orderedStats.shape[0]):
     #     for ngram in range(len(category_ngrams[bar])):

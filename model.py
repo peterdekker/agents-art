@@ -130,7 +130,6 @@ def art(data_onehot, ngram_inventory, inflections_gold, inflection_classes, lang
         if show:
             plt.show()
         plt.clf()
-        print(df_melt_scores)
 
         ## N_clusters plot
         df_melt_n_clusters = pd.melt(df_results, id_vars=["vigilance", "run", "batch", "fold_id", "mode", "model"], value_vars=[
@@ -144,7 +143,6 @@ def art(data_onehot, ngram_inventory, inflections_gold, inflection_classes, lang
             # sns.lineplot(data=df_melt_n_clusters, x="vigilance",
             #             y="# clusters", hue="mode", style="clustering")
         else:
-            print(df_melt_n_clusters)
             sns.lineplot(data=df_melt_n_clusters, x="vigilance",
                         y="# clusters", hue="clustering")
             # plt.axhline(y=len(inflection_classes)) # plot number of real inflection classes
