@@ -20,6 +20,7 @@ from scipy.sparse import issparse
 Option = namedtuple('Option', 'class_name value')
 number_type = (int, float, cp.floating, cp.integer)
 
+
 def preformat_value(value):
     if inspect.isfunction(value) or inspect.isclass(value):
         return value.__name__
@@ -27,10 +28,12 @@ def preformat_value(value):
     elif isinstance(value, (list, tuple, set)):
         return [preformat_value(v) for v in value]
 
-    elif isinstance(value, (np.ndarray, np.matrix, cp.ndarray)): # support both numpy and cupy arrays
+    # support both numpy and cupy arrays
+    elif isinstance(value, (np.ndarray, np.matrix, cp.ndarray)):
         return value.shape
 
     return value
+
 
 def format_data(data, is_feature1d=True, copy=False, make_float=False):
     """
@@ -67,10 +70,7 @@ def format_data(data, is_feature1d=True, copy=False, make_float=False):
     if data is None or issparse(data):
         return data
 
-    # if make_float:
-    #     data = asfloat(data)
-
-    if not isinstance(data, (np.ndarray, cp.ndarray)) or copy: # numpy or cupy array
+    if not isinstance(data, (np.ndarray, cp.ndarray)) or copy:  # numpy or cupy array
         data = cp.array(data, copy=copy)
 
     # Valid number of features for one or two dimensions
@@ -79,10 +79,11 @@ def format_data(data, is_feature1d=True, copy=False, make_float=False):
     if data.ndim == 1:
         data_shape = (n_features, 1) if is_feature1d else (1, n_features)
         data = data.reshape(data_shape)
-    
+
     data = data.astype('byte')
 
     return data
+
 
 def as_tuple(*values):
     """
@@ -114,6 +115,7 @@ def as_tuple(*values):
             cleaned_values.append(value)
     return tuple(cleaned_values)
 
+
 def asfloat(value):
     """
     Convert variable to 32 bit float number.
@@ -130,8 +132,9 @@ def asfloat(value):
     """
     float_type = 'float32'
 
-    if isinstance(value, (np.matrix, np.ndarray, cp.ndarray)): # nummpy or cupy array
-        if value.dtype != cp.dtype(float_type): #cupy dtype should be alias for numpy dtype
+    if isinstance(value, (np.matrix, np.ndarray, cp.ndarray)):  # nummpy or cupy array
+        # cupy dtype should be alias for numpy dtype
+        if value.dtype != cp.dtype(float_type):
             return value.astype(float_type)
 
         return value
@@ -144,6 +147,7 @@ def asfloat(value):
 
     float_x_type = cp.cast[float_type]
     return float_x_type(value)
+
 
 class BaseProperty:
     """
@@ -234,6 +238,7 @@ class WithdrawProperty(object):
         Name of the property. ``None`` in case if name
         wasn't specified.
     """
+
     def __get__(self, instance, owner):
         # Remove itself, to make sure that instance doesn't
         # have reference to this property. Instead user should
@@ -258,9 +263,11 @@ class Property(BaseProperty):
 
     {BaseProperty.Parameters}
     """
+
     def __init__(self, expected_type=object, *args, **kwargs):
         self.expected_type = expected_type
         super(Property, self).__init__(*args, **kwargs)
+
 
 class BoundedProperty(BaseProperty):
     """
@@ -306,6 +313,7 @@ class ProperFractionProperty(BoundedProperty):
         super(ProperFractionProperty, self).__init__(
             minval=0, maxval=1, *args, **kwargs)
 
+
 class NumberProperty(BoundedProperty):
     """
     Float or integer number property.
@@ -315,6 +323,7 @@ class NumberProperty(BoundedProperty):
     {BoundedProperty.Parameters}
     """
     expected_type = number_type
+
 
 class IntProperty(BoundedProperty):
     """
@@ -331,6 +340,7 @@ class IntProperty(BoundedProperty):
             value = int(value)
         super(IntProperty, self).__set__(instance, value)
 
+
 class ExtractParameters(object):
     def get_params(self, deep=False):
         options = {}
@@ -338,11 +348,9 @@ class ExtractParameters(object):
         for property_name, option in self.options.items():
             value = getattr(self, property_name)
 
-            # if isinstance(value, tf.Variable):
-            #     value = tensorflow_eval(value)
-
             property_ = option.value
-            is_numpy_array = isinstance(value, (np.ndarray, cp.ndarray)) # numpy or cupy
+            is_numpy_array = isinstance(
+                value, (np.ndarray, cp.ndarray))  # numpy or cupy
 
             if hasattr(option.value, 'choices'):
                 choices = property_.choices
@@ -359,6 +367,7 @@ class ExtractParameters(object):
         self.__dict__.update(params)
         return self
 
+
 class BaseConfigurable(ExtractParameters):
     """
     Base configuration class. It help set up and validate
@@ -369,6 +378,7 @@ class BaseConfigurable(ExtractParameters):
     **options
         Available properties.
     """
+
     def __init__(self, **options):
         available_options = set(self.options.keys())
         invalid_options = set(options) - available_options
@@ -387,6 +397,7 @@ class BaseConfigurable(ExtractParameters):
                 raise ValueError(
                     "Option `{}` is required.".format(option_name))
 
+
 class SharedDocsMeta(type):
     """
     Meta-class for shared documentation. This class contains
@@ -399,19 +410,8 @@ class SharedDocsMeta(type):
         new_class = super(SharedDocsMeta, cls).__new__(
             cls, clsname, bases, attrs)
 
-        # if attrs.get('inherit_method_docs', True):
-        #     inherit_docs_for_methods(new_class, attrs)
-
-        # if new_class.__doc__ is None:
-        #     return new_class
-
-        # class_docs = new_class.__doc__
-        # n_indents = find_numpy_doc_indent(class_docs)
-
-        # if n_indents is not None:
-        #     new_class.__doc__ = format_docs(new_class, new_class.__mro__)
-
         return new_class
+
 
 class ConfigMeta(SharedDocsMeta):
     """
@@ -441,17 +441,20 @@ class ConfigMeta(SharedDocsMeta):
 
         return new_class
 
+
 class ConfigABCMeta(ABCMeta, ConfigMeta):
     """
     Meta-class that combines ``ConfigMeta`` and ``abc.ABCMeta``
     meta-classes.
     """
 
+
 class ConfigurableABC(with_metaclass(ConfigABCMeta, BaseConfigurable)):
     """
     Class that combine ``BaseConfigurable`` class functionality,
     ``ConfigMeta`` and ``abc.ABCMeta`` meta-classes.
     """
+
 
 class BaseSkeleton(ConfigurableABC):
     """
@@ -468,17 +471,6 @@ class BaseSkeleton(ConfigurableABC):
 
     def __init__(self, *args, **options):
         super(BaseSkeleton, self).__init__(*args, **options)
-
-        # self.logs.title("Main information")
-        # self.logs.message("ALGORITHM", self.__class__.__name__)
-        # self.logs.newline()
-
-        # for key, data in sorted(self.options.items()):
-        #     formated_value = preformat_value(getattr(self, key))
-        #     msg_text = "{} = {}".format(key, formated_value)
-        #     self.logs.message("OPTION", msg_text, color='green')
-
-        # self.logs.newline()
 
     def repr_options(self):
         options = []
@@ -501,6 +493,7 @@ class BaseSkeleton(ConfigurableABC):
 
     def __setstate__(self, state):
         self.__dict__.update(state)
+
 
 class BaseNetwork(BaseSkeleton):
     """
@@ -559,30 +552,11 @@ class BaseNetwork(BaseSkeleton):
     step = NumberProperty(default=0.1, minval=0)
     show_epoch = IntProperty(minval=1, default=1)
     shuffle_data = Property(default=False, expected_type=bool)
-    #signals = Property(expected_type=object)
+    # signals = Property(expected_type=object)
 
     def __init__(self, *args, **options):
         super(BaseNetwork, self).__init__(*args, **options)
 
-        # self.last_epoch = 0
-        # self.n_updates_made = 0
-        # self.errors = base_signals.ErrorCollector()
-
-        # signals = list(as_tuple(
-        #     base_signals.ProgressbarSignal(),
-        #     base_signals.PrintLastErrorSignal(),
-        #     self.errors,
-        #     self.signals,
-        # ))
-
-        # for i, signal in enumerate(signals):
-        #     if inspect.isfunction(signal):
-        #         signals[i] = base_signals.EpochEndSignal(signal)
-
-        #     elif inspect.isclass(signal):
-        #         signals[i] = signal()
-
-        # self.events = Events(network=self, signals=signals)
 
 class ART1(BaseNetwork):
     rho = ProperFractionProperty(default=0.5)
@@ -590,15 +564,15 @@ class ART1(BaseNetwork):
 
     def train(self, X, save_interval):
         X = format_data(X)
-        if USE_GPU: # convert to Cupy array
+        if USE_GPU:  # convert to Cupy array
             X = cp.array(X, dtype=bool)
 
         if X.ndim != 2:
             raise ValueError("Input value must be 2 dimensional, got "
                              "{}".format(X.ndim))
 
-        incrementalClasses=[]
-        incrementalIndices=[]
+        incrementalClasses = []
+        incrementalIndices = []
 
         n_samples, n_features = X.shape
         n_clusters = self.n_clusters
@@ -612,7 +586,8 @@ class ART1(BaseNetwork):
             self.weight_21 = cp.ones((n_features, n_clusters))
 
         if not hasattr(self, 'weight_12'):
-            scaler = step / (step + n_features - 1) # In original code: n_clusters instead of n_features, n_features because this is the norm of the vector, and they're all ones
+            # In original neupy code: there was (we think wrongly) n_clusters instead of n_features. We use n_features because this is the norm of the vector, and they're all ones
+            scaler = step / (step + n_features - 1)
             self.weight_12 = scaler * self.weight_21.T
 
         weight_21 = self.weight_21
@@ -624,58 +599,36 @@ class ART1(BaseNetwork):
                              "".format(n_features, weight_21.shape[0]))
 
         classes = cp.zeros(n_samples, dtype=int)
-        
+
         # Train network
-        # start = time.process_time()
-        # X=X.astype('bool')
         for i, p in enumerate(X):
-            p=p.astype(int)
-            # print('Dealing with sample ' + str(i))
-            # print("accumulated time: " + str(time.process_time() - start))
+            p = p.astype(int)
             N_disabled_neurons = 0
-            # reseted_values = []
             reset = True
             input2 = cp.dot(weight_12, p.T)
-            #Sorting the inputs here, since they are tested from highest to lowest, always disabling the highest if reset happens
+            # Sorting the inputs here, since they are tested from highest to lowest, always disabling the highest if reset happens
             sorted_indices_descending = np.argsort(input2)[::-1]
-            # start2 = time.process_time()
-            # output2 = cp.zeros(weight_12.shape[0])
 
             while reset:
 
                 # winner_index = input2.argmax()
                 # below should equal the above line
-                # start3 = time.process_time()
                 winner_index = sorted_indices_descending[N_disabled_neurons]
                 expectation = weight_21[:, winner_index]
                 # equals:
                 # output2[winner_index] = 1
                 # expectation = cp.dot(weight_21, output2)
                 output1 = cp.logical_and(p, expectation).astype(int)
-                # print("First 3 rows: " + str(time.process_time() - start3))
                 if USE_GPU:
                     del expectation
                     cp._default_memory_pool.free_all_blocks()
 
-                # start3 = time.process_time()
-
-
                 reset_value = cp.dot(output1.T, output1) / cp.dot(p.T, p)
-                reset = reset_value < rho # Below vigilance = reset = keep searching
+                reset = reset_value < rho  # Below vigilance = reset = keep searching
 
-
-                # print("Next 2 rows: " + str(time.process_time() - start3))
                 if reset:
-                    # input2[winner_index] = -cp.inf not needed
-                    N_disabled_neurons+=1
-                    # output2[winner_index] = 0 #Back to zero vector
-                
-                # if N_disabled_neurons >= max_clusters:
-                #     # Got this case only if we test all possible clusters
-                #     reset = False
-                #     winner_index = None
 
-                
+                    N_disabled_neurons += 1
 
                 if not reset:
                     if winner_index is not None:
@@ -683,44 +636,32 @@ class ART1(BaseNetwork):
                             step + cp.dot(output1.T, output1) - 1
                         )
                         weight_21[:, winner_index] = output1
-                    
-                        if winner_index==n_clusters-1:    #If the input was set into an unused category, initialize a new one
-                            n_clusters=n_clusters+1
-                            new_top_down_weights=cp.ones((n_features, 1))
-                            weight_21 = cp.append(weight_21,new_top_down_weights,axis=1) #Assuming the new weights would've been initialized to ones, after the logical and, the input features p would be the ones left activated
-                            new_bottom_up_weights=(step * new_top_down_weights) / (
+
+                        if winner_index == n_clusters-1:  # If the input was set into an unused category, initialize a new one
+                            n_clusters = n_clusters+1
+                            new_top_down_weights = cp.ones((n_features, 1))
+                            # Assuming the new weights would've been initialized to ones, after the logical and, the input features p would be the ones left activated
+                            weight_21 = cp.append(
+                                weight_21, new_top_down_weights, axis=1)
+                            new_bottom_up_weights = (step * new_top_down_weights) / (
                                 step + n_features - 1)
                             if USE_GPU:
                                 del new_top_down_weights
                                 cp._default_memory_pool.free_all_blocks()
-                            weight_12 = cp.append(weight_12,new_bottom_up_weights.T,axis=0)
+                            weight_12 = cp.append(
+                                weight_12, new_bottom_up_weights.T, axis=0)
                             if USE_GPU:
                                 del new_bottom_up_weights
                                 cp._default_memory_pool.free_all_blocks()
-                    # else:
-                    #     # Create new category - Heikki edit
 
-                    #     # winner_index = max(reseted_values)[1]
-                    #     n_clusters=n_clusters+1
-                    #     winner_index = n_clusters-1 #-1 because 0 is a cluster
-                    #     output1=p[None,:].T #Make input a 2d column vector for appending
-                    #     weight_21 = cp.append(weight_21,output1,axis=1) #Assuming the new weights would've been initialized to ones, after the logical and, the input features p would be the ones left activated
-                    #     new_bottom_up_weights=(step * output1) / (
-                    #         step + cp.dot(output1.T, output1) - 1
-                    #     )
-                    #     weight_12 = cp.append(weight_12,new_bottom_up_weights.T,axis=0)         
-                        
                     classes[i] = winner_index
-                
+
                 if USE_GPU:
                     del output1
                     # Frees up memory of all the blocks that have now been deleted
                     cp._default_memory_pool.free_all_blocks()
-            
-            # print("While loop took: " + str(time.process_time() - start2))
-            
-            # print(i)
-            if ((i+1) % save_interval)==0 or i==len(X):
+
+            if ((i+1) % save_interval) == 0 or i == len(X):
                 classes_obj = cp.copy(classes[0:i])
                 classes_obj = classes_obj.get() if USE_GPU else classes_obj
                 incrementalClasses.append(classes_obj)
@@ -728,23 +669,21 @@ class ART1(BaseNetwork):
                 if USE_GPU:
                     del classes_obj
                     cp._default_memory_pool.free_all_blocks()
-            
+
             # After processing example p, delete input2
             if USE_GPU:
                 del input2
                 cp._default_memory_pool.free_all_blocks()
 
         # Save weights and #clusters in object field, so model can be trained in batches (not in NeuPy implementation)
-        self.weight_12=weight_12
-        self.weight_21=weight_21
-        self.n_clusters=n_clusters
-        
-
+        self.weight_12 = weight_12
+        self.weight_21 = weight_21
+        self.n_clusters = n_clusters
 
         # Convert to numpy
         classes_np = classes.get() if USE_GPU else classes
         # Prototypes, for interpretation: drop last placeholder cluster
-        prototypes = weight_21[:,:-1].T
+        prototypes = weight_21[:, :-1].T
         prototypes_np = prototypes.get() if USE_GPU else prototypes
         if USE_GPU:
             del weight_12
@@ -757,31 +696,28 @@ class ART1(BaseNetwork):
     # test() defines a non-standard way to only evaluate (without training), after having trained the model on a portion of the data
     def test(self, X, only_bottom_up):
         X = format_data(X)
-        if USE_GPU: # convert to Cupy array
+        if USE_GPU:  # convert to Cupy array
             X = cp.array(X, dtype=bool)
 
         if X.ndim != 2:
             raise ValueError("Input value must be 2 dimensional, got "
                              "{}".format(X.ndim))
 
-        # incrementalClasses=[]
-        # incrementalIndices=[]
-
         n_samples, n_features = X.shape
-        # step = self.step
         rho = self.rho
 
         if cp.any((X != 0) & (X != 1)):
             raise ValueError("ART1 Network works only with binary matrices")
 
         if not hasattr(self, 'weight_21') or not hasattr(self, 'weight_12'):
-            raise ValueError("ART model does not have weight matrices, this means models has not been trained yet. Train model before evaluating on test data.")
+            raise ValueError(
+                "ART model does not have weight matrices, this means models has not been trained yet. Train model before evaluating on test data.")
 
         # Last cluster is placeholder with only ones, not real cluster, remove this
-        assert np.all(self.weight_21[:,-1])
-        assert np.all(self.weight_12[-1,:])
-        weight_21 = self.weight_21[:,:-1]
-        weight_12 = self.weight_12[:-1,:]
+        assert np.all(self.weight_21[:, -1])
+        assert np.all(self.weight_12[-1, :])
+        weight_21 = self.weight_21[:, :-1]
+        weight_12 = self.weight_12[:-1, :]
         n_clusters = self.n_clusters - 1
 
         if n_features != weight_21.shape[0]:
@@ -790,9 +726,9 @@ class ART1(BaseNetwork):
                              "".format(n_features, weight_21.shape[0]))
 
         classes = cp.zeros(n_samples, dtype=int)
-        
+
         for i, p in enumerate(X):
-            p=p.astype(int)
+            p = p.astype(int)
             N_disabled_neurons = 0
             highest_reset_value = 0.0
             best_class_top_down = -1
@@ -817,44 +753,27 @@ class ART1(BaseNetwork):
                     if reset_value > highest_reset_value:
                         highest_reset_value = reset_value
                         best_class_top_down = winner_index
-                    reset = reset_value < rho # Below vigilance = reset = keep searching
+                    reset = reset_value < rho  # Below vigilance = reset = keep searching
 
-                    if not reset:                     
+                    if not reset:
                         classes[i] = winner_index
 
                     if reset:
-                        N_disabled_neurons+=1
+                        N_disabled_neurons += 1
                         if N_disabled_neurons == n_clusters:
                             # We have checked all clusters, none overcame reset, so use best class so far
                             classes[i] = best_class_top_down
                             reset = False
-                    
+
                     if USE_GPU:
                         del output1
                         # Frees up memory of all the blocks that have now been deleted
                         cp._default_memory_pool.free_all_blocks()
-                
-                # if ((i+1) % save_interval)==0 or i==len(X):
-                #     classes_obj = cp.copy(classes[0:i])
-                #     classes_obj = classes_obj.get() if USE_GPU else classes_obj
-                #     incrementalClasses.append(classes_obj)
-                #     incrementalIndices.append(i+1)
-                #     if USE_GPU:
-                #         del classes_obj
-                #         cp._default_memory_pool.free_all_blocks()
-                
+
                 # After processing example p, delete input2
                 if USE_GPU:
                     del input2
                     cp._default_memory_pool.free_all_blocks()
-
-        # Save weights and #clusters in object field, so model can be trained in batches (not in NeuPy implementation)
-        # self.weight_12=weight_12
-        # self.weight_21=weight_21
-        # self.n_clusters=n_clusters
-        
-
-
         # Convert to numpy
         classes_np = classes.get() if USE_GPU else classes
         prototypes_np = weight_21.T.get() if USE_GPU else weight_21.T
@@ -863,8 +782,7 @@ class ART1(BaseNetwork):
             del weight_21
             del classes
             cp._default_memory_pool.free_all_blocks()
-        return classes_np, prototypes_np, #incrementalClasses, incrementalIndices
-
+        return classes_np, prototypes_np,
 
     def predict(self, X):
         return self.train(X)
