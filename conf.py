@@ -7,42 +7,34 @@ import colorcet as cc
 
 pd.set_option('display.max_rows', None)
 
-# font = {'family' : 'Charis SIL Compact',
-#         'size'   : 24
-#         }
-# matplotlib.rc('font', **font)
 sns.set_theme(font="Charis SIL Compact", font_scale=1.4)
 
-# sns.set_palette("Set2") # Set2, husl, hsl
-# cmap_categorical is not activated by default, but variable can be imported
-cmap_categorical = sns.color_palette(cc.glasbey, n_colors=25, as_cmap=True) # sns.color_palette("Set2", as_cmap=True) # plt.get_cmap("Paired")
+cmap_categorical = sns.color_palette(cc.glasbey, n_colors=25, as_cmap=True)
 
-### Argparse options: settable by user via command line options. Default can be set here.
+### Command line options. Defaults (when no argument is given) can be set via the uppercase variables.
 LANGUAGE = "latin"
-FEATURES_SET = False
-SOUNDCLASSES = "none"  #  One of: "none", "asjp" or "sca"
-USE_PRESENT = False
-NGRAMS = 3
 VIGILANCE_SINGLE_RUN = 0.1
-N_RUNS = 10 # User has to set to 1 via command line for train_test mode
+N_RUNS = 10  # User has to set to 1 via command line for train_test mode
 
 params = {
     "language": {"default": LANGUAGE, "type": str},
-    "features_set": {"default": FEATURES_SET, "type": bool},
-    "soundclasses": {"default": SOUNDCLASSES, "type": str},
-    "use_present": {"default": USE_PRESENT, "type": bool},
-    "ngrams": {"default": NGRAMS, "type": int},
     "vigilance_single_run": {"default": VIGILANCE_SINGLE_RUN, "type": float},
     "n_runs": {"default": N_RUNS, "type": int},
 }
 
-mode_params = ["plot_data_before", "single_run", "eval_batches", "eval_vigilances", "eval_intervals", "baseline", "train_test"]
+
+
+mode_params = ["plot_data_before", "single_run", "eval_batches",
+               "eval_vigilances", "eval_intervals", "baseline", "train_test"]
 
 ###
 
-### Parameters settable for users via this config file
-MULTIPROCESSING = False
-N_PROCESSES = 2  # None # None for using all
+# Parameters settable only via this config file
+MULTIPROCESSING = True
+N_PROCESSES = None # Default: run processes on all processor cores (None), or give a specific number of processes
+FEATURES_SET = False # Default: use a concat representation based on all paradigm cells (False). When this variable is True, a set of the features in all paradigm cells is used, leading to a shorter representation.
+NGRAMS = 3 # By default, 3-grams are used. Using this variable, the number n of the n-gram (number of phonemes in the n-gram) can be set.
+SOUNDCLASSES = "none"  # By default, the phonemes of the wordforms are used ('none'). A soundclass representation can be actived using "asjp" or "sca"
 USE_GPU = False  # GPU often slower than CPU, and runs out of memory for concat representation. but saves CPU availability
 WRITE_CSV = True
 WRITE_TEX = True
@@ -61,17 +53,14 @@ SAMPLE_FIRST = None  # 1000
 ###
 
 
-### Not to be changed by user
-MAX_CLUSTERS_PORTUGUESE = None #disabled
+# Not to be changed by user
+MAX_CLUSTERS_PORTUGUESE = None  # disabled
 MIN_DATAPOINTS_CLASS_PORTUGUESE = 10
 
 VIGILANCE_RANGE = [
     x/1000 for x in range(0, int(MAX_VIGILANCE*1000), int(VIGILANCE_RANGE_STEP*1000))]
-# CONFIG_STRING = f"---squeeze_into_verbs={SQUEEZE_INTO_VERBS}---FEATURES_SET={FEATURES_SET}---CommonFeat0={SET_COMMON_FEATURES_TO_ZERO}---Ngram={NGRAMS}---present={USE_PRESENT}"
 LABEL_DENSITY = 5
 EVAL_INTERVAL = 20
-# INFLECTION_CLASSES = ["I", "II", "III", "IV", "special"]
-# N_INFLECTION_CLASSES = len(INFLECTION_CLASSES)
 INITIAL_CLUSTERS = 1
 FILLED_MARKERS = ['o', 'v', '^', '<', '>', '8',
                   's', 'p', '*', 'h', 'H', 'D', 'd', 'P', 'X']*16
@@ -88,34 +77,16 @@ paths = {
      "metadata_relative_path": "cldf/Wordlist-metadata.json",
      "conjugation_df_path": 'latin_data_df.csv',
      "cells_distillation": ["IMPERF-IND.3SG", "INF", "IMP.2SG", "PRS-IND.1SG", "PRS-IND.2SG", "PRS-IND.3SG", "PRS-IND.3PL", "PRS-SBJV.3SG", "GER"]},
-    # Distillation paper 2020, without deleting GER and IMP2SG: ["IMPERF-IND.3SG", "INF", "IMP.2SG", "PRS-IND.1SG", "PRS-IND.2SG", "PRS-IND.3SG", "PRS-IND.3PL", "PRS-SBJV.3SG", "GER"]
-    # Distillation paper 2020: ["IMPERF-IND.3SG", "INF", "PRS-IND.1SG", "PRS-IND.2SG", "PRS-IND.3SG", "PRS-IND.3PL", "PRS-SBJV.3SG"]}, #Removing these two cells gives better score: "IMPERF-IND.3SG",  "PRS-SBJV.3SG"
-    # Infectum (minus cells not available): ['PRS-IND.1SG', 'PRS-IND.2SG', 'PRS-IND.3SG', 'PRS-IND.1PL',
-    #    'PRS-IND.2PL', 'PRS-IND.3PL', 'IMPERF-IND.1SG', 'IMPERF-IND.2SG',
-    #    'IMPERF-IND.3SG', 'IMPERF-IND.1PL', 'IMPERF-IND.2PL',
-    #    'IMPERF-IND.3PL', 'PRS-SBJV.1SG', 'PRS-SBJV.2SG', 'PRS-SBJV.3SG',
-    #    'PRS-SBJV.1PL', 'PRS-SBJV.2PL', 'PRS-SBJV.3PL', 'IMPERF-SBJV.1SG',
-    #    'IMPERF-SBJV.2SG', 'IMPERF-SBJV.3SG', 'IMPERF-SBJV.1PL',
-    #    'IMPERF-SBJV.2PL', 'IMPERF-SBJV.3PL', 'INF']
     "estonian":
     {"archive_url": "https://zenodo.org/records/10692800/files/eesthetic-v1.0.3.zip",
      "archive_path": "estonian-v.1.0.3.zip",
      "file_path": os.path.join(DATA_PATH, "estonian-v.1.0.3"),
      "conjugation_df_path": "estonian_data_df.csv",
-     "cells_present": ["ind.prs.1sg", "ind.prs.2sg", "ind.prs.3sg", "ind.prs.1pl", "ind.prs.2pl", "ind.prs.3pl"],
      "cells_distillation": ["inf", "imp.prs.2pl", "imp.prs.pers", "ger", "ptcp.pst.pers",
                             "ind.prs.1sg", "cond.prs.pers", "imp.prs.2sg",
                             "sup", "ptcp.prs.pers", "quot.prs.pers", "ind.pst.ipfv.1sg",
                             "ind.prs.impers", "ind.pst.ipfv.impers"
                             ]},
-    # Estonian small distillation, based on Blevins (2007). p. 253 with impersonal past replaced by impersonal present: ["sup", "inf", "ind.prs.1sg","imp.prs.pers"]}, WRONG #
-    # Estonian small distillation, based on Blevins (2007). Tbl 3, p. 253 ["sup", "inf", "ind.prs.1sg","ind.pst.ipfv.impers"]}, #
-    # Full principle parts, based on EKI: ["sup", "inf", "ind.prs.1sg", "ind.pst.ipfv.1sg", "ind.pst.ipfv.3sg","imp.prs.pers", "ptcp.prs.pers", "ptcp.pst.pers", "ind.prs.impers", "ptcp.pst.impers"]
-    # Blevins tbl 4, per series: ["inf", "imp.prs.2pl", "imp.prs.pers", "ger", "ptcp.pst.pers",
-                            # "ind.prs.1sg", "cond.prs.pers", "imp.prs.2sg",
-                            # "sup", "ptcp.prs.pers", "quot.prs.pers", "ind.pst.ipfv.1sg",
-                            # "ind.prs.impers", "ind.pst.ipfv.impers"]
-    # Blevins tbl 4, extra persons ind.prs: ["ind.prs.1sg", "ind.prs.3sg", "ind.prs.1pl", "ind.prs.impers", "ind.pst.ipfv.1sg", "ind.pst.ipfv.impers", "cond.prs.pers", "quot.prs.pers", "imp.prs.2sg", "imp.prs.2pl", "imp.prs.pers", "sup", "inf", "ger", "ptcp.prs.pers", "ptcp.pst.pers" ]
     "portuguese":
     {"archive_url": "https://zenodo.org/records/8392722/files/v2.0.1.zip",
      "archive_path": "portuguese-v.2.0.1.zip",
@@ -124,13 +95,4 @@ paths = {
      "cells_distillation": ["prs.ind.1sg", "prs.ind.3sg", "prs.ind.1pl", "prs.ind.2pl",
                             "prs.ind.3pl", "pst.impf.ind.3sg", "pst.pfv.ind.1sg", "pst.perf.ind.3sg",
                             "fut.ind.3sg", "prs.sbjv.3sg", "prs.sbjv.2pl", "pst.ptcp"]},
-
-    # Distillation Tbl 18 Beniamine et al. 2021: ["prs.ind.1sg", "prs.ind.3sg", "prs.ind.1pl", "prs.ind.2pl", "prs.ind.3pl", "pst.impf.ind.3sg", "pst.pfv.ind.1sg", "pst.perf.ind.3sg", "fut.ind.3sg", "prs.sbjv.3sg", "prs.sbjv.2pl", "pst.ptcp"]
-    # "arabic":
-    # {"archive_url": "https://zenodo.org/records/10100678/files/aravelex-1.0.zip",
-    #  "archive_path": "arabic-v.1.0.zip",
-    #  "file_path": os.path.join(DATA_PATH, "arabic-v.1.0"),
-    #  "conjugation_df_path": "arabic_conjugation_df.csv"},
 }
-
-###

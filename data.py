@@ -5,11 +5,8 @@ import requests
 import shutil
 import pandas as pd
 from lingpy import ipa2tokens, tokens2class
-# from bpe import Encoder
 
 from conf import paths, WRITE_CSV
-
-# np.random.seed(11)
 
 
 ############ Methods Romance dataset ##########
@@ -48,29 +45,31 @@ def load_romance_dataset(conjugation_df_path):
 
     # Only use Latin
     forms_df = forms_df[forms_df["Language_ID"]
-                                    == "Italic_Latino-Faliscan_Latin"]
+                        == "Italic_Latino-Faliscan_Latin"]
 
     # Filter data
     forms_df_1cognate = filter_romance_empty_multicog(forms_df)
     # Filter on Latin inflection classes + merge forms and cognates table
     conjugation_df = merge_filter_romance_inflections(
         forms_df_1cognate, cognates_df)
-    
 
     conjugation_df["Cell"] = conjugation_df["Cell"].apply(
         lambda tense_person_list: ".".join(tense_person_list))
 
-    
     # Tokenize forms using Lingpy
-    conjugation_df["Form_tokenized"] = conjugation_df["Form"].apply(lambda f: " ".join(ipa2tokens(f, merge_vowels=False, merge_geminates=False)))
+    conjugation_df["Form_tokenized"] = conjugation_df["Form"].apply(
+        lambda f: " ".join(ipa2tokens(f, merge_vowels=False, merge_geminates=False)))
 
     # for form in conjugation_df["Form_tokenized"]:
     #     form_split = form.split(" ")
     #     print(form_split)
     #     print(tokens2class(form_split, model="sca"))
-    conjugation_df["form_sca"] = conjugation_df["Form_tokenized"].apply(lambda f: " ".join(tokens2class(f.split(" "), model="sca")))
-    conjugation_df["form_dolgo"] = conjugation_df["Form_tokenized"].apply(lambda f: " ".join(tokens2class(f.split(" "), model="dolgo")))
-    conjugation_df["form_asjp"] = conjugation_df["Form_tokenized"].apply(lambda f: " ".join(tokens2class(f.split(" "), model="asjp")))
+    conjugation_df["form_sca"] = conjugation_df["Form_tokenized"].apply(
+        lambda f: " ".join(tokens2class(f.split(" "), model="sca")))
+    conjugation_df["form_dolgo"] = conjugation_df["Form_tokenized"].apply(
+        lambda f: " ".join(tokens2class(f.split(" "), model="dolgo")))
+    conjugation_df["form_asjp"] = conjugation_df["Form_tokenized"].apply(
+        lambda f: " ".join(tokens2class(f.split(" "), model="asjp")))
 
     # Write table to file, so it can be read by our script later
     conjugation_df.to_csv(conjugation_df_path)
@@ -80,7 +79,8 @@ def load_romance_dataset(conjugation_df_path):
 def load_paralex_dataset(language, conjugation_df_path):
     download_if_needed(paths[language], language)
     file_path = paths[language]["file_path"]
-    language_filename = language #"std_modern_arabic" if language == "arabic" else language
+    # "std_modern_arabic" if language == "arabic" else language
+    language_filename = language
     paradigms_df = pd.read_csv(os.path.join(
         file_path, f"{language_filename}_paradigms.csv"), low_memory=False)
     lexemes_df = pd.read_csv(os.path.join(
@@ -89,11 +89,15 @@ def load_paralex_dataset(language, conjugation_df_path):
         right=lexemes_df, left_on="lexeme", right_on="lexeme_id")
 
     # Filter on only verbs (dataset also contains other POS)
-    conjugation_df = paradigms_lexemes_merged[paradigms_lexemes_merged["POS"] == "verb"].copy()
+    conjugation_df = paradigms_lexemes_merged[paradigms_lexemes_merged["POS"] == "verb"].copy(
+    )
 
-    conjugation_df["form_sca"] = conjugation_df["phon_form"].apply(lambda f: " ".join(tokens2class(f.split(" "), model="sca")))
-    conjugation_df["form_dolgo"] = conjugation_df["phon_form"].apply(lambda f: " ".join(tokens2class(f.split(" "), model="dolgo")))
-    conjugation_df["form_asjp"] = conjugation_df["phon_form"].apply(lambda f: " ".join(tokens2class(f.split(" "), model="asjp")))
+    conjugation_df["form_sca"] = conjugation_df["phon_form"].apply(
+        lambda f: " ".join(tokens2class(f.split(" "), model="sca")))
+    conjugation_df["form_dolgo"] = conjugation_df["phon_form"].apply(
+        lambda f: " ".join(tokens2class(f.split(" "), model="dolgo")))
+    conjugation_df["form_asjp"] = conjugation_df["phon_form"].apply(
+        lambda f: " ".join(tokens2class(f.split(" "), model="asjp")))
 
     # Write table to file, so it can be read by our script later
     conjugation_df.to_csv(conjugation_df_path)
@@ -120,7 +124,6 @@ def merge_filter_romance_inflections(forms_df_1cognate, cognates_df):
     return latin_conjugation_df
 
 
-
 def get_existing_sound_Ngrams(forms_tokenized, Ngrams):
     # sound_inventory = list(set(list("".join(forms))))
     ngram_inventory = []
@@ -128,7 +131,7 @@ def get_existing_sound_Ngrams(forms_tokenized, Ngrams):
         for token_ix in range(0, len(form)-(Ngrams-1)):
             # tuple can be deduplicated using set
             Ngram = tuple(form[token_ix:token_ix+Ngrams])
-            #if Ngram not in Ngram_list:
+            # if Ngram not in Ngram_list:
             ngram_inventory.append(Ngram)
     ngram_inventory = list(set(ngram_inventory))
     return ngram_inventory
@@ -146,7 +149,8 @@ def create_onehot_forms_from_Ngrams(forms_list, Ngrams, tokenized_form_spaces):
 
     ngram_inventory = get_existing_sound_Ngrams(forms_tokenized, Ngrams)
     n_Ngrams = len(ngram_inventory)
-    Ngram_list_indexes = {ngram: idx for idx, ngram in enumerate(ngram_inventory)}
+    Ngram_list_indexes = {ngram: idx for idx,
+                          ngram in enumerate(ngram_inventory)}
     array = np.zeros(shape=(n_forms, n_Ngrams))
 
     for form_row, form in enumerate(forms_tokenized):
@@ -159,7 +163,7 @@ def create_onehot_forms_from_Ngrams(forms_list, Ngrams, tokenized_form_spaces):
     return array, np.array(ngram_inventory)
 
 
-def create_language_dataset(df_language, language, Ngrams, sample_first, features_set, set_common_features_to_zero, remove_features_allzero, soundclasses, use_present):
+def create_language_dataset(df_language, language, Ngrams, sample_first, features_set, set_common_features_to_zero, remove_features_allzero, soundclasses):
     if language == "portuguese" or language == "estonian":
         form_column = f"form_{soundclasses}" if soundclasses != "none" else "phon_form"
         inflection_column = "inflection_class"
@@ -172,31 +176,28 @@ def create_language_dataset(df_language, language, Ngrams, sample_first, feature
         # tag_present_3pl = f"{tag_present}.3pl"
         tokenized_form_spaces = True
     else:  # data_format=="romance"
-        form_column = f"form_{soundclasses}" if soundclasses != "none" else "Form_tokenized" # form_column = "Form"
+        # form_column = "Form"
+        form_column = f"form_{soundclasses}" if soundclasses != "none" else "Form_tokenized"
         inflection_column = "Latin_Conjugation"
         lexeme_column = "Cognateset_ID_first"
         cell_column = "Cell"
         tag_present = "PRS-IND"
         # tag_present_3pl = f"{tag_present}.3PL"  # "'PRS-IND', '3PL'"
         tokenized_form_spaces = True
-    
+
     # Keep only first form for a cell (Estonian has doubles)
-    df_language = df_language.groupby([lexeme_column,cell_column], as_index=False).first()
+    df_language = df_language.groupby(
+        [lexeme_column, cell_column], as_index=False).first()
 
     if sample_first:
         df_language = df_language.head(sample_first)
 
-    if use_present:
-        if language=="estonian":
-            df_used = df_language[df_language[cell_column].isin(paths["estonian"]["cells_present"])]
-        else:
-            df_used = df_language[df_language[cell_column].str.contains(tag_present)]
-    else:
-        # Use cells from distillation
-        df_used = df_language[df_language[cell_column].isin(paths[language]["cells_distillation"])]
+    # Use cells from distillation
+    df_used = df_language[df_language[cell_column].isin(
+        paths[language]["cells_distillation"])]
     if WRITE_CSV:
         df_used.to_csv(f'only_used_{language}_stuff.csv')
-    
+
     # Reset index, so it starts from 0, and we can use these indices to distinguish items
     df_used = df_used.reset_index()
 
@@ -222,16 +223,15 @@ def create_language_dataset(df_language, language, Ngrams, sample_first, feature
     # Inflection classes calculated based on only used dataset (possibly not full dataset)
     inflection_classes = list(inflections.unique())
 
-
     forms_encoded, ngram_inventory = create_onehot_forms_from_Ngrams(
         forms_list, Ngrams, tokenized_form_spaces)
     assert forms_encoded.shape[0] == len(df_used)
     assert forms_encoded.shape[1] == len(ngram_inventory)
     orig_ngram_inventory = ngram_inventory
 
-    ### Begin squeeze into verbs
+    # Begin squeeze into verbs
     # Make new pooled ngram inventory with person tags
-    if not features_set: # concat
+    if not features_set:  # concat
 
         # Pooled ngram inventory only used for plotting, not in encoding processing
         pooled_ngram_inventory = np.array(["".join(
@@ -244,36 +244,40 @@ def create_language_dataset(df_language, language, Ngrams, sample_first, feature
         pooled_forms_encoded = np.zeros(
             (n_lexemes_unique, forms_encoded.shape[1]))
     pooled_inflections = []
-    #for lexeme_ix, lexeme_unique in enumerate(lexemes_unique):
+    # for lexeme_ix, lexeme_unique in enumerate(lexemes_unique):
     used_lexeme_indices = []
     for lexeme_ix, lexeme_unique in enumerate(lexemes_unique):
-        rows_lexeme_unique = df_used[df_used[lexeme_column]==lexeme_unique]
+        rows_lexeme_unique = df_used[df_used[lexeme_column] == lexeme_unique]
         # Not necessarily in the same order as wanted
-        cells_for_verb = list(rows_lexeme_unique[cell_column]) # cells_np[indices_for_verb]
+        # cells_np[indices_for_verb]
+        cells_for_verb = list(rows_lexeme_unique[cell_column])
         if len(cells_for_verb) < len(unique_cells_ordered):
             # Skip whole lexeme if one of the cells is not there
-            print(f"Skipping lexeme {lexeme_unique} because it does not include the following desired cells: {set(unique_cells_ordered).difference(set(cells_for_verb))}")
+            print(
+                f"Skipping lexeme {lexeme_unique} because it does not include the following desired cells: {set(unique_cells_ordered).difference(set(cells_for_verb))}")
             continue
         # Keep track of which lexemes we use, because of lexeme dropping when not all cells are there
         used_lexeme_indices.append(lexeme_ix)
 
-        if not features_set: # concat
+        if not features_set:  # concat
             pooled_forms_encoded_for_verb = [[]]  # add dimension
         else:
             pooled_forms_encoded_for_verb = np.zeros(
                 (1, len(ngram_inventory)))
-        indices_for_verb = list(rows_lexeme_unique.index) #np.where(lexemes == lexeme_unique)[0]
+        # np.where(lexemes == lexeme_unique)[0]
+        indices_for_verb = list(rows_lexeme_unique.index)
 
         # Save inflection for this pooled verb, from the first position
         pooled_inflections.append(
-            rows_lexeme_unique[inflection_column].values[0]) # inflections.values[indices_for_verb[0]]
+            rows_lexeme_unique[inflection_column].values[0])  # inflections.values[indices_for_verb[0]]
         for unique_cell in unique_cells_ordered:
-            #if unique_cell in cells_for_verb:
+            # if unique_cell in cells_for_verb:
             # index = np.where(
             #     unique_cell == cells_for_verb)
             index = cells_for_verb.index(unique_cell)
-            index_in_forms_encoded = indices_for_verb[index] # indices_for_verb[index[0][0]]
-            if not features_set: #concat
+            # indices_for_verb[index[0][0]]
+            index_in_forms_encoded = indices_for_verb[index]
+            if not features_set:  # concat
                 pooled_forms_encoded_for_verb = np.append(
                     pooled_forms_encoded_for_verb, forms_encoded[None, index_in_forms_encoded], axis=1)
             else:
@@ -285,12 +289,13 @@ def create_language_dataset(df_language, language, Ngrams, sample_first, feature
             #             pooled_forms_encoded_for_verb, np.zeros((forms_encoded.shape[1])), axis=0)
 
         if set_common_features_to_zero:
-            print("This should not be executed when set_common_features_to_zero is not on.")
+            print(
+                "This should not be executed when set_common_features_to_zero is not on.")
             # NOTE: This functionality assumes number of paradigm cells is 6: only works for Latin
             # NOTE: Not tested anymore after changing data processing code
-            if not features_set: #concat
+            if not features_set:  # concat
                 temp = np.reshape(pooled_forms_encoded_for_verb,
-                                    (n_cells_unique, forms_encoded.shape[1]))
+                                  (n_cells_unique, forms_encoded.shape[1]))
                 S = sum(temp)
                 # If the same gram was activated in all person tenses, their sum here is 6
                 temp[:, S == 6] = 0
@@ -303,11 +308,11 @@ def create_language_dataset(df_language, language, Ngrams, sample_first, feature
         if features_set:
             pooled_forms_encoded_for_verb = np.clip(
                 pooled_forms_encoded_for_verb, 0, 1)
-        pooled_forms_encoded[lexeme_ix,:] = pooled_forms_encoded_for_verb
+        pooled_forms_encoded[lexeme_ix, :] = pooled_forms_encoded_for_verb
     inflections = pooled_inflections
     forms_encoded = pooled_forms_encoded
-    ### End Squeeze into verbs
-    
+    # End Squeeze into verbs
+
     # For lexemes, make sure to return only data of used lexemes, because we drop lexemes
     # To return forms: list(forms[used_lexeme_indices])
     lexemes_used = list(lexemes[used_lexeme_indices])
@@ -320,13 +325,14 @@ def create_language_dataset(df_language, language, Ngrams, sample_first, feature
     if remove_features_allzero:
         print(f"Features before remove 0: {forms_encoded.shape[1]}")
         features_all_zero = np.all(forms_encoded == 0, axis=0)
-        forms_encoded = forms_encoded[:,~features_all_zero]
+        forms_encoded = forms_encoded[:, ~features_all_zero]
         ngram_inventory = ngram_inventory[~features_all_zero]
 
-
-    print(f"{language}. unique lexemes: {len(lexemes_unique_used)}. Inflection classes: {len(inflection_classes)}. Ngrams: {len(orig_ngram_inventory)}. Cells: {n_cells_unique}:{unique_cells_ordered}. Features: {forms_encoded.shape[1]}.")
+    print(
+        f"{language}. unique lexemes: {len(lexemes_unique_used)}. Inflection classes: {len(inflection_classes)}. Ngrams: {len(orig_ngram_inventory)}. Cells: {n_cells_unique}:{unique_cells_ordered}. Features: {forms_encoded.shape[1]}.")
     # NOTE: Normalized counts of inflection classes are based on lexemes before dropping entries that do not contain certain cells
-    print(df_used.drop_duplicates(subset=lexeme_column)[inflection_column].value_counts(normalize=True))
+    print(df_used.drop_duplicates(subset=lexeme_column)[
+          inflection_column].value_counts(normalize=True))
     # print_diagnostic_encoding(form_column, lexeme_column,
     #                           df_used, lexemes_unique_used, forms_encoded, ngram_inventory)
     assert len(forms_encoded) == len(lexemes_used) == len(inflections)
@@ -343,116 +349,3 @@ def print_diagnostic_encoding(form_column, lexeme_column, df_used, lexemes_uniqu
             df_used[df_used[lexeme_column] == lexeme][form_column])
         print(f"{lexeme}: {activated_ngrams}")
         print(f"Forms used for encoding: {used_forms}\n")
-
-# def get_sound_inventory(forms):
-#     sound_inventory = list(set(list("".join(forms))))
-#     max_form_len = max([len(x) for x in forms])
-#     return sound_inventory, max_form_len
-
-# def create_onehot_forms(forms, empty_symbol=True):
-#     sounds, max_form_len = get_sound_inventory(forms)
-#     n_forms = len(forms)
-#     if empty_symbol:
-#         sounds.append(".")
-#     n_sounds = len(sounds)
-#     # print(sounds)
-#     # print(f"n_forms: {n_forms}")
-#     # print(f"n_sounds: {n_sounds}")
-#     # print(f"max_form_len: {max_form_len}")
-#     array = np.zeros(shape=(n_forms, n_sounds * max_form_len))
-#     for form_row, form in enumerate(forms):
-#         # print(form)
-#         form_len = len(form)
-#         for char_position in range(max_form_len):
-#             if char_position < form_len:
-#                 char = form[char_position]
-#                 char_hot_index = sounds.index(char)
-#                 array[form_row, char_position*n_sounds+char_hot_index] = 1
-#                 # print(f"Char position {char_position} within form: {char}. Hot index: {char_hot_index}. Index: {form_row, char_position*n_sounds+char_hot_index}")
-#             else:  # Char_position >= form_len; so word shorter than the longest word
-#                 if empty_symbol:
-#                     # Create symbol for these positions
-#                     empty_hot_index = sounds.index(".")
-#                     array[form_row, char_position*n_sounds+empty_hot_index] = 1
-#                     # print(f"Char position {char_position} OUTSIDE form. Hot index: {empty_hot_index}. Index: {form_row, char_position*n_sounds+empty_hot_index}")
-#                 # Else: just leave the 0000s for empty symbol
-#     return array, sounds
-
-# def create_onehot_inflections(inflections):
-#     n_inflections = len(inflections)
-#     inflection_inventory = list(set(inflections))
-#     inflection_inventory_size = len(inflection_inventory)
-#     array = np.zeros(shape=(n_inflections, inflection_inventory_size))
-#     for infl_row, inflection in enumerate(inflections):
-#         hot_index = inflection_inventory.index(inflection)
-#         array[infl_row, hot_index] = 1
-#     return array, inflection_inventory
-
-# def create_bytepair_forms(forms):
-#     encoder = Encoder(200, pct_bpe=0.88)
-#     print(forms)
-#     encoder.fit(forms)
-#     print([encoder.tokenize(form) for form in forms])
-#     print(list(encoder.transform(forms)))
-#     # TODO: finish bytepair encoding. Possibly train on all languages
-#     # "{0:b}".format() -> map(int)
-#     # and set max bitstring length by max value
-#     # and try to get max word lengths almost equal by setting parameters right: Set parameters right to get quite even word lengths: https://arxiv.org/abs/1508.07909
-
-############### Methods binarized word embedings dataset #########
-
-
-# def map_int(string_list):
-#     return [int(s) for s in string_list]
-
-
-# def flatten(t):
-#     return [item for sublist in t for item in sublist]
-
-
-# def load_vectors(fname, read_first_words=10000, sample_words=1000):
-#     # t0 = time.time()
-#     fin = io.open(fname, 'r', encoding='utf-8', newline='\n', errors='ignore')
-#     n, dim = map(int, fin.readline().split())
-#     file_data = []
-#     words = []
-#     sample_indices = np.random.choice(
-#         np.arange(read_first_words), sample_words, replace=False)
-#     for i, line in enumerate(fin):
-#         if i >= read_first_words:
-#             break
-#         if i in sample_indices:  # Maybe inefficient if sample_words is high
-#             tokens = line.rstrip().split(' ')
-#             word = tokens[0]
-#             words.append(word)
-#             bin_values = [
-#                 f"{int(decimal_value):064b}" for decimal_value in tokens[1:]]
-#             file_data.append(bin_values)
-#     data_flatten = "".join(flatten(file_data))
-#     data_int = map_int(list(data_flatten))
-#     assert len(data_int) == dim*sample_words
-#     data_array = np.array(data_int).reshape(sample_words, dim)
-#     # Split array into n_words. This also joins the groups of 4 longs that represent one vector together
-#     # t1 = time.time()
-#     # print(t1-t0)
-#     return data_array, words, dim
-
-# def load_vectors(fname):
-#     t0 = time.time()
-#     fin = io.open(fname, 'r', encoding='utf-8', newline='\n', errors='ignore')
-#     n_words, d = map(int, fin.readline().split())
-#     data = []
-#     words = []
-#     for line in fin:
-#         tokens = line.rstrip().split(' ')
-#         word = tokens[0]
-#         words.append(word)
-#         bin_values = [map_int(list(f"{int(decimal_value):064b}")) for decimal_value in tokens[1:]]
-#         data.append(bin_values)
-#     data_array = np.array(data)
-#     print(data_array.shape)
-#     t1 = time.time()
-#     print(t1-t0)
-#     return data
-
-# TODO: also load real-valued vectors, to compare
